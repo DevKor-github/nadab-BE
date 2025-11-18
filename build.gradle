@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.devkor.ifive'
 version = '0.0.1-SNAPSHOT'
-description = 'Spring Boot backend server for Morae project'
+description = 'Spring Boot backend server for Nadab project'
 
 java {
 	toolchain {
