@@ -24,3 +24,7 @@ springdoc:
 
 cors:
   allowed-origins: []
+
+app:
+  cookie:
+    secure: false
