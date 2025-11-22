@@ -23,7 +23,4 @@ springdoc:
     path: /swagger-ui.html
 
 cors:
-  allowed-origins:
-    - http://localhost:3000
-    - http://localhost:5173
-    # TODO: 추후에 개발 서버 세팅이 끝나면 []로 바꾸고 application-dev.yml에 해당 도메인 추가
+  allowed-origins: []
