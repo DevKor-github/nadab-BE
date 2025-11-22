@@ -45,7 +45,4 @@ public class RefreshTokenProvider {
             throw new RuntimeException("SHA-256 알고리즘을 사용할 수 없습니다.", e);
         }
     }
-
-    // Refresh Token(Opaque Token) 쌍 - raw: 클라이언트 전달, hashed: DB 저장
-    public record RefreshTokenPair(String raw, String hashed) {}
 }
