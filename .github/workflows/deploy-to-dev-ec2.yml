@@ -45,30 +45,32 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euxo pipefail
-
+            
             cd ~/nadab
             echo "🔎 현재 서버 디렉토리: $(pwd)"
-
+            
             echo "📄 현재 파일 목록"
             ls -al
-
-            # 최근 JAR 선택
-            JAR_NAME=$(ls -1t *.jar | head -n1)
-            [ -n "$JAR_NAME" ] || { echo "❌ JAR 파일이 존재하지 않습니다"; exit 1; }
-
-            echo "📌 배포할 JAR 선택됨: $JAR_NAME"
-
+            
+            # 최근 JAR 선택 (build/libs 아래에서 찾기)
+            JAR_PATH=$(ls -1t build/libs/*.jar | head -n1 || true)
+            [ -n "$JAR_PATH" ] || { echo "❌ JAR 파일이 존재하지 않습니다"; exit 1; }
+            
+            JAR_NAME=$(basename "$JAR_PATH")
+            
+            echo "📌 배포할 JAR 선택됨: $JAR_PATH"
+            
             # 실행중인 프로세스 종료
             echo "🛑 기존 애플리케이션 종료 중..."
             pkill -f "$JAR_NAME" || true
-
+            
             echo "🚀 새 버전 실행..."
             DB_URL="${{ secrets.DB_URL }}" \
             DB_USERNAME="${{ secrets.DB_USERNAME }}" \
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
             JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             SWAGGER_SERVER_URL="${{ secrets.SWAGGER_SERVER_URL }}" \
-            nohup java -jar "$JAR_NAME" \
+            nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=dev > app.log 2>&1 &
-
+            
             echo "✅ 배포 완료!"
