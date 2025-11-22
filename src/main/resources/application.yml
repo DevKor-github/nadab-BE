@@ -28,16 +28,6 @@ token:
   access-token-expiration: 3600000  # 1시간 (밀리초)
   refresh-token-expiration: 1209600000  # 14일 (밀리초)
 
-oauth:
-  naver:
-    client-id: ${NAVER_CLIENT_ID}
-    client-secret: ${NAVER_CLIENT_SECRET}
-    redirect-uri: ${NAVER_REDIRECT_URI}
-  google:
-    client-id: ${GOOGLE_CLIENT_ID}
-    client-secret: ${GOOGLE_CLIENT_SECRET}
-    redirect-uri: ${GOOGLE_REDIRECT_URI}
-
 app:
   cookie:
     secure: false
