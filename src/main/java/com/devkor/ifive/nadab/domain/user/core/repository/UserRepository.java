@@ -15,4 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("provider") String provider,
             @Param("providerId") String providerId
     );
+
+    // 이메일 중복 체크
+    boolean existsByEmail(String email);
 }
