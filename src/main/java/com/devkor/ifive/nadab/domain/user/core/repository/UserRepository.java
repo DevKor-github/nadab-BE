@@ -10,7 +10,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     // 소셜 로그인 사용자 조회
-    @Query("SELECT u FROM User u WHERE u.provider = :provider AND u.providerId = :providerId")
     Optional<User> findByProviderAndProviderId(
             @Param("provider") String provider,
             @Param("providerId") String providerId
