@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.auth.api.dto;
+package com.devkor.ifive.nadab.domain.auth.api.dto.response;
 
 /**
  * 토큰 응답 DTO (공통)

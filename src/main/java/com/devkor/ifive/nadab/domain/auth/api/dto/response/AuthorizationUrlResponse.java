@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.auth.api.dto;
+package com.devkor.ifive.nadab.domain.auth.api.dto.response;
 
 /**
  * Authorization URL 응답 DTO

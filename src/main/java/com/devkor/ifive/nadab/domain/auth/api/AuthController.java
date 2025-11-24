@@ -1,20 +1,18 @@
 package com.devkor.ifive.nadab.domain.auth.api;
 
-import com.devkor.ifive.nadab.domain.auth.api.dto.AuthorizationUrlResponse;
-import com.devkor.ifive.nadab.domain.auth.api.dto.OAuth2LoginRequest;
-import com.devkor.ifive.nadab.domain.auth.api.dto.TokenResponse;
+import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.OAuth2LoginRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
 import com.devkor.ifive.nadab.domain.auth.application.OAuth2Service;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
 import com.devkor.ifive.nadab.domain.auth.infra.cookie.CookieManager;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
-import com.devkor.ifive.nadab.global.exception.UnauthorizedException;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import jakarta.annotation.security.PermitAll;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,7 +39,10 @@ public class AuthController {
     public ResponseEntity<AuthorizationUrlResponse> getAuthorizationUrl(
             @PathVariable("provider") String provider
     ) {
-        OAuth2Provider oauth2Provider = OAuth2Provider.valueOf(provider.toUpperCase());
+        // Provider 검증 및 변환
+        OAuth2Provider oauth2Provider = OAuth2Provider.fromString(provider);
+
+        // OAuth2 인증 URL 생성 (state 포함)
         String authorizationUrl = oauth2Service.getAuthorizationUrl(oauth2Provider);
 
         return ResponseEntity.ok(new AuthorizationUrlResponse(authorizationUrl));
@@ -55,16 +56,14 @@ public class AuthController {
             @RequestBody OAuth2LoginRequest request,
             HttpServletResponse response
     ) {
-        OAuth2Provider oauth2Provider = OAuth2Provider.valueOf(provider.toUpperCase());
-        TokenBundle tokenBundle = oauth2Service.executeOAuth2Login(
-                oauth2Provider,
-                request.code(),
-                request.state()
-        );
+        // Provider 검증 및 변환
+        OAuth2Provider oauth2Provider = OAuth2Provider.fromString(provider);
+
+        // Authorization Code로 토큰 발급 및 사용자 정보 조회
+        TokenBundle tokenBundle = oauth2Service.executeOAuth2Login(oauth2Provider, request.code(), request.state());
 
         // Refresh Token을 HttpOnly 쿠키에 저장
-        ResponseCookie cookie = cookieManager.create(tokenBundle.refreshToken());
-        response.addHeader("Set-Cookie", cookie.toString());
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
 
         return ResponseEntity.ok(new TokenResponse(tokenBundle.accessToken()));
     }
@@ -78,16 +77,12 @@ public class AuthController {
     ) {
         // 쿠키에서 Refresh Token 추출
         String refreshToken = cookieManager.extract(request);
-        if (refreshToken == null) {
-            throw new UnauthorizedException("Refresh Token이 없습니다.");
-        }
 
         // 토큰 재발급 (Rotation)
         TokenBundle tokenBundle = tokenService.refreshTokens(refreshToken);
 
-        // 새로운 Refresh Token을 HttpOnly 쿠키에 저장
-        ResponseCookie cookie = cookieManager.create(tokenBundle.refreshToken());
-        response.addHeader("Set-Cookie", cookie.toString());
+        // 새로운 Refresh Token을 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
 
         return ResponseEntity.ok(new TokenResponse(tokenBundle.accessToken()));
     }
@@ -103,9 +98,8 @@ public class AuthController {
         // DB에서 Refresh Token 삭제
         tokenService.revokeTokens(principal.getId());
 
-        // 쿠키 삭제
-        ResponseCookie cookie = cookieManager.delete();
-        response.addHeader("Set-Cookie", cookie.toString());
+        // 쿠키에서 Refresh Token 제거
+        cookieManager.removeRefreshTokenCookie(response);
 
         return ResponseEntity.noContent().build();
     }
