@@ -70,6 +70,12 @@ jobs:
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
             JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             SWAGGER_SERVER_URL="${{ secrets.SWAGGER_SERVER_URL }}" \
+            NAVER_CLIENT_ID="${{ secrets.NAVER_CLIENT_ID }}" \
+            NAVER_CLIENT_SECRET="${{ secrets.NAVER_CLIENT_SECRET }}" \
+            NAVER_REDIRECT_URI="${{ secrets.NAVER_REDIRECT_URI }}" \
+            GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
+            GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+            GOOGLE_REDIRECT_URI="${{ secrets.GOOGLE_REDIRECT_URI }}" \
             nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=dev > app.log 2>&1 &
             
