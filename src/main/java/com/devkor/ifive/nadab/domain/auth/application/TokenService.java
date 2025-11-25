@@ -31,14 +31,14 @@ public class TokenService {
     private final UserRepository userRepository;
     private final TokenProperties tokenProperties;
 
-    // Access Token + Refresh Token, Controller에서 accessToken은 응답 바디로 전달하고 refreshToken은 HttpOnly 쿠키로 전달할 예정
-    public record TokenBundle(String accessToken, String refreshToken) {}
+    // Access Token + Refresh Token + SignupStatus, Controller에서 accessToken과 signupStatus는 응답 바디로 전달하고 refreshToken은 HttpOnly 쿠키로 전달할 예정
+    public record TokenBundle(String accessToken, String refreshToken, String signupStatus) {}
 
     // 토큰 첫 발급 (로그인 시)
     public TokenBundle issueTokens(Long userId) {
         // User 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UnauthorizedException("사용자를 찾을 수 없습니다."));
 
         // Access Token 생성 (TODO: role 관련 코드는 추후 권한 관리 때 수정 예정)
         List<String> roles = List.of("USER");
@@ -52,7 +52,7 @@ public class TokenService {
         RefreshToken refreshToken = RefreshToken.create(user, tokenPair.hashed(), expiresAt);
         refreshTokenRepository.save(refreshToken);
 
-        return new TokenBundle(accessToken, tokenPair.raw());
+        return new TokenBundle(accessToken, tokenPair.raw(), user.getSignupStatus().name());
     }
 
     // 토큰 재발급 (Rotation 방식)
