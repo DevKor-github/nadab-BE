@@ -27,3 +27,7 @@ token:
   jwt-secret: ${JWT_SECRET}
   access-token-expiration: 3600000  # 1시간 (밀리초)
   refresh-token-expiration: 1209600000  # 14일 (밀리초)
+
+app:
+  cookie:
+    secure: false

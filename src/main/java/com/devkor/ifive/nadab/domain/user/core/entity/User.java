@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.user.core.entity;
 
+import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
 import com.devkor.ifive.nadab.global.shared.SoftDeletableAuditable;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -41,6 +42,16 @@ public class User extends SoftDeletableAuditable {
         User user = new User();
         user.email = email;
         user.signupStatus = SignupStatusType.PROFILE_INCOMPLETE;
+        return user;
+    }
+
+    public static User createSocialUser(String email, OAuth2Provider provider, String providerId) {
+        User user = new User();
+        user.email = email;
+        user.provider = provider.name();
+        user.providerId = providerId;
+        user.signupStatus = SignupStatusType.PROFILE_INCOMPLETE;
+        user.passwordHash = null; // 소셜 로그인은 비밀번호 없음
         return user;
     }
 }

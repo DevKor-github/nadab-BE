@@ -48,8 +48,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/health"
                         ).permitAll()
-                        // 그 외는 기존 정책대로
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll() // URL 패턴 기반 인증 대신 메서드 레벨 어노테이션으로 권한 제어 (@PermitAll, @PreAuthorize 사용)
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
