@@ -12,6 +12,7 @@ import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import jakarta.annotation.security.PermitAll;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,7 +54,7 @@ public class AuthController {
     @PermitAll
     public ResponseEntity<TokenResponse> oauth2Login(
             @PathVariable("provider") String provider,
-            @RequestBody OAuth2LoginRequest request,
+            @RequestBody @Valid OAuth2LoginRequest request,
             HttpServletResponse response
     ) {
         // Provider 검증 및 변환
