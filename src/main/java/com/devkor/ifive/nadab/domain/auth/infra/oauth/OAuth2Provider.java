@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.auth.infra.oauth;
 
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
+
 /**
  * OAuth2 제공자 (Provider)
  * - 지원되는 소셜 로그인 제공자를 정의
@@ -14,6 +16,6 @@ public enum OAuth2Provider {
                 return p;
             }
         }
-        throw new IllegalArgumentException("지원하지 않는 OAuth2 제공자입니다: " + provider);
+        throw new BadRequestException("지원하지 않는 OAuth2 제공자입니다: " + provider);
     }
 }
