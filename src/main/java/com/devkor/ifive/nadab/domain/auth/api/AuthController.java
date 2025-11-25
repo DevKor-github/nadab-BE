@@ -43,6 +43,8 @@ public class AuthController {
     private final TokenService tokenService;
     private final CookieManager cookieManager;
 
+    @GetMapping("/{provider}/url")
+    @PermitAll
     @Operation(
             summary = "OAuth2 Authorization URL 조회",
             description = """
@@ -56,8 +58,6 @@ public class AuthController {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthorizationUrlResponse.class))),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 - provider가 'naver' 또는 'google'이 아닌 경우", content = @Content)
     })
-    @GetMapping("/{provider}/url")
-    @PermitAll
     public ResponseEntity<AuthorizationUrlResponse> getAuthorizationUrl(
             @Parameter(description = "OAuth2 제공자 (naver, google)", example = "naver")
             @PathVariable("provider") String provider
@@ -71,6 +71,8 @@ public class AuthController {
         return ResponseEntity.ok(new AuthorizationUrlResponse(authorizationUrl));
     }
 
+    @PostMapping("/{provider}/login")
+    @PermitAll
     @Operation(
             summary = "OAuth2 로그인",
             description = """
@@ -104,8 +106,6 @@ public class AuthController {
                     - 해당 네이버, 구글 이메일이 다른 방법으로 이미 가입된 경우
                     """, content = @Content)
     })
-    @PostMapping("/{provider}/login")
-    @PermitAll
     public ResponseEntity<TokenResponse> oauth2Login(
             @Parameter(description = "OAuth2 제공자 (naver, google)", example = "naver")
             @PathVariable("provider") String provider,
@@ -125,6 +125,8 @@ public class AuthController {
         return ResponseEntity.ok(new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus()));
     }
 
+    @PostMapping("/refresh")
+    @PermitAll
     @Operation(
             summary = "토큰 재발급",
             description = """
@@ -143,8 +145,6 @@ public class AuthController {
                     - Refresh Token이 삭제된 경우 (로그아웃, 탈퇴, 또는 DB에 존재하지 않음)
                     """, content = @Content)
     })
-    @PostMapping("/refresh")
-    @PermitAll
     public ResponseEntity<TokenResponse> refresh(
             HttpServletRequest request,
             HttpServletResponse response
@@ -161,6 +161,8 @@ public class AuthController {
         return ResponseEntity.ok(new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus()));
     }
 
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "로그아웃",
             description = """
@@ -179,8 +181,6 @@ public class AuthController {
                     - JWT Access Token이 유효하지 않은 경우 (변조, 잘못된 서명)
                     """, content = @Content)
     })
-    @PostMapping("/logout")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> logout(
             @AuthenticationPrincipal UserPrincipal principal,
             HttpServletRequest request,
