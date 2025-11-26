@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.global.security.handler;
 
-import com.devkor.ifive.nadab.global.exception.ErrorResponse;
+import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,8 +32,11 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
 
-        ErrorResponse errorResponse = new ErrorResponse(HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다.");
+        ApiResponseDto<Void> body = ApiResponseDto.error(
+                HttpServletResponse.SC_FORBIDDEN,
+                "접근 권한이 없습니다."
+        );
 
-        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+        response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 }
