@@ -1,9 +1,10 @@
 package com.devkor.ifive.nadab.global.exception;
 
+import com.devkor.ifive.nadab.global.core.response.ApiResponse;
+import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -12,47 +13,26 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ExceptionController {
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex) {
-        ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
-        log.warn("error", ex);
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(error);
+    public ResponseEntity<ApiResponse<Void>> handleBadRequestException(BadRequestException ex) {
+        log.warn("BadRequestException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException ex) {
-        ErrorResponse error = new ErrorResponse(HttpStatus.FORBIDDEN.value(), ex.getMessage());
-        log.warn("error", ex);
-        return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(error);
+    public ResponseEntity<ApiResponse<Void>> handleForbiddenException(ForbiddenException ex) {
+        log.warn("ForbiddenException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFoundException(NotFoundException ex) {
-        ErrorResponse error = new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
-        log.warn("error", ex);
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(error);
+    public ResponseEntity<ApiResponse<Void>> handleNotFoundException(NotFoundException ex) {
+        log.warn("NotFoundException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
-        ErrorResponse error = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), ex.getMessage());
-        log.warn("error", ex);
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(error);
-    }
-
-    @ExceptionHandler(OAuth2Exception.class)
-    public ResponseEntity<ErrorResponse> handleOAuth2Exception(OAuth2Exception ex) {
-        ErrorResponse error = new ErrorResponse(ex.getStatusCode(), ex.getMessage());
-        log.warn("error", ex);
-        return ResponseEntity
-                .status(ex.getStatusCode())
-                .body(error);
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(UnauthorizedException ex) {
+        log.warn("UnauthorizedException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 }

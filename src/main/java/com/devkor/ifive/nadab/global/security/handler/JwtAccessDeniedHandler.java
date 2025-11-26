@@ -1,6 +1,5 @@
 package com.devkor.ifive.nadab.global.security.handler;
 
-import com.devkor.ifive.nadab.global.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
