@@ -15,7 +15,13 @@ public abstract class SoftDeletableAuditable extends Auditable {
 
     public void softDelete() {
         if (deletedAt != null) return;
-        updatedAt = OffsetDateTime.now();
-        deletedAt = OffsetDateTime.now();
+
+        OffsetDateTime now = OffsetDateTime.now();
+        this.updatedAt = now;
+        this.deletedAt = now;
+    }
+
+    public void undoSoftDelete() {
+        this.deletedAt = null;
     }
 }
