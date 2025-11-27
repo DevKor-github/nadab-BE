@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 
 @MappedSuperclass
 @Getter
-public abstract class Timestamped {
+public abstract class CreatableEntity {
 
     @Column(name = "created_at", updatable = false)
     protected OffsetDateTime createdAt;

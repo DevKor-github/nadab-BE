@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 
 @MappedSuperclass
 @Getter
-public abstract class Auditable extends Timestamped {
+public abstract class AuditableEntity extends CreatableEntity {
 
     @Column(name = "updated_at")
     protected OffsetDateTime updatedAt;

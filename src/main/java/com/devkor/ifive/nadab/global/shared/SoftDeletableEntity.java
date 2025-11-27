@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 
 @MappedSuperclass
 @Getter
-public abstract class SoftDeletableAuditable extends Auditable {
+public abstract class SoftDeletableEntity extends AuditableEntity {
 
     @Column(name = "deleted_at")
     protected OffsetDateTime deletedAt;

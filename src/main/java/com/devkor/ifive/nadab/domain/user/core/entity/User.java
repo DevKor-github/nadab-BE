@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.user.core.entity;
 
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
-import com.devkor.ifive.nadab.global.shared.SoftDeletableAuditable;
+import com.devkor.ifive.nadab.global.shared.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(name = "users")
 @Getter
-public class User extends SoftDeletableAuditable {
+public class User extends SoftDeletableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
