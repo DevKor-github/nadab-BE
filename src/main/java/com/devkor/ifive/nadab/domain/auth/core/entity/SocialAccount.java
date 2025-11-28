@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.auth.core.entity;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.global.shared.CreatableEntity;
+import com.devkor.ifive.nadab.global.shared.entity.CreatableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

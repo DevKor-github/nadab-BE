@@ -31,3 +31,5 @@ token:
 app:
   cookie:
     secure: false
+
+api_prefix: /api/v1

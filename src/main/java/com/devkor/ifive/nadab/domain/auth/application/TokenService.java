@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.auth.core.repository.RefreshTokenRepository
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.properties.TokenProperties;
+import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.UnauthorizedException;
 import com.devkor.ifive.nadab.global.security.token.AccessTokenProvider;
 import com.devkor.ifive.nadab.global.security.token.RefreshTokenPair;
@@ -38,7 +39,7 @@ public class TokenService {
     public TokenBundle issueTokens(Long userId) {
         // User 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
 
         // Access Token 생성 (TODO: role 관련 코드는 추후 권한 관리 때 수정 예정)
         List<String> roles = List.of("USER");

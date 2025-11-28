@@ -1,8 +1,7 @@
-package com.devkor.ifive.nadab.global.shared;
+package com.devkor.ifive.nadab.global.shared.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.Getter;
 
