@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.domain.user.core.entity;
 
-import com.devkor.ifive.nadab.global.shared.SoftDeletableEntity;
+import com.devkor.ifive.nadab.global.shared.entity.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 

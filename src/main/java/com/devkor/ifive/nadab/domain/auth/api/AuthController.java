@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Tag(name = "인증 API", description = "OAuth2 로그인, 일반 로그인, 토큰 재발급, 로그아웃 API")
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("${api_prefix}/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
