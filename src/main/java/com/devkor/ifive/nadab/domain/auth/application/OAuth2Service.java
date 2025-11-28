@@ -1,6 +1,9 @@
 package com.devkor.ifive.nadab.domain.auth.application;
 
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
+import com.devkor.ifive.nadab.domain.auth.core.entity.ProviderType;
+import com.devkor.ifive.nadab.domain.auth.core.entity.SocialAccount;
+import com.devkor.ifive.nadab.domain.auth.core.repository.SocialAccountRepository;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2UserInfo;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.client.GoogleOAuth2Client;
@@ -27,6 +30,7 @@ public class OAuth2Service {
     private final GoogleOAuth2Client googleOAuth2Client;
     private final StateManager stateManager;
     private final UserRepository userRepository;
+    private final SocialAccountRepository socialAccountRepository;
     private final TokenService tokenService;
 
     // 프론트엔드에 전달할 Authorization URL 반환 (CSRF 방지를 위한 state 파라미터 포함)
@@ -70,7 +74,10 @@ public class OAuth2Service {
 
     // User 조회 또는 생성
     private User getOrCreateUser(OAuth2Provider provider, String providerId, String email) {
-        return userRepository.findByProviderAndProviderId(provider.name(), providerId)
+        ProviderType providerType = ProviderType.valueOf(provider.name());
+
+        return socialAccountRepository.findByProviderTypeAndProviderUserId(providerType, providerId)
+                .map(SocialAccount::getUser)
                 .orElseGet(() -> saveNewSocialUser(email, provider, providerId));
     }
 
@@ -79,7 +86,16 @@ public class OAuth2Service {
         if (userRepository.existsByEmail(email)) {
             throw new OAuth2Exception("이미 가입된 이메일입니다. 다른 로그인 방식을 사용해주세요.", 409);
         }
-        User newUser = User.createSocialUser(email, provider, providerId);
-        return userRepository.save(newUser);
+
+        // User 생성 및 저장
+        User newUser = User.createSocialUser(email);
+        userRepository.save(newUser);
+
+        // SocialAccount 생성 및 저장
+        ProviderType providerType = ProviderType.valueOf(provider.name());
+        SocialAccount socialAccount = SocialAccount.createSocialAccount(newUser, providerId, providerType);
+        socialAccountRepository.save(socialAccount);
+
+        return newUser;
     }
 }
