@@ -28,6 +28,16 @@ token:
   access-token-expiration: 3600000  # 1시간 (밀리초)
   refresh-token-expiration: 1209600000  # 14일 (밀리초)
 
+cloud:
+  aws:
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: ${IAM_ACCESS_KEY}
+      secret-key: ${IAM_SECRET_KEY}
+    s3:
+      bucket: ${BUCKET_NAME}
+
 app:
   cookie:
     secure: false
