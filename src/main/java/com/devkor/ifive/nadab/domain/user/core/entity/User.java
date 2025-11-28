@@ -1,6 +1,5 @@
 package com.devkor.ifive.nadab.domain.user.core.entity;
 
-import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
 import com.devkor.ifive.nadab.global.shared.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -32,12 +31,6 @@ public class User extends SoftDeletableEntity {
     @Column(name = "default_profile_type")
     private DefaultProfileType defaultProfileType;
 
-    @Column(name = "provider")
-    private String provider;
-
-    @Column(name = "provider_id")
-    private String providerId;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "signup_status")
     private SignupStatusType signupStatus;
@@ -45,20 +38,19 @@ public class User extends SoftDeletableEntity {
     @Column(name = "registered_at")
     private OffsetDateTime registeredAt;
 
-    public static User createUser(String email) {
+    public static User createUser(String email, String passwordHash) {
         User user = new User();
         user.email = email;
         user.signupStatus = SignupStatusType.PROFILE_INCOMPLETE;
         user.defaultProfileType = DefaultProfileType.DEFAULT;
+        user.passwordHash = passwordHash;
         return user;
     }
 
-    public static User createSocialUser(String email, OAuth2Provider provider, String providerId) {
+    public static User createSocialUser(String email) {
         User user = new User();
         user.email = email;
         user.defaultProfileType = DefaultProfileType.DEFAULT;
-        user.provider = provider.name();
-        user.providerId = providerId;
         user.signupStatus = SignupStatusType.PROFILE_INCOMPLETE;
         user.passwordHash = null; // 소셜 로그인은 비밀번호 없음
         return user;
