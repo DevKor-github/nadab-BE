@@ -35,6 +35,7 @@ oauth:
 app:
   cookie:
     secure: false
+    same-site: Lax
 
 cors:
   allowed-origins: []
