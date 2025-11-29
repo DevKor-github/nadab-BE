@@ -33,6 +33,7 @@ oauth:
 
 profile-image:
   env: dev
+  base-url: ${PROFILE_IMAGE_BASE_URL}
 
 app:
   cookie:
