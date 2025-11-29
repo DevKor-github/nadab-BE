@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 @RestControllerAdvice
 @Slf4j
@@ -42,5 +43,18 @@ public class ExceptionController {
 
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode());
         return ApiResponseEntity.error(status, ex.getMessage());
+    }
+
+    @ExceptionHandler(NoSuchKeyException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleNoSuchKeyException(NoSuchKeyException ex) {
+        log.warn("NoSuchKeyException: {}", ex.getMessage(), ex);
+        // S3에서 객체를 찾을 수 없을 때 404 NOT_FOUND 응답
+        return ApiResponseEntity.error(HttpStatus.NOT_FOUND, "S3에서 요청된 파일을 찾을 수 없습니다.");
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleRuntimeException(RuntimeException ex) {
+        log.error("Internal Server Error (RuntimeException): {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 예상치 못한 오류가 발생했습니다.");
     }
 }

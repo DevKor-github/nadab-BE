@@ -1,7 +1,9 @@
 package com.devkor.ifive.nadab.domain.user.api;
 
 import com.devkor.ifive.nadab.domain.user.api.dto.request.CreateProfileImageUploadUrlRequest;
+import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserProfileRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.CreateProfileImageUploadUrlResponse;
+import com.devkor.ifive.nadab.domain.user.api.dto.response.UpdateUserProfileResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UserProfileResponse;
 import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
 import com.devkor.ifive.nadab.domain.user.application.UserCommandService;
@@ -31,8 +33,6 @@ public class UserController {
 
     private final UserQueryService userQueryService;
     private final UserCommandService userCommandService;
-    private final ProfileImageService profileImageService;
-    private final UserProfileUpdateService userProfileUpdateService;
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
@@ -96,7 +96,7 @@ public class UserController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateProfileImageUploadUrlRequest request) {
         CreateProfileImageUploadUrlResponse response =
-                profileImageService.createUploadUrl(principal.getId(), request);
+                userCommandService.createUploadUrl(principal.getId(), request);
         return ApiResponseEntity.ok(response);
     }
 
@@ -121,8 +121,51 @@ public class UserController {
     )
     public ResponseEntity<ApiResponseDto<Void>> deleteProfileImage(
             @AuthenticationPrincipal UserPrincipal principal) {
-        userProfileUpdateService.deleteProfileImage(principal.getId());
+        userCommandService.deleteProfileImage(principal.getId());
         return ApiResponseEntity.noContent();
     }
 
+    @PatchMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "나의 프로필 수정",
+            description = """
+                    로그인한 사용자의 프로필 정보를 수정합니다.
+                    닉네임과 프로필 이미지를 하나씩만, 또는 둘 다 수정할 수 있습니다.
+                    **적어도 하나의 필드를 포함해야 합니다.**
+                    **5MB 이하의 이미지 파일만 허용됩니다.**
+                    
+                    (예) 프로필 이미지만 수정 시 nickname은 null
+                   
+                    프로필 이미지 수정의 경우,
+                    POST /user/me/profile-image/upload-url 엔드포인트로
+                    미리 발급받은 PresignedURL을 통해 이미지를 업로드한 후,
+                    해당 엔드포인트에서 반환된 objectKey를 이 요청에 포함시켜야 합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "프로필 수정 성공",
+                            content = @Content(schema = @Schema(implementation = UpdateUserProfileResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 요청 (예: 닉네임 중복)",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<UpdateUserProfileResponse>> updateUserProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateUserProfileRequest request) {
+        UpdateUserProfileResponse response =
+                userCommandService.updateUserProfile(principal.getId(), request);
+        return ApiResponseEntity.ok(response);
+    }
 }
