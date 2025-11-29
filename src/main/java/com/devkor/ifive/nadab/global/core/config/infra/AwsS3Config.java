@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.global.core.config;
+package com.devkor.ifive.nadab.global.core.config.infra;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

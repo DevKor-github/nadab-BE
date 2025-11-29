@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.global.core.config;
+package com.devkor.ifive.nadab.global.core.config.infra;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

@@ -4,7 +4,6 @@ import com.devkor.ifive.nadab.domain.user.api.dto.request.CreateProfileImageUplo
 import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserProfileRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.CreateProfileImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UpdateUserProfileResponse;
-import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
 import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
