@@ -31,6 +31,10 @@ oauth:
     client-secret: ${GOOGLE_CLIENT_SECRET}
     redirect-uri: ${GOOGLE_REDIRECT_URI}
 
+profile-image:
+  env: dev
+  base-url: ${PROFILE_IMAGE_BASE_URL}
+
 app:
   cookie:
     secure: true

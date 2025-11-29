@@ -77,6 +77,10 @@ jobs:
             GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
             GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
             GOOGLE_REDIRECT_URI="${{ secrets.GOOGLE_REDIRECT_URI }}" \
+            IAM_ACCESS_KEY="${{ secrets.IAM_ACCESS_KEY }}" \
+            IAM_SECRET_KEY="${{ secrets.IAM_SECRET_KEY }}" \
+            BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
+            PROFILE_IMAGE_BASE_URL="${{ secrets.PROFILE_IMAGE_BASE_URL }}" \
             nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=dev > app.log 2>&1 &
             

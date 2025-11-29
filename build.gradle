@@ -48,6 +48,9 @@ dependencies {
 
     // WebClient (OAuth2 직접 구현용)
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    implementation platform('software.amazon.awssdk:bom:2.39.4')
+    implementation 'software.amazon.awssdk:s3'
 }
 
 tasks.named('test') {
