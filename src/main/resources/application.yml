@@ -41,5 +41,6 @@ cloud:
 app:
   cookie:
     secure: false
+    same-site: Lax
 
 api_prefix: /api/v1

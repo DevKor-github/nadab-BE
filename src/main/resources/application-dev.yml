@@ -38,6 +38,7 @@ profile-image:
 app:
   cookie:
     secure: true
+    same-site: None  # Cross-Site 허용 (프론트/백 도메인 분리된 상태)
 
 cors:
   allowed-origins:
