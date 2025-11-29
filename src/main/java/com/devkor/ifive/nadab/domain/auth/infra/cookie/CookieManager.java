@@ -21,6 +21,9 @@ public class CookieManager {
     @Value("${app.cookie.secure}")
     private boolean isCookieSecure;
 
+    @Value("${app.cookie.same-site}")
+    private String cookieSameSite;
+
     private static final String COOKIE_NAME = "refreshToken";
 
     private final TokenProperties tokenProperties;
@@ -32,7 +35,7 @@ public class CookieManager {
         return ResponseCookie.from(COOKIE_NAME, refreshToken)
                 .httpOnly(true)
                 .secure(isCookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/api/v1/auth")
                 .maxAge(maxAge)
                 .build();
@@ -43,7 +46,7 @@ public class CookieManager {
         return ResponseCookie.from(COOKIE_NAME, "")
                 .httpOnly(true)
                 .secure(isCookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/api/v1/auth")
                 .maxAge(0) // 즉시 만료
                 .build();
