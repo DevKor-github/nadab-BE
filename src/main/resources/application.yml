@@ -2,6 +2,10 @@ spring:
   application:
     name: nadab
 
+  config:
+    import:
+      - classpath:config/reserved-nicknames.yml
+
   profiles:
     active: local
 

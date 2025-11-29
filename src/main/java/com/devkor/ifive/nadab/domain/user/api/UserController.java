@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.user.api;
 
 import com.devkor.ifive.nadab.domain.user.api.dto.request.CreateProfileImageUploadUrlRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserProfileRequest;
+import com.devkor.ifive.nadab.domain.user.api.dto.response.CheckNicknameResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.CreateProfileImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UpdateUserProfileResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UserProfileResponse;
@@ -18,6 +19,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -166,6 +168,39 @@ public class UserController {
             @Valid @RequestBody UpdateUserProfileRequest request) {
         UpdateUserProfileResponse response =
                 userCommandService.updateUserProfile(principal.getId(), request);
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping("/check-nickname")
+    @PermitAll
+    @Operation(
+            summary = "닉네임 사용 가능 여부 조회",
+            description = """
+            닉네임이 사용 가능한지 종합적으로 검사합니다.
+            - 닉네임은 2자 이상 10자 이하이어야 합니다.
+            - 한글과 영어 대소문자만 허용됩니다.
+            - 닉네임은 공백으로 시작하거나 끝날 수 없습니다.
+            - 이미 사용 중인 닉네임은 사용할 수 없습니다.
+            - 예약어(admin, root 등)는 사용할 수 없습니다.
+            - 비속어 및 부적절한 단어가 포함된 닉네임은 사용할 수 없습니다.
+            - 로그인 상태에서 자신의 현재 닉네임을 보내면 사용 불가로 처리됩니다.
+            """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "조회 성공 - 사용 가능 여부는 응답 내용으로 판단",
+                            content = @Content(schema = @Schema(implementation = CheckNicknameResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 요청 - 닉네임 누락 또는 빈 문자열",
+                            content = @Content
+                    ),
+            }
+    )
+    public ResponseEntity<ApiResponseDto<CheckNicknameResponse>> checkNickname(
+            @RequestParam String nickname) {
+        CheckNicknameResponse response = userQueryService.checkNickname(nickname);
         return ApiResponseEntity.ok(response);
     }
 }
