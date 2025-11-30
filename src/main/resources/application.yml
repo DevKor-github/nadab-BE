@@ -21,6 +21,20 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_ADDRESS}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+
 springdoc:
   api-docs:
     enabled: false   # 공통: 기본 꺼두기
