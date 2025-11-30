@@ -81,6 +81,8 @@ jobs:
             IAM_SECRET_KEY="${{ secrets.IAM_SECRET_KEY }}" \
             BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
             PROFILE_IMAGE_BASE_URL="${{ secrets.PROFILE_IMAGE_BASE_URL }}" \
+            MAIL_ADDRESS="${{ secrets.MAIL_ADDRESS }}" \
+            MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \
             nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=dev > app.log 2>&1 &
             
