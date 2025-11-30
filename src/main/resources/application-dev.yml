@@ -45,4 +45,5 @@ cors:
     - http://localhost:3000
     - http://localhost:5173
     - ${FRONTEND_SERVER_URL}
-    - ${SWAGGER_SERVER_URL}
+    - ${SWAGGER_ORIGIN_PUBLIC_IP}
+    - ${SWAGGER_ORIGIN_DOMAIN}
