@@ -5,6 +5,8 @@ import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -50,6 +52,21 @@ public class ExceptionController {
         log.warn("NoSuchKeyException: {}", ex.getMessage(), ex);
         // S3에서 객체를 찾을 수 없을 때 404 NOT_FOUND 응답
         return ApiResponseEntity.error(HttpStatus.NOT_FOUND, "S3에서 요청된 파일을 찾을 수 없습니다.");
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        log.warn("MethodArgumentNotValidException: {}", ex.getMessage(), ex);
+
+        // 첫 번째 validation 에러 메시지 사용
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("입력값이 올바르지 않습니다.");
+
+        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(RuntimeException.class)

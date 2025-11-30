@@ -1,10 +1,8 @@
 package com.devkor.ifive.nadab.domain.email.api.dto.request;
 
-import com.devkor.ifive.nadab.domain.email.core.entity.VerificationType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 @Schema(description = "이메일 인증 코드 검증 요청")
@@ -20,7 +18,7 @@ public record VerifyCodeRequest(
         String code,
 
         @Schema(description = "인증 타입 (SIGNUP: 회원가입, PASSWORD_RESET: 비밀번호 재설정)", example = "SIGNUP")
-        @NotNull(message = "인증 타입은 필수입니다")
-        VerificationType verificationType
+        @NotBlank(message = "인증 타입은 필수입니다")
+        String verificationType
 ) {
 }

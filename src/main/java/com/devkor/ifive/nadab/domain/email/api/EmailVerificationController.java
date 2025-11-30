@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.email.api;
 import com.devkor.ifive.nadab.domain.email.api.dto.request.SendVerificationCodeRequest;
 import com.devkor.ifive.nadab.domain.email.api.dto.request.VerifyCodeRequest;
 import com.devkor.ifive.nadab.domain.email.application.EmailVerificationCommandService;
+import com.devkor.ifive.nadab.domain.email.core.entity.VerificationType;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,7 +60,10 @@ public class EmailVerificationController {
     public ResponseEntity<ApiResponseDto<Void>> sendVerificationCode(
             @Valid @RequestBody SendVerificationCodeRequest request
     ) {
-        emailVerificationCommandService.sendVerificationCode(request.email(), request.verificationType());
+        // verificationType String을 enum으로 변환
+        VerificationType type = VerificationType.fromString(request.verificationType());
+
+        emailVerificationCommandService.sendVerificationCode(request.email(), type);
         return ApiResponseEntity.ok("인증 코드가 발송되었습니다");
     }
 
@@ -93,7 +97,10 @@ public class EmailVerificationController {
     public ResponseEntity<ApiResponseDto<Void>> verifyCode(
             @Valid @RequestBody VerifyCodeRequest request
     ) {
-        emailVerificationCommandService.verifyCode(request.email(), request.code(), request.verificationType());
+        // verificationType String을 enum으로 변환
+        VerificationType type = VerificationType.fromString(request.verificationType());
+
+        emailVerificationCommandService.verifyCode(request.email(), request.code(), type);
         return ApiResponseEntity.ok("이메일 인증이 완료되었습니다");
     }
 }
