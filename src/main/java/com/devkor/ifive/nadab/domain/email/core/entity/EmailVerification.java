@@ -52,13 +52,14 @@ public class EmailVerification extends CreatableEntity {
         return verification;
     }
 
-    // 인증 코드 검증 및 상태 변경
-    public boolean verify(String code) {
-        if (!verificationCode.equals(code)) {
-            return false;
-        }
+    // 인증 코드 일치 여부 확인
+    public boolean matchesCode(String code) {
+        return verificationCode.equals(code);
+    }
+
+    // 인증 완료 처리
+    public void completeVerification() {
         this.isVerified = true;
-        return true;
     }
 
     // 만료 여부 확인

@@ -15,7 +15,7 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     Optional<EmailVerification> findByEmailAndVerificationType(String email, VerificationType verificationType);
 
     // 재발송 시 기존 레코드 삭제
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM EmailVerification ev WHERE ev.email = :email AND ev.verificationType = :verificationType")
     void deleteByEmailAndVerificationType(
             @Param("email") String email,
