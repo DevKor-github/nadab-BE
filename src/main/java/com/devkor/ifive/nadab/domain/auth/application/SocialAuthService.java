@@ -18,14 +18,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * OAuth2 로그인 서비스
+ * OAuth2 소셜 로그인 서비스
  * - Authorization URL 생성
  * - OAuth2 로그인 처리 (사용자 조회/생성 + 토큰 발급)
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class OAuth2Service {
+public class SocialAuthService {
 
     private final NaverOAuth2Client naverOAuth2Client;
     private final GoogleOAuth2Client googleOAuth2Client;

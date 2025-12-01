@@ -56,11 +56,6 @@ public class User extends SoftDeletableEntity {
         return user;
     }
 
-    public void completeProfile(String nickname) {
-        this.nickname = nickname;
-        this.signupStatus = SignupStatusType.COMPLETED;
-    }
-
     public void updatePasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
     }
