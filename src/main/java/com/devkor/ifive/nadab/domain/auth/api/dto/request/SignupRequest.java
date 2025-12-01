@@ -21,8 +21,7 @@ public record SignupRequest(
         @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다")
         @Pattern(regexp = ".*[A-Za-z].*", message = "비밀번호에는 영문자가 포함되어야 합니다")
         @Pattern(regexp = ".*\\d.*", message = "비밀번호에는 숫자가 포함되어야 합니다")
-        @Pattern(regexp = ".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*", message = "비밀번호에는 특수문자가 포함되어야 합니다")
-        @Pattern(regexp = "^\\S*$", message = "비밀번호에는 공백이 포함될 수 없습니다")
+        @Pattern(regexp = ".*[^0-9A-Za-z].*", message = "비밀번호에는 특수문자(또는 공백)가 포함되어야 합니다")
         String password
 ) {
 }
