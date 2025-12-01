@@ -11,6 +11,7 @@ import com.devkor.ifive.nadab.domain.auth.infra.oauth.client.NaverOAuth2Client;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.state.StateManager;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.OAuth2Exception;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -84,7 +85,7 @@ public class OAuth2Service {
     // User 조회 실패시 신규 소셜 로그인 사용자 생성
     private User saveNewSocialUser(String email, OAuth2Provider provider, String providerId) {
         if (userRepository.existsByEmail(email)) {
-            throw new OAuth2Exception("이미 가입된 이메일입니다. 다른 로그인 방식을 사용해주세요.", 409);
+            throw new ConflictException("이미 가입된 이메일입니다. 다른 로그인 방식을 사용해주세요.");
         }
 
         // User 생성 및 저장
