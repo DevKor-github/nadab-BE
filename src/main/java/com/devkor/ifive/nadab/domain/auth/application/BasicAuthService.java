@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 일반 회원가입/로그인 서비스
- * - 회원가입: 이메일 인증 확인 → User 생성(PROFILE_INCOMPLETE) → 토큰 발급
+ * - 회원가입: 이메일 인증 확인 → User 생성(PROFILE_INCOMPLETE) → 토큰 발급 → 이메일 인증 레코드 삭제
  * - 로그인: 이메일/비밀번호 검증 → 토큰 발급
  */
 @Service
@@ -31,7 +31,7 @@ public class BasicAuthService {
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // 회원가입(이메일 인증 완료, 중복 확인, User 생성, 토큰 발급)
+    // 회원가입(이메일 인증 확인, 중복 확인, User 생성, 토큰 발급, 이메일 인증 레코드 삭제)
     public TokenBundle signup(String email, String password) {
         // 1. 이메일 인증 완료 확인
         EmailVerification verification = emailVerificationRepository
@@ -55,7 +55,12 @@ public class BasicAuthService {
         userRepository.save(user);
 
         // 5. 토큰 발급 (PROFILE_INCOMPLETE 상태)
-        return tokenService.issueTokens(user.getId());
+        TokenBundle tokenBundle = tokenService.issueTokens(user.getId());
+
+        // 6. 이메일 인증 레코드 삭제 (회원가입 완료, 정리 작업)
+        emailVerificationRepository.delete(verification);
+
+        return tokenBundle;
     }
 
     // 로그인(이메일로 User 조회, 비밀번호 검증, 토큰 발급)
