@@ -121,7 +121,6 @@ public class AuthController {
             }
     )
     public ResponseEntity<ApiResponseDto<TokenResponse>> signup(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "회원가입 요청 (email, password)")
             @RequestBody @Valid SignupRequest request,
             HttpServletResponse response
     ) {
@@ -182,7 +181,6 @@ public class AuthController {
             }
     )
     public ResponseEntity<ApiResponseDto<TokenResponse>> login(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "로그인 요청 (email, password)")
             @RequestBody @Valid LoginRequest request,
             HttpServletResponse response
     ) {
@@ -250,7 +248,6 @@ public class AuthController {
     public ResponseEntity<ApiResponseDto<TokenResponse>> oauth2Login(
             @Parameter(description = "OAuth2 제공자 (naver, google)", example = "naver")
             @PathVariable("provider") String provider,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "OAuth2 로그인 요청 (code, state)")
             @RequestBody @Valid SocialLoginRequest request,
             HttpServletResponse response
     ) {
