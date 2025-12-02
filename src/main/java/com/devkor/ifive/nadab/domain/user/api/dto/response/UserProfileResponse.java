@@ -9,6 +9,7 @@ public record UserProfileResponse(
     String nickname,
     String email,
     String profileImageUrl,
+    String interestCode,
     LocalDate registeredDate
 ) {
 }
