@@ -1,9 +1,12 @@
 package com.devkor.ifive.nadab.domain.auth.api;
 
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.LoginRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
-import com.devkor.ifive.nadab.domain.auth.api.dto.request.OAuth2LoginRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
-import com.devkor.ifive.nadab.domain.auth.application.OAuth2Service;
+import com.devkor.ifive.nadab.domain.auth.application.BasicAuthService;
+import com.devkor.ifive.nadab.domain.auth.application.SocialAuthService;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
 import com.devkor.ifive.nadab.domain.auth.infra.cookie.CookieManager;
@@ -40,7 +43,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final OAuth2Service oauth2Service;
+    private final SocialAuthService socialAuthService;
+    private final BasicAuthService basicAuthService;
     private final TokenService tokenService;
     private final CookieManager cookieManager;
 
@@ -73,9 +77,122 @@ public class AuthController {
         OAuth2Provider oauth2Provider = OAuth2Provider.fromString(provider);
 
         // OAuth2 인증 URL 생성 (state 포함)
-        String authorizationUrl = oauth2Service.getAuthorizationUrl(oauth2Provider);
+        String authorizationUrl = socialAuthService.getAuthorizationUrl(oauth2Provider);
 
         return ApiResponseEntity.ok(new AuthorizationUrlResponse(authorizationUrl));
+    }
+
+    @PostMapping("/signup")
+    @PermitAll
+    @Operation(
+            summary = "회원가입",
+            description = """
+                    이메일 인증 완료 후 회원가입을 진행합니다.<br>
+                    Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
+                    회원가입 완료 후 signupStatus가 PROFILE_INCOMPLETE 상태이므로, 이 후 온보딩에서 프로필을 완성해야 합니다.<br>
+                    <br>
+                    **signupStatus:**<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "회원가입 성공",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    잘못된 요청
+                                    - 이메일 인증이 완료되지 않은 경우
+                                    - 이메일 형식이 올바르지 않은 경우
+                                    - 비밀번호 형식이 올바르지 않은 경우 (영문, 숫자, 특수문자 포함 8자 이상)
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = """
+                                    이메일 중복
+                                    - 이미 사용 중인 이메일입니다
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> signup(
+            @RequestBody @Valid SignupRequest request,
+            HttpServletResponse response
+    ) {
+        // 회원가입 및 토큰 발급
+        TokenBundle tokenBundle = basicAuthService.signup(request.email(), request.password());
+
+        // Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
+    }
+
+    @PostMapping("/login")
+    @PermitAll
+    @Operation(
+            summary = "로그인",
+            description = """
+                    이메일과 비밀번호로 로그인합니다.<br>
+                    Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
+                    <br>
+                    **signupStatus:**<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (온보딩 필요)<br>
+                    - COMPLETED: 가입 완료 (모든 필수 정보 입력 완료)<br>
+                    - WITHDRAWN: 회원 탈퇴 (14일 내 복구 가능)
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "로그인 성공",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    잘못된 요청
+                                    - 이메일 형식이 올바르지 않은 경우
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = """
+                                    인증 실패
+                                    - 비밀번호가 일치하지 않는 경우
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    사용자를 찾을 수 없습니다
+                                    - 등록되지 않은 이메일일 경우
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> login(
+            @RequestBody @Valid LoginRequest request,
+            HttpServletResponse response
+    ) {
+        // 로그인 및 토큰 발급
+        TokenBundle tokenBundle = basicAuthService.login(request.email(), request.password());
+
+        // Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
     }
 
     @PostMapping("/{provider}/login")
@@ -88,7 +205,7 @@ public class AuthController {
                     기존 회원은 바로 로그인 처리되며, 신규 사용자는 자동으로 회원가입 후 로그인됩니다.<br>
                     <br>
                     **signupStatus:**<br>
-                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (닉네임 미입력 상태, 신규 가입자)<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (신규 가입자)<br>
                     - COMPLETED: 가입 완료 (모든 필수 정보 입력 완료)<br>
                     - WITHDRAWN: 회원 탈퇴 (14일 내 복구 가능)
                     """,
@@ -131,15 +248,14 @@ public class AuthController {
     public ResponseEntity<ApiResponseDto<TokenResponse>> oauth2Login(
             @Parameter(description = "OAuth2 제공자 (naver, google)", example = "naver")
             @PathVariable("provider") String provider,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "OAuth2 로그인 요청 (code, state)")
-            @RequestBody @Valid OAuth2LoginRequest request,
+            @RequestBody @Valid SocialLoginRequest request,
             HttpServletResponse response
     ) {
         // Provider 검증 및 변환
         OAuth2Provider oauth2Provider = OAuth2Provider.fromString(provider);
 
         // Authorization Code로 토큰 발급 및 사용자 정보 조회
-        TokenBundle tokenBundle = oauth2Service.executeOAuth2Login(oauth2Provider, request.code(), request.state());
+        TokenBundle tokenBundle = socialAuthService.executeOAuth2Login(oauth2Provider, request.code(), request.state());
 
         // Refresh Token을 HttpOnly 쿠키에 저장
         cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());

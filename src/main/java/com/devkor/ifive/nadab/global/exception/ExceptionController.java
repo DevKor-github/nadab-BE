@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
+import java.util.stream.Collectors;
+
 @RestControllerAdvice
 @Slf4j
 public class ExceptionController {
@@ -21,16 +23,22 @@ public class ExceptionController {
         return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleForbiddenException(ForbiddenException ex) {
-        log.warn("ForbiddenException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.FORBIDDEN, ex.getMessage());
-    }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        log.warn("MethodArgumentNotValidException: {}", ex.getMessage(), ex);
 
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleNotFoundException(NotFoundException ex) {
-        log.warn("NotFoundException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.NOT_FOUND, ex.getMessage());
+        // 모든 validation 에러 메시지를 쉼표로 합침
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+
+        if (message.isEmpty()) {
+            message = "입력값이 올바르지 않습니다";
+        }
+
+        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
@@ -47,6 +55,18 @@ public class ExceptionController {
         return ApiResponseEntity.error(status, ex.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleForbiddenException(ForbiddenException ex) {
+        log.warn("ForbiddenException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleNotFoundException(NotFoundException ex) {
+        log.warn("NotFoundException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     @ExceptionHandler(NoSuchKeyException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleNoSuchKeyException(NoSuchKeyException ex) {
         log.warn("NoSuchKeyException: {}", ex.getMessage(), ex);
@@ -54,19 +74,10 @@ public class ExceptionController {
         return ApiResponseEntity.error(HttpStatus.NOT_FOUND, "S3에서 요청된 파일을 찾을 수 없습니다.");
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
-        log.warn("MethodArgumentNotValidException: {}", ex.getMessage(), ex);
-
-        // 첫 번째 validation 에러 메시지 사용
-        String message = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .findFirst()
-                .map(FieldError::getDefaultMessage)
-                .orElse("입력값이 올바르지 않습니다.");
-
-        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, message);
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleConflictException(ConflictException ex) {
+        log.warn("ConflictException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)
