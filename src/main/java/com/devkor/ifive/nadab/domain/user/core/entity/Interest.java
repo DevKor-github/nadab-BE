@@ -19,8 +19,9 @@ public class Interest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String code;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "code", nullable = false, length = 50)
+    private InterestCode code;
 
     @Column(nullable = false, length = 100)
     private String name;

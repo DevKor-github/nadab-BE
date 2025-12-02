@@ -1,18 +1,20 @@
 package com.devkor.ifive.nadab.domain.user.application;
 
 import com.devkor.ifive.nadab.domain.user.api.dto.request.CreateProfileImageUploadUrlRequest;
+import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserInterestRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserProfileRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.CreateProfileImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UpdateUserProfileResponse;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
+import com.devkor.ifive.nadab.domain.user.core.service.UserInterestService;
 import com.devkor.ifive.nadab.domain.user.core.service.UserProfileUpdateService;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class UserCommandService {
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
     private final ProfileImageService profileImageService;
     private final UserProfileUpdateService userProfileUpdateService;
+    private final UserInterestService userInterestService;
 
     @Value("${profile-image.env}")
     private String env;
@@ -66,7 +69,7 @@ public class UserCommandService {
         userProfileUpdateService.deleteProfileImage(user);
     }
 
-    public UpdateUserProfileResponse updateUserProfile(Long id, @Valid UpdateUserProfileRequest request) {
+    public UpdateUserProfileResponse updateUserProfile(Long id, UpdateUserProfileRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + id));
 
@@ -91,5 +94,14 @@ public class UserCommandService {
                 user.getEmail(),
                 profileImageUrlBuilder.buildUserProfileUrl(user)
         );
+    }
+
+    public void updateUserInterest(Long userId, UpdateUserInterestRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+
+        InterestCode code = InterestCode.fromString(request.interestCode());
+
+        userInterestService.updateUserInterest(user, code);
     }
 }

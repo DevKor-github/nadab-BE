@@ -1,15 +1,14 @@
 package com.devkor.ifive.nadab.domain.user.api;
 
 import com.devkor.ifive.nadab.domain.user.api.dto.request.CreateProfileImageUploadUrlRequest;
+import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserInterestRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserProfileRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.CheckNicknameResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.CreateProfileImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UpdateUserProfileResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UserProfileResponse;
-import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
 import com.devkor.ifive.nadab.domain.user.application.UserCommandService;
 import com.devkor.ifive.nadab.domain.user.application.UserQueryService;
-import com.devkor.ifive.nadab.domain.user.core.service.UserProfileUpdateService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
@@ -202,5 +201,48 @@ public class UserController {
             @RequestParam String nickname) {
         CheckNicknameResponse response = userQueryService.checkNickname(nickname);
         return ApiResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/interest")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "유저 관심 주제 업데이트",
+            description = """
+                    유저의 관심 주제를 업데이트합니다. 하나만 선택 가능합니다. 온보딩 시에도 사용됩니다.
+                    
+                    선택 가능한 관심 주제 코드는 다음과 같습니다.
+                    
+                    - **PREFERENCE** : 취향
+                    - **EMOTION** : 감정
+                    - **ROUTINE** : 루틴
+                    - **RELATIONSHIP** : 인간관계
+                    - **LOVE** : 사랑
+                    - **VALUES** : 가치관
+                    - **DREAM** : 꿈
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "관심 주제 업데이트 성공",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 요청 (예: 지원하지 않는 관심 주제)",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> updateUserInterests(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateUserInterestRequest request) {
+        userCommandService.updateUserInterest(principal.getId(), request);
+        return ApiResponseEntity.noContent();
     }
 }

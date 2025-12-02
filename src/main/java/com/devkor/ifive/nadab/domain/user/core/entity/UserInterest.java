@@ -35,4 +35,15 @@ public class UserInterest extends CreatableEntity {
             foreignKey = @ForeignKey(name = "fk_user_interests_interest")
     )
     private Interest interest;
+
+    public static UserInterest create(User user, Interest interest) {
+        UserInterest userInterest = new UserInterest();
+        userInterest.user = user;
+        userInterest.interest = interest;
+        return userInterest;
+    }
+
+    public void updateInterest(Interest interest) {
+        this.interest = interest;
+    }
 }
