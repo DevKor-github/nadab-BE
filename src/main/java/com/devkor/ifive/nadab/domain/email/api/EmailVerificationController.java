@@ -41,6 +41,10 @@ public class EmailVerificationController {
                     6자리 숫자 인증 코드가 이메일로 전송되며, 유효기간은 3분입니다.<br>
                     동일한 이메일과 인증 타입으로 재요청 시, 기존 인증 코드는 제거되고 새로운 코드가 생성됩니다.<br>
                     <br>
+                    **검증 사항:**<br>
+                    - SIGNUP: 이메일 중복 확인 (이미 사용 중인 이메일은 발송 불가)<br>
+                    - PASSWORD_RESET: 사용자 존재 확인 + 탈퇴한 계정 차단 + 소셜 로그인 계정 차단<br>
+                    <br>
                     <b>주의:</b> 이메일 발송은 비동기로 처리되며, SMTP 실패 시에도 200 응답이 반환됩니다.
                     이메일을 받지 못한 경우 동일한 API를 재호출하여 새로운 인증 코드를 발급받을 수 있습니다.
                     """,
@@ -52,7 +56,20 @@ public class EmailVerificationController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "이메일 형식 오류, 인증 타입 누락",
+                            description = """
+                                    - 이메일 형식 오류, 인증 타입 누락
+                                    - PASSWORD_RESET: 탈퇴한 계정 또는 소셜 로그인 계정은 비밀번호 찾기를 위한 이메일 인증 불가
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "PASSWORD_RESET: 등록되지 않은 이메일",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "SIGNUP: 이미 사용 중인 이메일",
                             content = @Content
                     )
             }
