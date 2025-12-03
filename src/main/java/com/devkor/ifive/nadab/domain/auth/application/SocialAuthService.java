@@ -94,7 +94,7 @@ public class SocialAuthService {
 
         // SocialAccount 생성 및 저장
         ProviderType providerType = ProviderType.valueOf(provider.name());
-        SocialAccount socialAccount = SocialAccount.createSocialAccount(newUser, providerId, providerType);
+        SocialAccount socialAccount = SocialAccount.create(newUser, providerId, providerType);
         socialAccountRepository.save(socialAccount);
 
         return newUser;

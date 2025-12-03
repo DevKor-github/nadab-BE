@@ -35,7 +35,7 @@ public class SocialAccount extends CreatableEntity {
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     private String refreshToken = null;
 
-    public static SocialAccount createSocialAccount(User user, String providerUserId, ProviderType providerType) {
+    public static SocialAccount create(User user, String providerUserId, ProviderType providerType) {
         SocialAccount socialAccount = new SocialAccount();
         socialAccount.user = user;
         socialAccount.providerUserId = providerUserId;
