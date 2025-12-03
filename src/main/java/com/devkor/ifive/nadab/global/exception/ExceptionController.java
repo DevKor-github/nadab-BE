@@ -5,6 +5,8 @@ import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -82,6 +84,10 @@ public class ExceptionController {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleRuntimeException(RuntimeException ex) {
+        if (ex instanceof AuthenticationException || ex instanceof AccessDeniedException) {
+            throw ex; // 다시 던져서 Security FilterChain이 처리하게
+        }
+
         log.error("Internal Server Error (RuntimeException): {}", ex.getMessage(), ex);
         return ApiResponseEntity.error(HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 예상치 못한 오류가 발생했습니다.");
     }
