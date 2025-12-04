@@ -1,11 +1,14 @@
 package com.devkor.ifive.nadab.domain.auth.api;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.LoginRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.ChangePasswordRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.ResetPasswordRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
 import com.devkor.ifive.nadab.domain.auth.application.BasicAuthService;
+import com.devkor.ifive.nadab.domain.auth.application.PasswordService;
 import com.devkor.ifive.nadab.domain.auth.application.SocialAuthService;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
@@ -35,7 +38,7 @@ import org.springframework.web.bind.annotation.*;
  * 인증 API 통합 컨트롤러
  * - OAuth2 로그인
  * - 일반 로그인
- * - 공통 API (토큰 재발급, 로그아웃)
+ * - 공통 API (토큰 재발급, 로그아웃, 비밀번호 변경)
  */
 @Tag(name = "인증 API", description = "OAuth2 로그인, 일반 로그인, 토큰 재발급, 로그아웃 API")
 @RestController
@@ -46,6 +49,7 @@ public class AuthController {
     private final SocialAuthService socialAuthService;
     private final BasicAuthService basicAuthService;
     private final TokenService tokenService;
+    private final PasswordService passwordService;
     private final CookieManager cookieManager;
 
     @GetMapping("/{provider}/url")
@@ -85,7 +89,7 @@ public class AuthController {
     @PostMapping("/signup")
     @PermitAll
     @Operation(
-            summary = "회원가입",
+            summary = "일반 회원가입",
             description = """
                     이메일 인증 완료 후 회원가입을 진행합니다.<br>
                     Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
@@ -138,7 +142,7 @@ public class AuthController {
     @PostMapping("/login")
     @PermitAll
     @Operation(
-            summary = "로그인",
+            summary = "일반 로그인",
             description = """
                     이메일과 비밀번호로 로그인합니다.<br>
                     Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
@@ -349,5 +353,96 @@ public class AuthController {
         cookieManager.removeRefreshTokenCookie(response);
 
         return ApiResponseEntity.noContent();
+    }
+
+    @PostMapping("/password/reset")
+    @PermitAll
+    @Operation(
+            summary = "비밀번호 찾기",
+            description = """
+                    이메일 인증 완료 후 비밀번호를 재설정합니다.<br>
+                    - 이메일 인증(PASSWORD_RESET)을 먼저 완료해야 합니다
+                    - 이전 비밀번호와 동일한 비밀번호는 사용할 수 없습니다
+                    - 재설정 후 모든 기기에서 자동 로그아웃됩니다
+                    """,
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "비밀번호 재설정 성공"),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    잘못된 요청
+                                    - 이메일 인증 미완료
+                                    - 소셜 로그인 계정
+                                    - 탈퇴한 계정
+                                    - 이전 비밀번호와 동일
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(responseCode = "404",
+                            description = """
+                                    사용자를 찾을 수 없음
+                                    - 등록되지 않은 이메일일 경우
+                                    """,
+                            content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request
+    ) {
+        passwordService.resetPassword(request.email(), request.newPassword());
+        return ApiResponseEntity.noContent();
+    }
+
+    @PatchMapping("/password")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "비밀번호 변경",
+            description = """
+                    로그인 상태(마이페이지)에서 비밀번호를 변경합니다.<br>
+                    - 현재 비밀번호 확인이 필수입니다<br>
+                    - 이전 비밀번호와 동일한 비밀번호는 사용할 수 없습니다<br>
+                    - 변경 후 다른 기기에서는 자동 로그아웃됩니다<br>
+                    - 현재 기기는 새로운 Access Token과 Refresh Token이 자동으로 발급되어 로그인 상태가 유지됩니다
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "비밀번호 변경 성공",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    잘못된 요청
+                                    - 소셜 로그인 계정이 비밀번호를 변경하려는 경우
+                                    - 이전 비밀번호와 동일한 비밀번호를 사용하려는 경우
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = """
+                                    인증 실패
+                                    - 현재 비밀번호가 불일치할 경우
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestBody @Valid ChangePasswordRequest request,
+            HttpServletResponse response
+    ) {
+        // 비밀번호 변경 + 토큰 재발급
+        TokenBundle tokenBundle = passwordService.changePassword(principal.getId(), request.currentPassword(), request.newPassword());
+
+        // 새 Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
     }
 }

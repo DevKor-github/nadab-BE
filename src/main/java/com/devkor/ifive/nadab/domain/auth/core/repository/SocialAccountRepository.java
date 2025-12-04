@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.auth.core.repository;
 
 import com.devkor.ifive.nadab.domain.auth.core.entity.ProviderType;
 import com.devkor.ifive.nadab.domain.auth.core.entity.SocialAccount;
+import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -13,4 +14,7 @@ public interface SocialAccountRepository extends JpaRepository<SocialAccount, Lo
             ProviderType providerType,
             String providerUserId
     );
+
+    // 사용자로 소셜 계정 존재 여부 확인
+    boolean existsByUser(User user);
 }
