@@ -30,7 +30,7 @@ public class PasswordService {
     private final PasswordEncoder passwordEncoder;
 
     // 비밀번호 재설정 (이메일 인증 완료 후)
-    public void recoverPassword(String email, String newPassword) {
+    public void resetPassword(String email, String newPassword) {
         // 1. 이메일 인증 완료 확인
         EmailVerification verification = emailVerificationRepository
                 .findByEmailAndVerificationType(email, VerificationType.PASSWORD_RESET)

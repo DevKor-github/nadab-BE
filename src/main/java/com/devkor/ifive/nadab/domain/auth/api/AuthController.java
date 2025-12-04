@@ -1,8 +1,8 @@
 package com.devkor.ifive.nadab.domain.auth.api;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.LoginRequest;
-import com.devkor.ifive.nadab.domain.auth.api.dto.request.PasswordChangeRequest;
-import com.devkor.ifive.nadab.domain.auth.api.dto.request.PasswordRecoveryRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.ChangePasswordRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.ResetPasswordRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
@@ -355,7 +355,7 @@ public class AuthController {
         return ApiResponseEntity.noContent();
     }
 
-    @PatchMapping("/password/recovery")
+    @PostMapping("/password/reset")
     @PermitAll
     @Operation(
             summary = "비밀번호 찾기",
@@ -386,10 +386,10 @@ public class AuthController {
                             content = @Content)
             }
     )
-    public ResponseEntity<ApiResponseDto<Void>> recoverPassword(
-            @RequestBody @Valid PasswordRecoveryRequest request
+    public ResponseEntity<ApiResponseDto<Void>> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request
     ) {
-        passwordService.recoverPassword(request.email(), request.newPassword());
+        passwordService.resetPassword(request.email(), request.newPassword());
         return ApiResponseEntity.noContent();
     }
 
@@ -432,7 +432,7 @@ public class AuthController {
     )
     public ResponseEntity<ApiResponseDto<TokenResponse>> changePassword(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestBody @Valid PasswordChangeRequest request,
+            @RequestBody @Valid ChangePasswordRequest request,
             HttpServletResponse response
     ) {
         // 비밀번호 변경 + 토큰 재발급

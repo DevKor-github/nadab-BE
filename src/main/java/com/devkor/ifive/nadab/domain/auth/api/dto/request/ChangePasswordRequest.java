@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Schema(description = "비밀번호 변경 요청 (마이페이지)")
-public record PasswordChangeRequest(
+public record ChangePasswordRequest(
         @Schema(description = "현재 비밀번호", example = "currentPassword123!")
         @NotBlank(message = "현재 비밀번호는 필수입니다")
         String currentPassword,
