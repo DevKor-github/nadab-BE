@@ -56,10 +56,6 @@ public class User extends SoftDeletableEntity {
         return user;
     }
 
-    public boolean isSocialAccount() {
-        return this.passwordHash == null;
-    }
-
     public void updatePasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
     }

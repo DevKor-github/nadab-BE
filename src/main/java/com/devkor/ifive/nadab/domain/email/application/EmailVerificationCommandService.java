@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.email.application;
 
+import com.devkor.ifive.nadab.domain.auth.core.repository.SocialAccountRepository;
 import com.devkor.ifive.nadab.domain.email.core.entity.EmailVerification;
 import com.devkor.ifive.nadab.domain.email.core.entity.VerificationType;
 import com.devkor.ifive.nadab.domain.email.core.repository.EmailVerificationRepository;
@@ -27,6 +28,7 @@ public class EmailVerificationCommandService {
     private final EmailVerificationRepository emailVerificationRepository;
     private final EmailSendService emailSendService;
     private final UserRepository userRepository;
+    private final SocialAccountRepository socialAccountRepository;
 
     // 인증 코드 발송
     public void sendVerificationCode(String email, VerificationType type) {
@@ -100,7 +102,7 @@ public class EmailVerificationCommandService {
                 .orElseThrow(() -> new NotFoundException("등록되지 않은 이메일입니다"));
 
         // 2. 소셜 로그인 사용자 차단
-        if (user.isSocialAccount()) {
+        if (socialAccountRepository.existsByUser(user)) {
             throw new BadRequestException("소셜 로그인 계정은 비밀번호 찾기를 사용할 수 없습니다");
         }
 

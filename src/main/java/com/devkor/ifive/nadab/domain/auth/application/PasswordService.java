@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.auth.application;
 
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
+import com.devkor.ifive.nadab.domain.auth.core.repository.SocialAccountRepository;
 import com.devkor.ifive.nadab.domain.email.core.entity.EmailVerification;
 import com.devkor.ifive.nadab.domain.email.core.entity.VerificationType;
 import com.devkor.ifive.nadab.domain.email.core.repository.EmailVerificationRepository;
@@ -26,6 +27,7 @@ public class PasswordService {
 
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
+    private final SocialAccountRepository socialAccountRepository;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
 
@@ -67,7 +69,7 @@ public class PasswordService {
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
 
         // 2. 소셜 로그인 사용자 차단
-        if (user.isSocialAccount()) {
+        if (socialAccountRepository.existsByUser(user)) {
             throw new BadRequestException("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다");
         }
 
