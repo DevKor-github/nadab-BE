@@ -41,3 +41,6 @@ out/
 
 # node.js 관련 파일
 node_modules
+
+# 오늘의 리포트 프롬프트
+src/main/resources/secret/daily-prompt-local.txt

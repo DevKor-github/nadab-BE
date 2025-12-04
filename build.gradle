@@ -24,6 +24,10 @@ repositories {
 	mavenCentral()
 }
 
+ext {
+    set('springAiVersion', "1.0.2")
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -59,6 +63,15 @@ dependencies {
 
     // Spring Mail
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // Spring AI - OpenAI
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
 }
 
 tasks.named('test') {
