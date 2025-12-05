@@ -43,4 +43,4 @@ out/
 node_modules
 
 # 오늘의 리포트 프롬프트
-src/main/resources/secret/daily-prompt-local.txt
+/src/main/resources/secret/
