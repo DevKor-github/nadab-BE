@@ -65,6 +65,11 @@ jobs:
             pkill -f "$JAR_NAME" || true
             
             echo "🚀 새 버전 실행..."
+            
+            # ✅ base64로 인코딩된 프롬프트를 환경 변수에 디코딩해서 넣기
+            INSIGHT_PROMPT_B64="${{ secrets.INSIGHT_PROMPT_B64 }}"
+            INSIGHT_PROMPT="$(printf '%s' "$INSIGHT_PROMPT_B64" | base64 -d)"
+            
             DB_URL="${{ secrets.DB_URL }}" \
             DB_USERNAME="${{ secrets.DB_USERNAME }}" \
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \

@@ -23,7 +23,6 @@ public class SecretDailyReportPromptLoader implements DailyReportPromptLoader{
             throw new BadRequestException("INSIGHT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다.");
         }
 
-        // GitHub Secret에는 "\n"으로 저장 → 실제 줄바꿈으로 복원
-        return rawPrompt.replace("\\n", "\n");
+        return rawPrompt;
     }
 }
