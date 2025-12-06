@@ -34,6 +34,14 @@ spring:
             enable: true
           connectiontimeout: 5000
           timeout: 5000
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.0
+          max-tokens: 512
 
 springdoc:
   api-docs:
