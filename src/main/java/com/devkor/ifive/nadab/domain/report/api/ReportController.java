@@ -6,6 +6,9 @@ import com.devkor.ifive.nadab.domain.report.application.ReportService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
@@ -21,11 +24,22 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    @PostMapping("/daily/generate")
+    @PostMapping("/daily/generate/test")
     @PermitAll
     @Operation(
-            summary = "일간 리포트 생성 API",
-            description = "사용자의 일간 리포트를 생성합니다."
+            summary = "(테스트용) 오늘의 리포트 생성 API",
+            description = "유저의 오늘의 리포트를 생성합니다.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "테스트용 오늘의 리포트 생성 성공",
+                            content = @Content(schema = @Schema(implementation = DailyReportResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 요청"
+                    ),
+            }
     )
     public ResponseEntity<ApiResponseDto<DailyReportResponse>> generateDailyReport(
             @Valid @RequestBody DailyReportRequest request
