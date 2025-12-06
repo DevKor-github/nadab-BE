@@ -68,7 +68,8 @@ jobs:
             
             # ✅ base64로 인코딩된 프롬프트를 환경 변수에 디코딩해서 넣기
             INSIGHT_PROMPT_B64="${{ secrets.INSIGHT_PROMPT_B64 }}"
-            INSIGHT_PROMPT="$(printf '%s' "$INSIGHT_PROMPT_B64" | base64 -d)"
+            INSIGHT_PROMPT="$(printf '%s' "$INSIGHT_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export INSIGHT_PROMPT
             
             DB_URL="${{ secrets.DB_URL }}" \
             DB_USERNAME="${{ secrets.DB_USERNAME }}" \
@@ -90,7 +91,7 @@ jobs:
             PROFILE_IMAGE_BASE_URL="${{ secrets.PROFILE_IMAGE_BASE_URL }}" \
             MAIL_ADDRESS="${{ secrets.MAIL_ADDRESS }}" \
             MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \
-            INSIGHT_PROMPT="${{ secrets.INSIGHT_PROMPT }}" \
+            
             nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=dev > app.log 2>&1 &
             
