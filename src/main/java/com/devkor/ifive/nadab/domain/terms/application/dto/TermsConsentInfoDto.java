@@ -4,7 +4,7 @@ import com.devkor.ifive.nadab.domain.terms.core.entity.TermsType;
 
 import java.util.List;
 
-public record TermsConsentInfo(
+public record TermsConsentInfoDto(
         Boolean requiresConsent,
         List<TermsType> missingTerms,
         Boolean service,

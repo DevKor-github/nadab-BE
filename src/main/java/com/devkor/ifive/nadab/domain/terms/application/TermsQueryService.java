@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.domain.terms.application;
 
-import com.devkor.ifive.nadab.domain.terms.application.dto.TermsConsentInfo;
+import com.devkor.ifive.nadab.domain.terms.application.dto.TermsConsentInfoDto;
 import com.devkor.ifive.nadab.domain.terms.core.entity.Term;
 import com.devkor.ifive.nadab.domain.terms.core.entity.TermsType;
 import com.devkor.ifive.nadab.domain.terms.core.entity.UserTerm;
@@ -25,7 +25,7 @@ public class TermsQueryService {
     private final UserTermRepository userTermRepository;
 
     // 약관 동의 정보 조회 (재동의 필요 약관 + 현재 동의 상태)
-    public TermsConsentInfo getTermsConsentInfo(Long userId) {
+    public TermsConsentInfoDto getTermsConsentInfo(Long userId) {
         List<Term> activeTerms = termRepository.findByIsActiveTrue();
         List<UserTerm> userTerms = userTermRepository.findByUserId(userId);
 
@@ -60,7 +60,7 @@ public class TermsQueryService {
         }
 
         Boolean requiresConsent = !missingTerms.isEmpty();
-        return new TermsConsentInfo(requiresConsent, missingTerms, service, privacy, ageVerification, marketing);
+        return new TermsConsentInfoDto(requiresConsent, missingTerms, service, privacy, ageVerification, marketing);
 
     }
 

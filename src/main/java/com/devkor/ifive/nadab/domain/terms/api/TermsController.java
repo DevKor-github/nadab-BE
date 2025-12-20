@@ -6,7 +6,7 @@ import com.devkor.ifive.nadab.domain.terms.api.dto.response.MarketingConsentResp
 import com.devkor.ifive.nadab.domain.terms.api.dto.response.TermsCheckResponse;
 import com.devkor.ifive.nadab.domain.terms.application.TermsCommandService;
 import com.devkor.ifive.nadab.domain.terms.application.TermsQueryService;
-import com.devkor.ifive.nadab.domain.terms.application.dto.TermsConsentInfo;
+import com.devkor.ifive.nadab.domain.terms.application.dto.TermsConsentInfoDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
@@ -26,14 +26,14 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "약관 API", description = "약관 관련 API")
 @RestController
-@RequestMapping("${api_prefix}")
+@RequestMapping("${api_prefix}/terms")
 @RequiredArgsConstructor
 public class TermsController {
 
     private final TermsCommandService termsCommandService;
     private final TermsQueryService termsQueryService;
 
-    @GetMapping("/terms/consent")
+    @GetMapping("/consent")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "약관 동의 상태 확인",
@@ -73,7 +73,7 @@ public class TermsController {
     public ResponseEntity<ApiResponseDto<TermsCheckResponse>> checkTermsConsent(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        TermsConsentInfo info = termsQueryService.getTermsConsentInfo(principal.getId());
+        TermsConsentInfoDto info = termsQueryService.getTermsConsentInfo(principal.getId());
 
         return ApiResponseEntity.ok(
                 new TermsCheckResponse(
@@ -87,7 +87,7 @@ public class TermsController {
         );
     }
 
-    @PostMapping("/terms/consent")
+    @PostMapping("/consent")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "약관 동의",
@@ -134,7 +134,7 @@ public class TermsController {
         return ApiResponseEntity.noContent();
     }
 
-    @GetMapping("/terms/consent/marketing")
+    @GetMapping("/consent/marketing")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "마케팅 동의 상태 조회",
@@ -160,7 +160,7 @@ public class TermsController {
         return ApiResponseEntity.ok(new MarketingConsentResponse(agreed));
     }
 
-    @PatchMapping("/terms/consent/marketing")
+    @PatchMapping("/consent/marketing")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "마케팅 동의 변경",
