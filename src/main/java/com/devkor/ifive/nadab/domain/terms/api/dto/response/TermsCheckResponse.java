@@ -16,7 +16,7 @@ public record TermsCheckResponse(
         @Schema(description = "현재 서비스 이용약관 동의 여부", example = "true")
         Boolean service,
 
-        @Schema(description = "현재 개인정보 처리방침 동의 여부", example = "false")
+        @Schema(description = "현재 개인정보 처리방침 동의 여부", example = "true")
         Boolean privacy,
 
         @Schema(description = "현재 만 14세 이상 확인 여부", example = "true")

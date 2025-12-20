@@ -7,13 +7,13 @@ import com.devkor.ifive.nadab.domain.terms.api.dto.response.TermsCheckResponse;
 import com.devkor.ifive.nadab.domain.terms.application.TermsCommandService;
 import com.devkor.ifive.nadab.domain.terms.application.TermsQueryService;
 import com.devkor.ifive.nadab.domain.terms.application.dto.TermsConsentInfo;
-import com.devkor.ifive.nadab.domain.terms.core.entity.TermsType;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -60,7 +60,8 @@ public class TermsController {
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "성공"
+                            description = "성공",
+                            content = @Content(schema = @Schema(implementation = TermsCheckResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -104,7 +105,8 @@ public class TermsController {
             responses = {
                     @ApiResponse(
                             responseCode = "204",
-                            description = "성공"
+                            description = "성공",
+                            content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "400",
@@ -141,7 +143,8 @@ public class TermsController {
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "성공"
+                            description = "성공",
+                            content = @Content(schema = @Schema(implementation = MarketingConsentResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -166,7 +169,8 @@ public class TermsController {
             responses = {
                     @ApiResponse(
                             responseCode = "204",
-                            description = "성공"
+                            description = "성공",
+                            content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
