@@ -92,6 +92,8 @@ public class AuthController {
             summary = "일반 회원가입",
             description = """
                     이메일 인증 완료 후 회원가입을 진행합니다.<br>
+                    일반 회원가입 시 약관 동의를 함께 처리합니다. 필수 약관(서비스 이용약관, 개인정보 처리방침, 만 14세 이상 확인)에 모두 동의해야 합니다.<br>
+                    <br>
                     Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
                     회원가입 완료 후 signupStatus가 PROFILE_INCOMPLETE 상태이므로, 이 후 온보딩에서 프로필을 완성해야 합니다.<br>
                     <br>
@@ -109,6 +111,7 @@ public class AuthController {
                             description = """
                                     잘못된 요청
                                     - 이메일 인증이 완료되지 않은 경우
+                                    - 필수 약관 미동의한 경우
                                     - 이메일 형식이 올바르지 않은 경우
                                     - 비밀번호 형식이 올바르지 않은 경우 (영문, 숫자, 특수문자 포함 8자 이상)
                                     """,
@@ -129,7 +132,14 @@ public class AuthController {
             HttpServletResponse response
     ) {
         // 회원가입 및 토큰 발급
-        TokenBundle tokenBundle = basicAuthService.signup(request.email(), request.password());
+        TokenBundle tokenBundle = basicAuthService.signup(
+                request.email(),
+                request.password(),
+                request.service(),
+                request.privacy(),
+                request.ageVerification(),
+                request.marketing()
+        );
 
         // Refresh Token을 HttpOnly 쿠키에 저장
         cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
@@ -208,8 +218,10 @@ public class AuthController {
                     Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
                     기존 회원은 바로 로그인 처리되며, 신규 사용자는 자동으로 회원가입 후 로그인됩니다.<br>
                     <br>
+                    신규 가입자(signupStatus: PROFILE_INCOMPLETE)는 온보딩 과정에서 약관 동의(POST /terms/consent) 후 닉네임을 입력해야 합니다.<br>
+                    <br>
                     **signupStatus:**<br>
-                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (신규 가입자)<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (신규 가입자, 약관 동의 + 닉네임 입력 필요)<br>
                     - COMPLETED: 가입 완료 (모든 필수 정보 입력 완료)<br>
                     - WITHDRAWN: 회원 탈퇴 (14일 내 복구 가능)
                     """,
