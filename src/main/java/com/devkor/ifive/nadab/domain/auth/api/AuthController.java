@@ -3,10 +3,12 @@ package com.devkor.ifive.nadab.domain.auth.api;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.LoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.ChangePasswordRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.ResetPasswordRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.RestoreRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
+import com.devkor.ifive.nadab.domain.auth.application.WithdrawalService;
 import com.devkor.ifive.nadab.domain.auth.application.BasicAuthService;
 import com.devkor.ifive.nadab.domain.auth.application.PasswordService;
 import com.devkor.ifive.nadab.domain.auth.application.SocialAuthService;
@@ -38,7 +40,7 @@ import org.springframework.web.bind.annotation.*;
  * 인증 API 통합 컨트롤러
  * - OAuth2 로그인
  * - 일반 로그인
- * - 공통 API (토큰 재발급, 로그아웃, 비밀번호 변경)
+ * - 공통 API (토큰 재발급, 로그아웃, 비밀번호 변경, 회원 탈퇴, 회원 복구)
  */
 @Tag(name = "인증 API", description = "OAuth2 로그인, 일반 로그인, 토큰 재발급, 로그아웃 API")
 @RestController
@@ -50,6 +52,7 @@ public class AuthController {
     private final BasicAuthService basicAuthService;
     private final TokenService tokenService;
     private final PasswordService passwordService;
+    private final WithdrawalService withdrawalService;
     private final CookieManager cookieManager;
 
     @GetMapping("/{provider}/url")
@@ -173,6 +176,8 @@ public class AuthController {
                             description = """
                                     잘못된 요청
                                     - 이메일 형식이 올바르지 않은 경우
+                                    - 탈퇴한 계정 (message: "탈퇴한 계정입니다. 계정 복구를 진행해주세요.")
+                                      → 프론트엔드: 복구 선택 화면으로 이동 (POST /auth/restore 안내)
                                     """,
                             content = @Content
                     ),
@@ -457,4 +462,103 @@ public class AuthController {
                 new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
         );
     }
+
+    @PostMapping("/withdrawal")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "회원 탈퇴",
+            description = """
+                    회원 탈퇴를 진행합니다.<br>
+                    - 탈퇴 후 14일 동안 복구 가능합니다.<br>
+                    - 모든 기기에서 자동 로그아웃됩니다.<br>
+                    - 14일 후 자동으로 완전 삭제됩니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "탈퇴 성공"
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "이미 탈퇴한 계정",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> withdrawUser(
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletResponse response
+    ) {
+        // 회원 탈퇴
+        withdrawalService.withdrawUser(principal.getId());
+
+        // 쿠키에서 Refresh Token 제거
+        cookieManager.removeRefreshTokenCookie(response);
+
+        return ApiResponseEntity.noContent();
+    }
+
+    @PostMapping("/restore")
+    @PermitAll
+    @Operation(
+            summary = "회원 복구 (일반 로그인)",
+            description = """
+                    탈퇴한 일반 계정을 복구합니다.<br>
+                    - 이메일과 비밀번호로 본인 확인을 합니다.<br>
+                    - 14일 이내에만 복구 가능합니다.<br>
+                    - 복구 후 자동으로 로그인됩니다.<br>
+                    <br>
+                    **소셜 로그인 계정의 경우:**<br>
+                    - 별도 복구 API가 필요 없습니다.<br>
+                    - 소셜 로그인(POST /naver/login 또는 POST /google/login)을 시도하면 자동으로 복구됩니다.
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "복구 성공 및 로그인",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    잘못된 요청
+                                    - 탈퇴하지 않은 계정
+                                    - 소셜 로그인 계정
+                                    - 복구 가능 기간(14일) 초과
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "비밀번호 불일치",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "사용자를 찾을 수 없음",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> restoreBasicAccount(
+            @RequestBody @Valid RestoreRequest request,
+            HttpServletResponse response
+    ) {
+        // 계정 복구 및 토큰 발급
+        TokenBundle tokenBundle = withdrawalService.restoreUser(request.email(), request.password());
+
+        // Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
+    }
+
 }

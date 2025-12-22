@@ -9,13 +9,17 @@ import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.client.GoogleOAuth2Client;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.client.NaverOAuth2Client;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.state.StateManager;
+import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.OAuth2Exception;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
 
 /**
  * OAuth2 소셜 로그인 서비스
@@ -79,14 +83,25 @@ public class SocialAuthService {
 
         return socialAccountRepository.findByProviderTypeAndProviderUserId(providerType, providerId)
                 .map(SocialAccount::getUser)
+                .map(user -> {
+                    // 탈퇴한 계정이면 자동 복구
+                    if (user.getDeletedAt() != null) {
+                        return restoreWithdrawnAccount(user);
+                    }
+                    return user;
+                })
                 .orElseGet(() -> saveNewSocialUser(email, provider, providerId));
     }
 
     // User 조회 실패시 신규 소셜 로그인 사용자 생성
     private User saveNewSocialUser(String email, OAuth2Provider provider, String providerId) {
-        if (userRepository.existsByEmail(email)) {
+        // 이메일 중복 체크 및 탈퇴 계정 확인
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (user.getDeletedAt() != null) {
+                throw new BadRequestException("탈퇴한 계정입니다. 원래 로그인 방식으로 복구를 진행해주세요.");
+            }
             throw new ConflictException("이미 가입된 이메일입니다. 다른 로그인 방식을 사용해주세요.");
-        }
+        });
 
         // User 생성 및 저장
         User newUser = User.createSocialUser(email);
@@ -98,5 +113,24 @@ public class SocialAuthService {
         socialAccountRepository.save(socialAccount);
 
         return newUser;
+    }
+
+    // 탈퇴한 소셜 계정 자동 복구
+    private User restoreWithdrawnAccount(User user) {
+        // 14일 이내인지 확인
+        if (user.getDeletedAt().isBefore(OffsetDateTime.now().minusDays(14))) {
+            throw new BadRequestException("복구 가능 기간(14일)이 지났습니다");
+        }
+
+        // 소셜 로그인 계정이 아닌 경우 차단 (일반 계정은 비밀번호 확인 필요)
+        if (!socialAccountRepository.existsByUser(user)) {
+            throw new BadRequestException("탈퇴한 계정입니다. 원래 로그인 방식으로 복구를 진행해주세요.");
+        }
+
+        // 복구 처리
+        user.restoreAccount();
+        user.updateSignupStatus(SignupStatusType.COMPLETED);
+
+        return user;
     }
 }
