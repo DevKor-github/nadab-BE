@@ -89,13 +89,10 @@ public class EmailVerificationCommandService {
 
     // 회원가입 이메일 인증 검증
     private void validateNewUserEmail(String email) {
-        // 이메일 중복 체크 및 탈퇴 계정 확인
-        userRepository.findByEmail(email).ifPresent(user -> {
-            if (user.getDeletedAt() != null) {
-                throw new BadRequestException("탈퇴한 계정입니다. 로그인 후 계정 복구를 진행해주세요.");
-            }
+        // 이메일 중복 체크
+        if (userRepository.existsByEmail(email)) {
             throw new ConflictException("이미 사용 중인 이메일입니다");
-        });
+        }
     }
 
     // 비밀번호 찾기 이메일 인증 검증
@@ -111,7 +108,7 @@ public class EmailVerificationCommandService {
 
         // 3. 탈퇴한 계정 차단
         if (user.getDeletedAt() != null) {
-            throw new BadRequestException("탈퇴한 계정입니다. 계정 복구는 비밀번호를 기억하는 경우에만 가능합니다.");
+            throw new BadRequestException("탈퇴한 계정입니다");
         }
     }
 
