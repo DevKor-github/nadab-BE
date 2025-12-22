@@ -67,7 +67,7 @@ public class BasicAuthService {
         return tokenBundle;
     }
 
-    // 로그인(이메일로 User 조회, 비밀번호 검증, 토큰 발급)
+    // 로그인(이메일로 User 조회, 비밀번호 검증, 탈퇴 계정 체크, 토큰 발급)
     public TokenBundle login(String email, String password) {
         // 1. User 조회
         User user = userRepository.findByEmail(email)
@@ -78,7 +78,12 @@ public class BasicAuthService {
             throw new UnauthorizedException("비밀번호가 일치하지 않습니다");
         }
 
-        // 3. 토큰 발급
+        // 3. 탈퇴한 계정 체크
+        if (user.getDeletedAt() != null) {
+            throw new BadRequestException("탈퇴한 계정입니다. 계정 복구를 진행해주세요.");
+        }
+
+        // 4. 토큰 발급
         return tokenService.issueTokens(user.getId());
     }
 }
