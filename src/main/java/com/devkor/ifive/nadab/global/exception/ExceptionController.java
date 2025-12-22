@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.global.exception;
 
+import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,12 @@ public class ExceptionController {
     public ResponseEntity<ApiResponseDto<Void>> handleBadRequestException(BadRequestException ex) {
         log.warn("BadRequestException: {}", ex.getMessage(), ex);
         return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(WithdrawnException.class)
+    public ResponseEntity<ApiResponseDto<WithdrawnInfoResponse>> handleWithdrawnException(WithdrawnException ex) {
+        log.warn("WithdrawnException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getWithdrawnInfo());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
