@@ -37,7 +37,14 @@ public class ApiResponseEntity {
                 .body(ApiResponseDto.success(status.value(), status.getReasonPhrase()));
     }
 
-    // 에러 응답
+    // 에러 응답 - data 있음
+    public static <T> ResponseEntity<ApiResponseDto<T>> error(HttpStatus httpStatus, String message, T data) {
+        return ResponseEntity
+                .status(httpStatus)
+                .body(ApiResponseDto.error(httpStatus.value(), message, data));
+    }
+
+    // 에러 응답 - data 없음
     public static <T> ResponseEntity<ApiResponseDto<T>> error(HttpStatus httpStatus, String message) {
         return ResponseEntity
                 .status(httpStatus)

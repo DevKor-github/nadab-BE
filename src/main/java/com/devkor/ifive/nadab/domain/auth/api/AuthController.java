@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
+import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
 import com.devkor.ifive.nadab.domain.auth.application.WithdrawalService;
 import com.devkor.ifive.nadab.domain.auth.application.BasicAuthService;
 import com.devkor.ifive.nadab.domain.auth.application.PasswordService;
@@ -177,9 +178,10 @@ public class AuthController {
                                     잘못된 요청
                                     - 이메일 형식이 올바르지 않은 경우
                                     - 탈퇴한 계정 (message: "탈퇴한 계정입니다. 계정 복구를 진행해주세요.")
+                                      → data 필드에 탈퇴 계정 정보 포함 (닉네임, 완전 삭제 예정일)
                                       → 프론트엔드: 복구 선택 화면으로 이동 (POST /auth/restore 안내)
                                     """,
-                            content = @Content
+                            content = @Content(schema = @Schema(implementation = WithdrawnInfoResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",

@@ -38,7 +38,16 @@ public class ApiResponseDto<T> {
                 .build();
     }
 
-    // 실패 응답
+    // 실패 응답 (data 있는 경우)
+    public static <T> ApiResponseDto<T> error(int status, String message, T data) {
+        return ApiResponseDto.<T>builder()
+                .status(status)
+                .message(message)
+                .data(data)
+                .build();
+    }
+
+    // 실패 응답 (data 없는 경우)
     public static <T> ApiResponseDto<T> error(int status, String message) {
         return ApiResponseDto.<T>builder()
                 .status(status)

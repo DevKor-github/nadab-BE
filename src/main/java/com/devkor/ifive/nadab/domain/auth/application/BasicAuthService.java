@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.auth.application;
 
+import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
 import com.devkor.ifive.nadab.domain.email.core.entity.EmailVerification;
 import com.devkor.ifive.nadab.domain.email.core.entity.VerificationType;
@@ -11,6 +12,7 @@ import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.UnauthorizedException;
+import com.devkor.ifive.nadab.global.exception.WithdrawnException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -80,7 +82,11 @@ public class BasicAuthService {
 
         // 3. 탈퇴한 계정 체크
         if (user.getDeletedAt() != null) {
-            throw new BadRequestException("탈퇴한 계정입니다. 계정 복구를 진행해주세요.");
+            WithdrawnInfoResponse accountInfo = new WithdrawnInfoResponse(
+                    user.getNickname(),
+                    user.getDeletedAt().toLocalDate().plusDays(15)
+            );
+            throw new WithdrawnException("탈퇴한 계정입니다. 계정 복구를 진행해주세요.", accountInfo);
         }
 
         // 4. 토큰 발급
