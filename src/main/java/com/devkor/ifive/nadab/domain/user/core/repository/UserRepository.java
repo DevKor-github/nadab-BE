@@ -20,6 +20,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByNickname(String nickname);
 
     @Modifying
-    @Query("DELETE FROM User u WHERE u.deletedAt IS NOT NULL AND u.deletedAt <= :expirationDate")
+    @Query("DELETE FROM User u WHERE u.deletedAt IS NOT NULL AND u.deletedAt < :expirationDate")
     int deleteOldWithdrawnUsers(@Param("expirationDate") OffsetDateTime expirationDate);
 }
