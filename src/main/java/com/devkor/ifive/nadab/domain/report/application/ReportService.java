@@ -5,7 +5,8 @@ import com.devkor.ifive.nadab.domain.report.api.dto.request.TestDailyReportReque
 import com.devkor.ifive.nadab.domain.report.api.dto.response.DailyReportResponse;
 import com.devkor.ifive.nadab.domain.report.core.dto.AiReportResultDto;
 import com.devkor.ifive.nadab.global.core.prompt.DailyReportPromptLoader;
-import com.devkor.ifive.nadab.global.exception.AiServiceException;
+import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -37,7 +38,7 @@ public class ReportService {
                 .content();
 
         if (response == null || response.trim().isEmpty()) {
-            throw new AiServiceException("AI 서비스로부터 응답을 받지 못했습니다.");
+            throw new AiServiceUnavailableException("AI 서비스로부터 응답을 받지 못했습니다.");
         }
 
         try {
@@ -55,7 +56,7 @@ public class ReportService {
 
         } catch (Exception e) {
             // GPT가 JSON 형식을 지키지 못했을 경우 대비
-            throw new AiServiceException("AI 응답 형식을 해석할 수 없습니다.");
+            throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
         }
     }
 
@@ -81,7 +82,7 @@ public class ReportService {
                 .content();
 
         if (response == null || response.trim().isEmpty()) {
-            throw new AiServiceException("AI 서비스로부터 응답을 받지 못했습니다.");
+            throw new AiServiceUnavailableException("AI 서비스로부터 응답을 받지 못했습니다.");
         }
 
         try {
@@ -99,7 +100,7 @@ public class ReportService {
 
         } catch (Exception e) {
             // GPT가 JSON 형식을 지키지 못했을 경우 대비
-            throw new AiServiceException("AI 응답 형식을 해석할 수 없습니다.");
+            throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
         }
     }
 }
