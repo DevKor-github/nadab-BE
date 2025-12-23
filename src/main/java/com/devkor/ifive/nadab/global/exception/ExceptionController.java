@@ -3,6 +3,8 @@ package com.devkor.ifive.nadab.global.exception;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
+import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,6 +89,18 @@ public class ExceptionController {
     public ResponseEntity<ApiResponseDto<Void>> handleConflictException(ConflictException ex) {
         log.warn("ConflictException: {}", ex.getMessage(), ex);
         return ApiResponseEntity.error(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(AiServiceUnavailableException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleAiServiceUnavailableException(AiServiceUnavailableException ex) {
+        log.warn("AI Service Unavailable: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    @ExceptionHandler(AiResponseParseException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleAiResponseParseException(AiResponseParseException ex) {
+        log.warn("AI Response Parse Error: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.BAD_GATEWAY, ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)
