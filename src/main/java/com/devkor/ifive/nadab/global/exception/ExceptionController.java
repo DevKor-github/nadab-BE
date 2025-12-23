@@ -89,6 +89,12 @@ public class ExceptionController {
         return ApiResponseEntity.error(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(AiServiceException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleAiServiceException(AiServiceException ex) {
+        log.warn("AiServiceException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleRuntimeException(RuntimeException ex) {
         if (ex instanceof AuthenticationException || ex instanceof AccessDeniedException) {
