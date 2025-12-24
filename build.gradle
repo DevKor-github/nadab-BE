@@ -66,6 +66,10 @@ dependencies {
 
     // Spring AI - OpenAI
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
+    // testcontainers
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation "org.testcontainers:junit-jupiter"
 }
 
 dependencyManagement {
