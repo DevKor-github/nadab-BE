@@ -4,7 +4,7 @@ import com.devkor.ifive.nadab.domain.auth.api.dto.response.LocalTokenResponse;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
-import com.devkor.ifive.nadab.domain.wallet.core.repository.WalletRepository;
+import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.security.token.AccessTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class LocalTokenService {
 
     private final AccessTokenProvider accessTokenProvider;
     private final UserRepository userRepository;
-    private final WalletRepository walletRepository;
+    private final UserWalletRepository userWalletRepository;
 
     // 로컬 로그인용 토큰 발급
     public LocalTokenResponse issueDummyAccessToken() {
@@ -36,8 +36,8 @@ public class LocalTokenService {
     }
 
     public UserWallet getOrCreateWallet(User user) {
-        return walletRepository.findByUserId(user.getId())
-                .orElseGet(() -> walletRepository.save(UserWallet.create(user)));
+        return userWalletRepository.findByUserId(user.getId())
+                .orElseGet(() -> userWalletRepository.save(UserWallet.create(user)));
     }
 
 }

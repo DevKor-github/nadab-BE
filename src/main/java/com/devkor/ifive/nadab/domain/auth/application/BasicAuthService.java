@@ -9,7 +9,7 @@ import com.devkor.ifive.nadab.domain.terms.application.TermsCommandService;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
-import com.devkor.ifive.nadab.domain.wallet.core.repository.WalletRepository;
+import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
@@ -32,7 +32,7 @@ public class BasicAuthService {
 
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
-    private final WalletRepository walletRepository;
+    private final UserWalletRepository userWalletRepository;
     private final TermsCommandService termsCommandService;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
@@ -61,7 +61,7 @@ public class BasicAuthService {
         userRepository.save(user);
 
         UserWallet wallet = UserWallet.create(user);
-        walletRepository.save(wallet);
+        userWalletRepository.save(wallet);
 
         // 5. 약관 동의 처리
         termsCommandService.saveConsents(user.getId(), service, privacy, ageVerification, marketing);
