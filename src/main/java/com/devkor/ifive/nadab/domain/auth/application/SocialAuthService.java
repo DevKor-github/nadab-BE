@@ -12,6 +12,8 @@ import com.devkor.ifive.nadab.domain.auth.infra.oauth.state.StateManager;
 import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
+import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.OAuth2Exception;
@@ -36,6 +38,7 @@ public class SocialAuthService {
     private final StateManager stateManager;
     private final UserRepository userRepository;
     private final SocialAccountRepository socialAccountRepository;
+    private final UserWalletRepository userWalletRepository;
     private final TokenService tokenService;
 
     // 프론트엔드에 전달할 Authorization URL 반환 (CSRF 방지를 위한 state 파라미터 포함)
@@ -106,6 +109,10 @@ public class SocialAuthService {
         // User 생성 및 저장
         User newUser = User.createSocialUser(email);
         userRepository.save(newUser);
+
+        // UserWallet 생성 및 저장
+        UserWallet wallet = UserWallet.create(newUser);
+        userWalletRepository.save(wallet);
 
         // SocialAccount 생성 및 저장
         ProviderType providerType = ProviderType.valueOf(provider.name());
