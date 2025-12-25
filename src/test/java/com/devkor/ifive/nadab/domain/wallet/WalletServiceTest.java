@@ -1,11 +1,9 @@
 package com.devkor.ifive.nadab.domain.wallet;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.domain.wallet.application.WalletCommandService;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
-import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.infra.builder.UserBuilder;
 import com.devkor.ifive.nadab.infra.builder.UserWalletBuilder;
 import com.devkor.ifive.nadab.infra.db.PostgresIntegrationTestSupport;

@@ -37,20 +37,13 @@ public class CrystalLog extends CreatableEntity {
     @Column(name = "reason", nullable = false, length = 64)
     private CrystalLogReason reason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    private CrystalLogStatus status;
+
     @Column(name = "ref_type", length = 64)
     private String refType;
 
     @Column(name = "ref_id", length = 128)
     private Long refId;
-
-    public static CrystalLog create(User user, long delta, long balanceAfter, CrystalLogReason reason, String refType, Long refId) {
-        CrystalLog crystalLog = new CrystalLog();
-        crystalLog.user = user;
-        crystalLog.delta = delta;
-        crystalLog.balanceAfter = balanceAfter;
-        crystalLog.reason = reason;
-        crystalLog.refType = refType;
-        crystalLog.refId = refId;
-        return crystalLog;
-    }
 }
