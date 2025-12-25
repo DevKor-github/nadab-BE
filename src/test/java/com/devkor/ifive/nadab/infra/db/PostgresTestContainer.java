@@ -14,9 +14,7 @@ public final class PostgresTestContainer {
 
     private static final DockerImageName IMAGE = DockerImageName.parse("postgres:16-alpine");
 
-    private static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>(IMAGE)
-                    .withReuse(true); // 선택: 로컬에서 재사용(설정 필요)
+    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(IMAGE);
 
     private PostgresTestContainer() {
         // utility class
