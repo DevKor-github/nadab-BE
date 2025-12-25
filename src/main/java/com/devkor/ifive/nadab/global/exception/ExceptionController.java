@@ -103,6 +103,12 @@ public class ExceptionController {
         return ApiResponseEntity.error(HttpStatus.BAD_GATEWAY, ex.getMessage());
     }
 
+    @ExceptionHandler(NotEnoughCrystalException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleNotEnoughCrystalException(NotEnoughCrystalException ex) {
+        log.warn("NotEnoughCrystalException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleRuntimeException(RuntimeException ex) {
         if (ex instanceof AuthenticationException || ex instanceof AccessDeniedException) {

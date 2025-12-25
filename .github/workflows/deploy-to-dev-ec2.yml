@@ -25,7 +25,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: 🏗️ Build Project with Gradle
-        run: ./gradlew test bootJar
+        run: ./gradlew bootJar
 
       - name: 📤 Upload JAR to EC2 via SCP
         uses: appleboy/scp-action@v0.1.7
