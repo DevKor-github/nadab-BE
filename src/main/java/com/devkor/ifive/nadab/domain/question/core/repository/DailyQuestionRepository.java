@@ -9,6 +9,12 @@ import java.util.Optional;
 
 public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Long> {
 
+    /**
+     * 랜덤으로 질문 하나를 조회합니다.
+     * @param interestId
+     * @param levelOnly: null이면 레벨 무관, 아니면 해당 레벨만
+     * @return
+     */
     @Query("""
         select q
         from DailyQuestion q
@@ -21,6 +27,13 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
             @Param("levelOnly") Integer levelOnly
     );
 
+    /**
+     * 특정 질문을 제외하고 랜덤으로 질문 하나를 조회합니다.
+     * @param interestId
+     * @param excludeId
+     * @param levelOnly: null이면 레벨 무관, 아니면 해당 레벨만
+     * @return
+     */
     @Query("""
         select q
         from DailyQuestion q
