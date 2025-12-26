@@ -13,7 +13,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Component
 public class WeightedInterestPicker {
 
-    public Integer pickForReroll(Integer userInterestId, List<Integer> allInterestIds) {
+    public Long pickForReroll(Long userInterestId, List<Long> allInterestIds) {
         if (allInterestIds == null || allInterestIds.isEmpty()) {
             throw new IllegalStateException("interest 목록이 비어있습니다.");
         }
@@ -27,7 +27,7 @@ public class WeightedInterestPicker {
         double r = ThreadLocalRandom.current().nextDouble(0.0, 1.0);
         double acc = 0.0;
 
-        for (Integer id : allInterestIds) {
+        for (Long id : allInterestIds) {
             double w = id.equals(userInterestId) ? userWeight : othersWeightEach;
             acc += w;
             if (r <= acc) return id;

@@ -23,7 +23,7 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
         order by function('random')
         """)
     Optional<DailyQuestion> findRandomByInterest(
-            @Param("interestId") Integer interestId,
+            @Param("interestId") Long interestId,
             @Param("levelOnly") Integer levelOnly
     );
 
@@ -43,7 +43,7 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
         order by function('random')
         """)
     Optional<DailyQuestion> findRandomByInterestExcluding(
-            @Param("interestId") Integer interestId,
+            @Param("interestId") Long interestId,
             @Param("excludeId") Long excludeId,
             @Param("levelOnly") Integer levelOnly
     );
