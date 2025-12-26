@@ -25,12 +25,12 @@ public class DailyQuestion extends SoftDeletableEntity {
     @Column(name = "question_level", nullable = false)
     private Integer questionLevel;
 
-    @Column(name = "guide_empathy", length = 100)
+    @Column(name = "empathy_guide", length = 100)
     private String empathyGuide;
 
-    @Column(name = "guide_hint", length = 100)
+    @Column(name = "hint_guide", length = 100)
     private String hintGuide;
 
-    @Column(name = "leading_question_hint", length = 100)
-    private String leadingQuestionHint;
+    @Column(name = "leading_question_guide", length = 100)
+    private String leadingQuestionGuide;
 }
