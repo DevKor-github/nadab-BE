@@ -96,14 +96,14 @@ public class QuestionCommandService {
      * - 선택된 interest 내에서 랜덤 질문 (단, 현재 질문 제외)
      * - 가입 2주 미만이면 level = 1만
      */
-    public UserDailyQuestion rerollTodayQuestion(Long userId) {
+    public DailyQuestionResponse rerollTodayQuestion(Long userId) {
         LocalDate today = LocalDate.now(KST);
 
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
                 .orElseThrow(() -> new ConflictException("오늘의 첫 질문이 아직 생성되지 않았습니다."));
 
         if (udq.isRerollUsed()) {
-            throw new BadRequestException("오늘은 이미 리롤을 사용했습니다.");
+            throw new BadRequestException("오늘은 이미 질문을 다시 생성했습니다.");
         }
 
         User user = udq.getUser();
@@ -123,6 +123,15 @@ public class QuestionCommandService {
         );
 
         udq.rerollTo(newQ);
-        return udq;
+
+        return new DailyQuestionResponse(
+                newQ.getId(),
+                newQ.getQuestionText(),
+                newQ.getEmpathyGuide(),
+                newQ.getHintGuide(),
+                newQ.getLeadingQuestionGuide(),
+                false,
+                true
+        );
     }
 }

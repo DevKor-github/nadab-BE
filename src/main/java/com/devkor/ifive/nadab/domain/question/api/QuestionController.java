@@ -17,12 +17,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "질문 API", description = "오늘의 질문 관련 API")
 @RestController
-@RequestMapping("${api_prefix}/questions/")
+@RequestMapping("${api_prefix}/question")
 @RequiredArgsConstructor
 public class QuestionController {
 
@@ -44,13 +45,44 @@ public class QuestionController {
                             responseCode = "401",
                             description = "사용자 인증 실패",
                             content = @Content
-                    ),
+                    )
             }
     )
     public ResponseEntity<ApiResponseDto<DailyQuestionResponse>> getDailyQuestion(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         DailyQuestionResponse response = questionCommandService.getOrCreateTodayQuestion(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reroll")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "오늘의 질문 재생성",
+            description = "오늘의 질문을 재생성합니다. 하루에 한 번만 재생성할 수 있습니다.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "성공",
+                            content = @Content(schema = @Schema(implementation = DailyQuestionResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "사용자 인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "오늘의 질문은 하루에 한 번만 재생성할 수 있습니다.",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<DailyQuestionResponse>> rerollDailyQuestion(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        DailyQuestionResponse response = questionCommandService.rerollTodayQuestion(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 }
