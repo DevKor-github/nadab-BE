@@ -3,6 +3,8 @@ CREATE TABLE daily_reports (
                                answer_entry_id BIGINT      NOT NULL,
                                emotion_id      INT,
                                content         VARCHAR(500),
+                               status          VARCHAR(16) NOT NULL,
+
                                analyzed_at     TIMESTAMPTZ,
                                created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
 

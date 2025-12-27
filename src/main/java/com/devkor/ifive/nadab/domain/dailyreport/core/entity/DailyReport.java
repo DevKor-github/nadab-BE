@@ -29,15 +29,24 @@ public class DailyReport extends CreatableEntity {
     @Column(length = 500)
     private String content;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    private DailyReportStatus status;
+
     @Column(name = "analyzed_at")
     private OffsetDateTime analyzedAt;
 
-    public static DailyReport create(AnswerEntry answerEntry, Emotion emotion, String content, OffsetDateTime analyzedAt) {
+    public static DailyReport create(AnswerEntry answerEntry, Emotion emotion, String content, DailyReportStatus status) {
         DailyReport dr = new DailyReport();
         dr.answerEntry = answerEntry;
         dr.emotion = emotion;
         dr.content = content;
-        dr.analyzedAt = analyzedAt;
+        dr.status = status;
         return dr;
+    }
+
+    public void markAsCompleted() {
+        this.status = DailyReportStatus.COMPLETED;
+        this.analyzedAt = OffsetDateTime.now();
     }
 }
