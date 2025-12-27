@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.question.core.entity;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.global.shared.entity.CreatableEntity;
+import com.devkor.ifive.nadab.global.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,7 +18,7 @@ import java.time.LocalDate;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserDailyQuestion extends CreatableEntity {
+public class UserDailyQuestion extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

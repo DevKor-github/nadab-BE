@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.question.application;
 
+import com.devkor.ifive.nadab.domain.question.api.dto.response.DailyQuestionResponse;
 import com.devkor.ifive.nadab.domain.question.application.helper.DailyQuestionSelector;
 import com.devkor.ifive.nadab.domain.question.application.helper.QuestionLevelPolicy;
 import com.devkor.ifive.nadab.domain.question.application.helper.WeightedInterestPicker;
@@ -30,13 +31,34 @@ public class QuestionCommandService {
 
     private final UserRepository userRepository;
     private final UserDailyQuestionRepository userDailyQuestionRepository;
-
     private final UserInterestRepository userInterestRepository;
     private final InterestRepository interestRepository;
 
     private final QuestionLevelPolicy questionLevelPolicy;
     private final WeightedInterestPicker weightedInterestPicker;
     private final DailyQuestionSelector dailyQuestionSelector;
+
+    public DailyQuestionResponse getOrCreateTodayQuestion(Long userId) {
+        LocalDate today = LocalDate.now(KST);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+
+        UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
+                .orElseGet(() -> this.createTodayQuestion(userId, today));
+
+        DailyQuestion question = udq.getDailyQuestion();
+
+        return new DailyQuestionResponse(
+                question.getId(),
+                question.getQuestionText(),
+                question.getEmpathyGuide(),
+                question.getHintGuide(),
+                question.getLeadingQuestionGuide(),
+                false,
+                false
+        );
+    }
 
     /**
      * 오늘 첫 질문 생성:
@@ -48,10 +70,10 @@ public class QuestionCommandService {
         // -> insert 시도 후 unique 위반이면 다시 조회해서 반환
         try {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다. id: " + userId));
+                    .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
 
             Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
-                    .orElseThrow(() -> new NotFoundException("유저 관심 주제가 없습니다. id: " + userId));
+                    .orElseThrow(() -> new NotFoundException("사용자의 관심 주제를 찾을 수 없습니다. id: " + userId));
 
             Integer levelOnly = questionLevelPolicy.levelOnlyFor(user, OffsetDateTime.now());
 

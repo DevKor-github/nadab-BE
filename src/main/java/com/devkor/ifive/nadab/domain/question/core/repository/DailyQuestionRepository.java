@@ -1,11 +1,12 @@
 package com.devkor.ifive.nadab.domain.question.core.repository;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Long> {
 
@@ -13,6 +14,7 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
      * 랜덤으로 질문 하나를 조회합니다.
      * @param interestId
      * @param levelOnly: null이면 레벨 무관, 아니면 해당 레벨만
+     * @param pageable : 페이지 정보 (1개만 조회하기 위해 사용)
      * @return
      */
     @Query("""
@@ -22,9 +24,10 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
           and (:levelOnly is null or q.questionLevel = :levelOnly)
         order by function('random')
         """)
-    Optional<DailyQuestion> findRandomByInterest(
+    List<DailyQuestion> findRandomByInterest(
             @Param("interestId") Long interestId,
-            @Param("levelOnly") Integer levelOnly
+            @Param("levelOnly") Integer levelOnly,
+            Pageable pageable
     );
 
     /**
@@ -32,6 +35,7 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
      * @param interestId
      * @param excludeId
      * @param levelOnly: null이면 레벨 무관, 아니면 해당 레벨만
+     * @param pageable : 페이지 정보 (1개만 조회하기 위해 사용)
      * @return
      */
     @Query("""
@@ -42,9 +46,10 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
           and (:levelOnly is null or q.questionLevel = :levelOnly)
         order by function('random')
         """)
-    Optional<DailyQuestion> findRandomByInterestExcluding(
+    List<DailyQuestion> findRandomByInterestExcluding(
             @Param("interestId") Long interestId,
             @Param("excludeId") Long excludeId,
-            @Param("levelOnly") Integer levelOnly
+            @Param("levelOnly") Integer levelOnly,
+            Pageable pageable
     );
 }
