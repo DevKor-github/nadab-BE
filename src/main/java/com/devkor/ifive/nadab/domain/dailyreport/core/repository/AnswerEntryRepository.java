@@ -1,6 +1,6 @@
-package com.devkor.ifive.nadab.domain.report.core.repository;
+package com.devkor.ifive.nadab.domain.dailyreport.core.repository;
 
-import com.devkor.ifive.nadab.domain.report.core.entity.AnswerEntry;
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

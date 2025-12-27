@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.report.api.dto.response;
+package com.devkor.ifive.nadab.domain.dailyreport.api.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

@@ -7,7 +7,7 @@ import com.devkor.ifive.nadab.domain.question.application.helper.WeightedInteres
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionRepository;
-import com.devkor.ifive.nadab.domain.report.core.repository.AnswerEntryRepository;
+import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.InterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserInterestRepository;

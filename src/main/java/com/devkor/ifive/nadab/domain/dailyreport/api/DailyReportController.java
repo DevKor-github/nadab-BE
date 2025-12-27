@@ -1,9 +1,8 @@
-package com.devkor.ifive.nadab.domain.report.api;
+package com.devkor.ifive.nadab.domain.dailyreport.api;
 
-import com.devkor.ifive.nadab.domain.report.api.dto.request.DailyReportRequest;
-import com.devkor.ifive.nadab.domain.report.api.dto.request.TestDailyReportRequest;
-import com.devkor.ifive.nadab.domain.report.api.dto.response.DailyReportResponse;
-import com.devkor.ifive.nadab.domain.report.application.ReportService;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReportRequest;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,15 +16,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "리포트 API", description = "리포트 생성 및 조회 관련 API")
+@Tag(name = "오늘의 리포트 API", description = "오늘의 리포트 생성 및 조회 관련 API")
 @RestController
-@RequestMapping("${api_prefix}/report")
+@RequestMapping("${api_prefix}/daily-report")
 @RequiredArgsConstructor
-public class ReportController {
+public class DailyReportController {
 
-    private final ReportService reportService;
+    private final DailyReportService dailyReportService;
 
-    @PostMapping("/daily/generate/test")
+    @PostMapping("/generate/test")
     @PermitAll
     @Operation(
             summary = "(테스트용) 오늘의 리포트 생성 API",
@@ -70,7 +69,7 @@ public class ReportController {
             @Valid @RequestBody TestDailyReportRequest request,
             @RequestParam String prompt
     ) {
-        DailyReportResponse response = reportService.generateTestDailyReport(request, prompt);
+        DailyReportResponse response = dailyReportService.generateTestDailyReport(request, prompt);
         return ApiResponseEntity.ok(response);
     }
 }

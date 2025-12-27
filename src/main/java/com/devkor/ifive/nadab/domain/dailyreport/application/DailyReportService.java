@@ -1,9 +1,9 @@
-package com.devkor.ifive.nadab.domain.report.application;
+package com.devkor.ifive.nadab.domain.dailyreport.application;
 
-import com.devkor.ifive.nadab.domain.report.api.dto.request.DailyReportRequest;
-import com.devkor.ifive.nadab.domain.report.api.dto.request.TestDailyReportRequest;
-import com.devkor.ifive.nadab.domain.report.api.dto.response.DailyReportResponse;
-import com.devkor.ifive.nadab.domain.report.core.dto.AiReportResultDto;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReportRequest;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
 import com.devkor.ifive.nadab.global.core.prompt.DailyReportPromptLoader;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
@@ -15,9 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
-public class ReportService {
+public class DailyReportService {
 
     private final ChatClient chatClient;
     private final DailyReportPromptLoader dailyReportPromptLoader;
@@ -60,6 +59,7 @@ public class ReportService {
         }
     }
 
+    @Transactional
     public DailyReportResponse generateTestDailyReport(TestDailyReportRequest request, String promptInput) {
         String question = request.question();
         String answer = request.answer();
