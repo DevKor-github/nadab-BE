@@ -11,8 +11,7 @@ public enum InterestCode {
     ROUTINE,
     RELATIONSHIP,
     LOVE,
-    VALUES,
-    DREAM;
+    VALUES;
 
     public static InterestCode fromString(String code) {
         for (InterestCode interestCode : InterestCode.values()) {
