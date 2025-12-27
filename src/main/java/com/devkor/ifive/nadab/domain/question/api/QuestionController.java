@@ -2,7 +2,6 @@ package com.devkor.ifive.nadab.domain.question.api;
 
 import com.devkor.ifive.nadab.domain.question.api.dto.response.DailyQuestionResponse;
 import com.devkor.ifive.nadab.domain.question.application.QuestionCommandService;
-import com.devkor.ifive.nadab.domain.question.application.QuestionQueryService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
@@ -58,8 +57,8 @@ public class QuestionController {
     @PostMapping("/reroll")
     @PreAuthorize("isAuthenticated()")
     @Operation(
-            summary = "오늘의 질문 재생성",
-            description = "오늘의 질문을 재생성합니다. 하루에 한 번만 재생성할 수 있습니다.",
+            summary = "새로운 질문 받기",
+            description = "오늘의 질문을 새로 받습니다. 하루에 한 번만 가능합니다.",
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
@@ -74,7 +73,7 @@ public class QuestionController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "오늘의 질문은 하루에 한 번만 재생성할 수 있습니다.",
+                            description = "오늘의 질문은 하루에 한 번만 새로 받을 수 있습니다.",
                             content = @Content
                     )
             }
