@@ -218,7 +218,6 @@ public class UserController {
                     - **RELATIONSHIP** : 인간관계
                     - **LOVE** : 사랑
                     - **VALUES** : 가치관
-                    - **DREAM** : 꿈
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
