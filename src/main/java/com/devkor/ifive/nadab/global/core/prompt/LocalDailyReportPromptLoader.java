@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class LocalDailyReportPromptLoader implements DailyReportPromptLoader {
 
-    private static final String PROMPT_PATH = "secret/daily-prompt-local.txt";
+    private static final String PROMPT_PATH = "secret/backup/daily-prompt-local.txt";
 
     @Override
     public String loadPrompt() {

@@ -59,7 +59,7 @@ public class QuestionCommandService {
                 question.getEmpathyGuide(),
                 question.getHintGuide(),
                 question.getLeadingQuestionGuide(),
-                false,
+                answered,
                 udq.isRerollUsed()
         );
     }
