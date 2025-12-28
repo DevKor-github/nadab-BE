@@ -53,7 +53,7 @@ public class CrystalLog extends CreatableEntity {
         return log;
     }
 
-    public static CrystalLog createCompleted(User user, long delta, long balanceAfter, CrystalLogReason reason, String refType, Long refId) {
+    public static CrystalLog createConfirmed(User user, long delta, long balanceAfter, CrystalLogReason reason, String refType, Long refId) {
         CrystalLog log = create(user, delta, balanceAfter, reason, refType, refId);
         log.status = CrystalLogStatus.CONFIRMED;
         return log;

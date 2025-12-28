@@ -72,7 +72,7 @@ public class DailyReportTxService {
 
         // 3) 보상 로그 기록(확정 상태로 바로 저장)
         User user = userRepository.getReferenceById(prep.userId());
-        CrystalLog log = CrystalLog.createCompleted(
+        CrystalLog log = CrystalLog.createConfirmed(
                 user,
                 +DAILY_REPORT_REWARD,
                 balanceAfter,

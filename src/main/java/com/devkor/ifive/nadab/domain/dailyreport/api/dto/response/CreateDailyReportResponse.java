@@ -13,7 +13,7 @@ public record CreateDailyReportResponse(
         @Schema(description = "오늘의 리포트 감정 상태", example = "GROWTH")
         String emotion,
 
-        @Schema(description = "리포트 작성 후 잔액", example = "100")
+        @Schema(description = "리포트 작성 후 크리스탈 잔액", example = "100")
         Long balanceAfter
 ) {
 }
