@@ -46,4 +46,27 @@ public class CrystalLog extends CreatableEntity {
 
     @Column(name = "ref_id", length = 128)
     private Long refId;
+
+    public static CrystalLog createPending(User user, long delta, long balanceAfter, CrystalLogReason reason, String refType, Long refId) {
+        CrystalLog log = create(user, delta, balanceAfter, reason, refType, refId);
+        log.status = CrystalLogStatus.PENDING;
+        return log;
+    }
+
+    public static CrystalLog createConfirmed(User user, long delta, long balanceAfter, CrystalLogReason reason, String refType, Long refId) {
+        CrystalLog log = create(user, delta, balanceAfter, reason, refType, refId);
+        log.status = CrystalLogStatus.CONFIRMED;
+        return log;
+    }
+
+    private static CrystalLog create(User user, long delta, long balanceAfter, CrystalLogReason reason, String refType, Long refId) {
+        CrystalLog log = new CrystalLog();
+        log.user = user;
+        log.delta = delta;
+        log.balanceAfter = balanceAfter;
+        log.reason = reason;
+        log.refType = refType;
+        log.refId = refId;
+        return log;
+    }
 }

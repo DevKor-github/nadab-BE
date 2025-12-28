@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.report.core.dto;
+package com.devkor.ifive.nadab.domain.dailyreport.core.dto;
 
 public record AiReportResultDto(
         String message,

@@ -7,8 +7,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 가중치 기반으로 관심사를 선택하는 헬퍼 클래스
- * - 사용자의 기존 관심사에 더 높은 가중치(0.5)를 부여하여 재선택
- * - 나머지 관심사들은 균등하게 나머지 가중치(0.5)를 분배
+ * - 사용자의 기존 관심사에 더 높은 가중치(0.75)를 부여하여 재선택
+ * - 나머지 관심사들은 균등하게 나머지 가중치(0.25)를 분배
  */
 @Component
 public class WeightedInterestPicker {
@@ -21,8 +21,8 @@ public class WeightedInterestPicker {
             return allInterestIds.get(0);
         }
 
-        double userWeight = 0.5d;
-        double othersWeightEach = 0.5d / (allInterestIds.size() - 1);
+        double userWeight = 0.75d;
+        double othersWeightEach = 0.25d / (allInterestIds.size() - 1);
 
         double r = ThreadLocalRandom.current().nextDouble(0.0, 1.0);
         double acc = 0.0;

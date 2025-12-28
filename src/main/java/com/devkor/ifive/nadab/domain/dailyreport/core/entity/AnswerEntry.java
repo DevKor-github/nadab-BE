@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.report.core.entity;
+package com.devkor.ifive.nadab.domain.dailyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
