@@ -45,8 +45,7 @@ public class DailyReport extends CreatableEntity {
         return dr;
     }
 
-    public void markAsCompleted() {
-        this.status = DailyReportStatus.COMPLETED;
-        this.analyzedAt = OffsetDateTime.now();
+    public static DailyReport createPending(AnswerEntry answerEntry) {
+        return create(answerEntry, null, null, DailyReportStatus.PENDING);
     }
 }

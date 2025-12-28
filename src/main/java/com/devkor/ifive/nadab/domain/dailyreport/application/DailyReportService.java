@@ -1,106 +1,56 @@
 package com.devkor.ifive.nadab.domain.dailyreport.application;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
-import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
-import com.devkor.ifive.nadab.global.core.prompt.DailyReportPromptLoader;
-import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
-import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
+import com.devkor.ifive.nadab.domain.dailyreport.infra.DailyReportLlmClient;
+import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.repository.DailyQuestionRepository;
+import com.devkor.ifive.nadab.domain.user.core.entity.User;
+import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.exception.NotFoundException;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class DailyReportService {
 
-    private final ChatClient chatClient;
-    private final DailyReportPromptLoader dailyReportPromptLoader;
-    private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
+    private final DailyQuestionRepository dailyQuestionRepository;
+    private final DailyReportRepository dailyReportRepository;
 
-    public DailyReportResponse generateDailyReport(DailyReportRequest request) {
-        String question = request.question();
-        String answer = request.answer();
+    private final DailyReportTxService dailyReportTxService;
 
-        String prompt = dailyReportPromptLoader.loadPrompt()
-                .replace("{question}", question)
-                .replace("{answer}", answer);
+    private final DailyReportLlmClient dailyReportLlmClient;
 
-        // ChatClient를 통해 GPT API 호출
-        String response = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+    public DailyReportResponse generateDailyReport(Long userId, DailyReportRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
 
-        if (response == null || response.trim().isEmpty()) {
-            throw new AiServiceUnavailableException("AI 서비스로부터 응답을 받지 못했습니다.");
-        }
+        DailyQuestion question = dailyQuestionRepository.findById(request.questionId())
+                .orElseThrow(() -> new NotFoundException("질문을 찾을 수 없습니다. id: " + request.questionId()));
 
+        PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer());
+
+        AiReportResultDto dto;
         try {
-            // 3. JSON → DTO 역직렬화
-            AiReportResultDto result = objectMapper.readValue(response, AiReportResultDto.class);
-
-            String message = result.message();
-            String emotion = result.emotion();
-
-            return new DailyReportResponse(
-                    message,
-                    emotion,
-                    message.length()
-            );
-
+            dto = dailyReportLlmClient.generate(question.getQuestionText(), request.answer());
         } catch (Exception e) {
-            // GPT가 JSON 형식을 지키지 못했을 경우 대비
-            throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
-        }
-    }
-
-    @Transactional
-    public DailyReportResponse generateTestDailyReport(TestDailyReportRequest request, String promptInput) {
-        String question = request.question();
-        String answer = request.answer();
-        String prompt = promptInput
-                .replace("{question}", question)
-                .replace("{answer}", answer);
-
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .temperature(
-                        request.temperature() != null ? request.temperature() : 0.0
-                )
-                .maxTokens(512)
-                .build();
-
-        // ChatClient를 통해 GPT API 호출
-        String response = chatClient.prompt()
-                .user(prompt)
-                .options(options)
-                .call()
-                .content();
-
-        if (response == null || response.trim().isEmpty()) {
-            throw new AiServiceUnavailableException("AI 서비스로부터 응답을 받지 못했습니다.");
+            dailyReportTxService.failDaily(prep.reportId());
+            throw e;
         }
 
-        try {
-            // 3. JSON → DTO 역직렬화
-            AiReportResultDto result = objectMapper.readValue(response, AiReportResultDto.class);
+        long balanceAfter = dailyReportTxService.confirmDailyAndReward(prep, dto);
 
-            String message = result.message();
-            String emotion = result.emotion();
-
-            return new DailyReportResponse(
-                    message,
-                    emotion,
-                    message.length()
-            );
-
-        } catch (Exception e) {
-            // GPT가 JSON 형식을 지키지 못했을 경우 대비
-            throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
-        }
+        return new DailyReportResponse(
+                prep.reportId(),
+                dto.message(),
+                dto.emotion(),
+                balanceAfter
+        );
     }
 }

@@ -19,8 +19,9 @@ public class Emotion {
     @Column(name = "code", nullable = false, length = 50)
     private EmotionCode code;
 
-    @Column(nullable = false, length = 50)
-    private String name;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "name",nullable = false, length = 50)
+    private EmotionName name;
 
     @Column(name = "color_code", length = 50)
     private String colorCode;
