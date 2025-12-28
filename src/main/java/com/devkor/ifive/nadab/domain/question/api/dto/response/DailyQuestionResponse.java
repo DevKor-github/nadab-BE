@@ -7,6 +7,9 @@ public record DailyQuestionResponse(
         @Schema(description = "질문 ID")
         Long questionId,
 
+        @Schema(description = "관심 주제 코드")
+        String interestCode,
+
         @Schema(description = "질문 텍스트")
         String questionText,
 

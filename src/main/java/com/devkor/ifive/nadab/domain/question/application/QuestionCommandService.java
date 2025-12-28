@@ -55,6 +55,7 @@ public class QuestionCommandService {
 
         return new DailyQuestionResponse(
                 question.getId(),
+                question.getInterest().getCode().toString(),
                 question.getQuestionText(),
                 question.getEmpathyGuide(),
                 question.getHintGuide(),
@@ -133,6 +134,7 @@ public class QuestionCommandService {
 
         return new DailyQuestionResponse(
                 newQ.getId(),
+                newQ.getInterest().getCode().toString(),
                 newQ.getQuestionText(),
                 newQ.getEmpathyGuide(),
                 newQ.getHintGuide(),
