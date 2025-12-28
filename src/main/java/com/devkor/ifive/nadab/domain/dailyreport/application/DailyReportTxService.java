@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.dailyreport.application;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
@@ -48,10 +49,11 @@ public class DailyReportTxService {
         // DailyReport PENDING 생성 또는 조회 (별도의 트랜잭션)
         DailyReport report = pendingDailyReportService.getOrCreatePendingDailyReport(entry);
 
-        return new PrepareDailyResultDto(entry.getId(), report.getId(), user.getId());
+        return new PrepareDailyResultDto(entry, report.getId(), user.getId());
     }
 
-    protected long confirmDailyAndReward(PrepareDailyResultDto prep, AiReportResultDto aiResult) {
+    protected ConfirmDailyAndRewardDto confirmDailyAndReward(PrepareDailyResultDto prep, AiReportResultDto aiResult) {
+
         Emotion emotion = emotionRepository.findByName(EmotionName.valueOf(aiResult.emotion()))
                 .orElseThrow(() -> new NotFoundException("감정 코드를 찾을 수 없습니다: " + aiResult.emotion()));
 
@@ -83,7 +85,10 @@ public class DailyReportTxService {
 
         crystalLogRepository.save(log);
 
-        return wallet.getCrystalBalance();
+        return new ConfirmDailyAndRewardDto(
+                emotion,
+                wallet.getCrystalBalance()
+        );
     }
 
     protected void failDaily(Long reportId) {
