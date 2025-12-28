@@ -86,7 +86,25 @@ public class DailyReportController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "오늘의 리포트 생성 API",
-            description = "유저의 오늘의 리포트를 생성합니다.",
+            description = """
+                    유저의 오늘의 리포트를 생성합니다. <br/>
+                    생성 실패 시에도 이 API를 다시 호출하면 됩니다. <br/>
+                    이 때 유저의 답변은 기존의 답변으로 자동으로 사용됩니다. <br/>
+                    소요 시간이 최대 3~4초밖에 안 되어 동기처리로 구현했습니다. <br/>
+                    
+                    | 응답의 emotion | 해당 감정 |
+                    | :--- | :--- |
+                    | `JOY` | 기쁨 |
+                    | `PLEASURE` | 즐거움 |
+                    | `LOVE` | 사랑 |
+                    | `SADNESS` | 슬픔 |
+                    | `ANGER` | 분노 |
+                    | `PAIN` | 고통 |
+                    | `REGRET` | 후회 |
+                    | `FRUSTRATION` | 좌절 |
+                    | `GROWTH` | 성장 |
+                    | `ETC` | 기타 |
+                    """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
@@ -100,7 +118,11 @@ public class DailyReportController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "크리스탈 부족 또는 잘못된 요청"
+                            description = "잘못된 요청"
+                    ),
+                    @ApiResponse(
+                            responseCode = "502",
+                            description = "AI 응답 JSON 파싱 실패"
                     ),
                     @ApiResponse(
                             responseCode = "503",

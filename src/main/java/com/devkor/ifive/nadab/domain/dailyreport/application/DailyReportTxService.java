@@ -62,7 +62,7 @@ public class DailyReportTxService {
         int updated = userWalletRepository.charge(prep.userId(), DAILY_REPORT_REWARD);
         if (updated == 0) {
             // wallet이 없을 수 있는 상황
-            throw new IllegalStateException("지갑을 찾을 수 없습니다. userId: " + prep.userId());
+            throw new NotFoundException("지갑을 찾을 수 없습니다. userId: " + prep.userId());
         }
 
         UserWallet wallet = userWalletRepository.findByUserId(prep.userId())
