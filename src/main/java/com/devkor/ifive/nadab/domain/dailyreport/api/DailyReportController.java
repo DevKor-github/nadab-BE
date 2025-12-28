@@ -2,8 +2,10 @@ package com.devkor.ifive.nadab.domain.dailyreport.api;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReportRequest;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.TestDailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportQueryService;
 import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportService;
 import com.devkor.ifive.nadab.domain.dailyreport.core.service.TestDailyReportService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
@@ -32,6 +34,7 @@ public class DailyReportController {
 
     private final TestDailyReportService testDailyReportService;
     private final DailyReportService dailyReportService;
+    private final DailyReportQueryService dailyReportQueryService;
 
     @PostMapping("/generate/test")
     @PermitAll
@@ -66,7 +69,7 @@ public class DailyReportController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "테스트용 오늘의 리포트 생성 성공",
-                            content = @Content(schema = @Schema(implementation = DailyReportResponse.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = CreateDailyReportResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "400",
@@ -110,7 +113,7 @@ public class DailyReportController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "오늘의 리포트 생성 성공",
-                            content = @Content(schema = @Schema(implementation = DailyReportResponse.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = CreateDailyReportResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -134,11 +137,42 @@ public class DailyReportController {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<DailyReportResponse>> generateDailyReport(
+    public ResponseEntity<ApiResponseDto<CreateDailyReportResponse>> generateDailyReport(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody DailyReportRequest request
     ) {
-        DailyReportResponse response = dailyReportService.generateDailyReport(principal.getId(), request);
+        CreateDailyReportResponse response = dailyReportService.generateDailyReport(principal.getId(), request);
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "오늘의 리포트 조회 API",
+            description = "유저의 오늘의 리포트를 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "오늘의 리포트 조회 성공",
+                            content = @Content(schema = @Schema(implementation = DailyReportResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "오늘의 리포트가 존재하지 않는 경우",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<DailyReportResponse>> getDailyReport(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        DailyReportResponse response = dailyReportQueryService.getDailyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 }

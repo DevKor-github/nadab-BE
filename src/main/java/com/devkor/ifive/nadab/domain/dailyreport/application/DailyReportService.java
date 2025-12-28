@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.application;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
-import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
@@ -32,7 +32,7 @@ public class DailyReportService {
 
     private final DailyReportLlmClient dailyReportLlmClient;
 
-    public DailyReportResponse generateDailyReport(Long userId, DailyReportRequest request) {
+    public CreateDailyReportResponse generateDailyReport(Long userId, DailyReportRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
 
@@ -57,7 +57,7 @@ public class DailyReportService {
         Emotion emotion = emotionRepository.findByName(EmotionName.valueOf(dto.emotion()))
                 .orElseThrow(() -> new NotFoundException("감정 코드를 찾을 수 없습니다: " + dto.emotion()));
 
-        return new DailyReportResponse(
+        return new CreateDailyReportResponse(
                 prep.reportId(),
                 dto.message(),
                 emotion.getCode().toString(),
