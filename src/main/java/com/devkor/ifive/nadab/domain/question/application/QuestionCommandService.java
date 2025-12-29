@@ -15,6 +15,8 @@ import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeRangeProvider;
+import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -106,6 +108,8 @@ public class QuestionCommandService {
     public DailyQuestionResponse rerollTodayQuestion(Long userId) {
         LocalDate today = LocalDate.now(KST);
 
+        TodayDateTimeRangeDto range = TodayDateTimeRangeProvider.get();
+
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
                 .orElseThrow(() -> new ConflictException("오늘의 첫 질문이 아직 생성되지 않았습니다."));
 
@@ -114,6 +118,11 @@ public class QuestionCommandService {
         }
 
         User user = udq.getUser();
+
+        boolean alreadyAnswered = answerEntryRepository.existsByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow());
+        if (alreadyAnswered) {
+            throw new BadRequestException("오늘의 질문에 이미 답변을 작성한 후에는 질문을 새로 받을 수 없습니다.");
+        }
 
         Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("유저 관심 주제가 없습니다. id: " + userId));

@@ -23,4 +23,6 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
     );
 
     Optional<AnswerEntry> findByUserAndCreatedAtBetween(User user, OffsetDateTime start, OffsetDateTime end);
+
+    boolean existsByUserAndCreatedAtBetween(User user, OffsetDateTime start, OffsetDateTime end);
 }
