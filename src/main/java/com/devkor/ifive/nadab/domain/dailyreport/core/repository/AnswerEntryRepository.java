@@ -16,7 +16,6 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
         from AnswerEntry a
         where a.user.id = :userId
           and a.question.id = :questionId
-          and a.deletedAt is null
         """)
     boolean existsActiveAnswer(
             @Param("userId") Long userId,

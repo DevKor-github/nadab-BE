@@ -26,7 +26,6 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
           from AnswerEntry a
           where a.user.id = :userId
             and a.question.id = q.id
-            and a.deletedAt is null
       )
     order by function('random')
     """)
@@ -56,7 +55,6 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
           from AnswerEntry a
           where a.user.id = :userId
             and a.question.id = q.id
-            and a.deletedAt is null
       )
     order by function('random')
     """)

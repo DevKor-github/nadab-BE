@@ -2,7 +2,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.global.shared.entity.SoftDeletableEntity;
+import com.devkor.ifive.nadab.global.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "answer_entries")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AnswerEntry extends SoftDeletableEntity {
+public class AnswerEntry extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,5 +39,6 @@ public class AnswerEntry extends SoftDeletableEntity {
 
     public void updateContent(String content) {
         this.content = content;
+        onUpdate();
     }
 }
