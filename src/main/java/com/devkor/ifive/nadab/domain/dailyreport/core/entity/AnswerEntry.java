@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "answer_entries")
 @Getter
@@ -29,11 +31,15 @@ public class AnswerEntry extends AuditableEntity {
     @Column(name = "content", length = 500, nullable = false)
     private String content;
 
-    public static AnswerEntry create(User user, DailyQuestion question, String content) {
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
+    public static AnswerEntry create(User user, DailyQuestion question, String content, LocalDate date) {
         AnswerEntry e = new AnswerEntry();
         e.user = user;
         e.question = question;
         e.content = content;
+        e.date = date;
         return e;
     }
 

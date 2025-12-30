@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+
 
 @Service
 @RequiredArgsConstructor
@@ -18,13 +21,17 @@ public class AnswerEntryService {
 
     private final AnswerEntryRepository answerEntryRepository;
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText) {
 
         TodayDateTimeRangeDto range = TodayDateTimeRangeProvider.get();
 
+        LocalDate today = LocalDate.now(KST);
+
         return answerEntryRepository.findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
-                .orElseGet(() -> answerEntryRepository.save(AnswerEntry.create(user, dq, answerText)));
+                .orElseGet(() -> answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, today)));
     }
 }
 
