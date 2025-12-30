@@ -11,7 +11,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "answer_entries")
+@Table(
+        name = "answer_entries",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_answer_entries_user_id_date", columnNames = {"user_id", "date"})
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AnswerEntry extends AuditableEntity {
