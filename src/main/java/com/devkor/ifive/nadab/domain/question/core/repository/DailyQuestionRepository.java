@@ -21,6 +21,7 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
     from DailyQuestion q
     where q.interest.id = :interestId
       and (:levelOnly is null or q.questionLevel = :levelOnly)
+      and q.deletedAt is null
       and not exists (
           select 1
           from AnswerEntry a
@@ -50,6 +51,7 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
     where q.interest.id = :interestId
       and q.id <> :excludeId
       and (:levelOnly is null or q.questionLevel = :levelOnly)
+      and q.deletedAt is null
       and not exists (
           select 1
           from AnswerEntry a
