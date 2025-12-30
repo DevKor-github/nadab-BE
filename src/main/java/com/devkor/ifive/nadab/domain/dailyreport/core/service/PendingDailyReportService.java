@@ -5,7 +5,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
-import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeRangeProvider;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 
 @Service
@@ -22,14 +21,13 @@ public class PendingDailyReportService {
 
     private final DailyReportRepository dailyReportRepository;
 
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public DailyReport getOrCreatePendingDailyReport(AnswerEntry entry) {
 
-        TodayDateTimeRangeDto range = TodayDateTimeRangeProvider.get();
+        TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
-        LocalDate today = LocalDate.now(KST);
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
 
         DailyReport report = dailyReportRepository.findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
                 .orElseGet(() -> dailyReportRepository.save(DailyReport.createPending(entry, today)));

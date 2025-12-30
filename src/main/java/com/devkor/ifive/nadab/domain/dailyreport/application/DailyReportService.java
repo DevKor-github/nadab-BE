@@ -16,11 +16,11 @@ import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +34,6 @@ public class DailyReportService {
 
     private final DailyReportLlmClient dailyReportLlmClient;
 
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     public CreateDailyReportResponse generateDailyReport(Long userId, DailyReportRequest request) {
         User user = userRepository.findById(userId)
@@ -43,7 +42,7 @@ public class DailyReportService {
         DailyQuestion question = dailyQuestionRepository.findById(request.questionId())
                 .orElseThrow(() -> new NotFoundException("질문을 찾을 수 없습니다. id: " + request.questionId()));
 
-        LocalDate today = LocalDate.now(KST);
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
                 .orElseThrow(() -> new BadRequestException("오늘의 질문이 사용자에게 할당되지 않았습니다. date: " + today));
         if (!udq.getDailyQuestion().getId().equals(request.questionId())) {

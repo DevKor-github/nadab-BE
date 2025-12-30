@@ -15,7 +15,7 @@ import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
-import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeRangeProvider;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,8 +30,6 @@ import java.util.List;
 @Transactional
 public class QuestionCommandService {
 
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     private final UserRepository userRepository;
     private final UserDailyQuestionRepository userDailyQuestionRepository;
     private final UserInterestRepository userInterestRepository;
@@ -43,11 +41,11 @@ public class QuestionCommandService {
     private final DailyQuestionSelector dailyQuestionSelector;
 
     public DailyQuestionResponse getOrCreateTodayQuestion(Long userId) {
-        LocalDate today = LocalDate.now(KST);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
 
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
                 .orElseGet(() -> this.createTodayQuestion(userId, today));
 
@@ -106,9 +104,9 @@ public class QuestionCommandService {
      * - 이미 답변한 질문은 제외
      */
     public DailyQuestionResponse rerollTodayQuestion(Long userId) {
-        LocalDate today = LocalDate.now(KST);
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
 
-        TodayDateTimeRangeDto range = TodayDateTimeRangeProvider.get();
+        TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
                 .orElseThrow(() -> new ConflictException("오늘의 첫 질문이 아직 생성되지 않았습니다."));

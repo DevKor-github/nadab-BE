@@ -8,7 +8,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepo
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
-import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeRangeProvider;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class DailyReportQueryService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + id));
 
-        TodayDateTimeRangeDto range = TodayDateTimeRangeProvider.get();
+        TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
         AnswerEntry entry = answerEntryRepository.findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
                 .orElseThrow(() -> new NotFoundException("오늘의 답변 항목을 찾을 수 없습니다. userId: " + id));

@@ -7,17 +7,17 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 /**
- * 오늘 날짜의 시작과 내일 날짜의 시작을 제공하는 유틸리티 클래스
+ * 오늘 날짜, 오늘 날짜의 시작과 내일 날짜의 시작 등을 제공하는 유틸리티 클래스
  * repository 등에서 오늘 날짜 범위 조회 시 사용
  */
-public class TodayDateTimeRangeProvider {
+public class TodayDateTimeProvider {
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
-    private TodayDateTimeRangeProvider() {
+    private TodayDateTimeProvider() {
     }
 
-    public static TodayDateTimeRangeDto get() {
+    public static TodayDateTimeRangeDto getRange() {
         LocalDate today = LocalDate.now(SEOUL);
 
         OffsetDateTime startOfToday =
@@ -29,5 +29,9 @@ public class TodayDateTimeRangeProvider {
                         .toOffsetDateTime();
 
         return new TodayDateTimeRangeDto(startOfToday, startOfTomorrow);
+    }
+
+    public static LocalDate getTodayDate() {
+        return LocalDate.now(SEOUL);
     }
 }
