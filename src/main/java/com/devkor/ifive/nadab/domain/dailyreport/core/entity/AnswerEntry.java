@@ -2,17 +2,24 @@ package com.devkor.ifive.nadab.domain.dailyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.global.shared.entity.SoftDeletableEntity;
+import com.devkor.ifive.nadab.global.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
-@Table(name = "answer_entries")
+@Table(
+        name = "answer_entries",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_answer_entries_user_id_date", columnNames = {"user_id", "date"})
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AnswerEntry extends SoftDeletableEntity {
+public class AnswerEntry extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,15 +36,20 @@ public class AnswerEntry extends SoftDeletableEntity {
     @Column(name = "content", length = 500, nullable = false)
     private String content;
 
-    public static AnswerEntry create(User user, DailyQuestion question, String content) {
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
+    public static AnswerEntry create(User user, DailyQuestion question, String content, LocalDate date) {
         AnswerEntry e = new AnswerEntry();
         e.user = user;
         e.question = question;
         e.content = content;
+        e.date = date;
         return e;
     }
 
     public void updateContent(String content) {
         this.content = content;
+        onUpdate();
     }
 }

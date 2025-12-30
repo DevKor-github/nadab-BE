@@ -16,7 +16,6 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
         from AnswerEntry a
         where a.user.id = :userId
           and a.question.id = :questionId
-          and a.deletedAt is null
         """)
     boolean existsActiveAnswer(
             @Param("userId") Long userId,
@@ -24,4 +23,6 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
     );
 
     Optional<AnswerEntry> findByUserAndCreatedAtBetween(User user, OffsetDateTime start, OffsetDateTime end);
+
+    boolean existsByUserAndCreatedAtBetween(User user, OffsetDateTime start, OffsetDateTime end);
 }

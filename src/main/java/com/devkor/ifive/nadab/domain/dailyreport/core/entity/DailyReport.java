@@ -6,10 +6,16 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "daily_reports")
+@Table(
+        name = "daily_reports",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_daily_reports_answer_entry_id_date", columnNames = {"answer_entry_id", "date"})
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DailyReport extends CreatableEntity {
@@ -36,16 +42,20 @@ public class DailyReport extends CreatableEntity {
     @Column(name = "analyzed_at")
     private OffsetDateTime analyzedAt;
 
-    public static DailyReport create(AnswerEntry answerEntry, Emotion emotion, String content, DailyReportStatus status) {
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
+    public static DailyReport create(AnswerEntry answerEntry, Emotion emotion, String content, LocalDate date,DailyReportStatus status) {
         DailyReport dr = new DailyReport();
         dr.answerEntry = answerEntry;
         dr.emotion = emotion;
         dr.content = content;
+        dr.date = date;
         dr.status = status;
         return dr;
     }
 
-    public static DailyReport createPending(AnswerEntry answerEntry) {
-        return create(answerEntry, null, null, DailyReportStatus.PENDING);
+    public static DailyReport createPending(AnswerEntry answerEntry, LocalDate date) {
+        return create(answerEntry, null, null, date,DailyReportStatus.PENDING);
     }
 }
