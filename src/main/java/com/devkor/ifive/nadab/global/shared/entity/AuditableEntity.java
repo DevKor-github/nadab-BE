@@ -14,7 +14,7 @@ public abstract class AuditableEntity extends CreatableEntity {
     @Column(name = "updated_at")
     protected OffsetDateTime updatedAt;
 
-    // Timestamped의 onCreate를 오버라이드
+    // CreatableEntity의 onCreate를 오버라이드
     @Override
     protected void onCreate() {
         super.onCreate();
