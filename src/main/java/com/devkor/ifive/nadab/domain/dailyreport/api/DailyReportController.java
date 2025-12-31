@@ -99,10 +99,8 @@ public class DailyReportController {
                     | :--- | :--- |
                     | `JOY` | 기쁨 |
                     | `PLEASURE` | 즐거움 |
-                    | `LOVE` | 사랑 |
                     | `SADNESS` | 슬픔 |
                     | `ANGER` | 분노 |
-                    | `PAIN` | 고통 |
                     | `REGRET` | 후회 |
                     | `FRUSTRATION` | 좌절 |
                     | `GROWTH` | 성장 |
