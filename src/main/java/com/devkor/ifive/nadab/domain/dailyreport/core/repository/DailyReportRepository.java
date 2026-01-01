@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface DailyReportRepository extends JpaRepository<DailyReport, Long> {
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE DailyReport r
         SET r.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED,
@@ -23,7 +23,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
     """)
     int markCompleted(@Param("reportId") Long reportId, @Param("content") String content, @Param("emotionId") Long emotionId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE DailyReport r
         SET r.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.FAILED
