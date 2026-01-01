@@ -1,6 +1,5 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.application;
 
-import com.devkor.ifive.nadab.domain.dailyreport.core.service.AnswerEntryService;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
@@ -23,10 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class WeeklyReportTxService {
 
-    private final WeeklyReportRepository weeklyReportRepository;
-    private final AnswerEntryService answerEntryService;
     private final PendingWeeklyReportService pendingWeeklyReportService;
 
+    private final WeeklyReportRepository weeklyReportRepository;
     private final UserWalletRepository userWalletRepository;
     private final CrystalLogRepository crystalLogRepository;
 
@@ -75,7 +73,7 @@ public class WeeklyReportTxService {
         crystalLogRepository.markConfirmed(logId);
     }
 
-    public void failAndRefundWeekly(Long userId, Long reportId, Long logId, String errorMsg) {
+    public void failAndRefundWeekly(Long userId, Long reportId, Long logId) {
         weeklyReportRepository.markFailed(reportId, WeeklyReportStatus.FAILED);
 
         // 환불(+cost)
