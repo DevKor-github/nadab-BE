@@ -17,7 +17,7 @@ public final class WeekRangeCalculator {
     /**
      * 월요일 시작 ~ 일요일 종료 기준의 "이번 주" 범위를 반환합니다.
      */
-    public static WeekRangeDto currentWeekRange() {
+    public static WeekRangeDto getCurrentWeekRange() {
         LocalDate today = LocalDate.now(KST);
         return weekRangeOf(today);
     }
