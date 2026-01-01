@@ -32,4 +32,18 @@ public final class WeekRangeCalculator {
         return weekRangeOf(lastWeekDate);
     }
 
+    /**
+     * 주어진 WeekRange가 해당 월의 몇 주차인지 반환합니다.
+     * (월요일 시작 기준, 해당 주의 월요일이 속한 달 기준)
+     */
+    public static int getWeekOfMonth(WeekRangeDto weekRange) {
+        LocalDate weekStart = weekRange.weekStartDate();
+
+        LocalDate firstMondayOfMonth =
+                weekStart.withDayOfMonth(1)
+                        .with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+
+        return (int) java.time.temporal.ChronoUnit.WEEKS
+                .between(firstMondayOfMonth, weekStart) + 1;
+    }
 }
