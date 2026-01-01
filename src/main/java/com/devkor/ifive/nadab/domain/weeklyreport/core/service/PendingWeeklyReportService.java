@@ -24,7 +24,7 @@ public class PendingWeeklyReportService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public WeeklyReport getOrCreatePendingWeeklyReport(User user) {
 
-        WeekRangeDto range = WeekRangeCalculator.getCurrentWeekRange();
+        WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
         LocalDate today = TodayDateTimeProvider.getTodayDate();
 
         WeeklyReport report = weeklyReportRepository.findByUserAndWeekStartDate(user, range.weekStartDate())

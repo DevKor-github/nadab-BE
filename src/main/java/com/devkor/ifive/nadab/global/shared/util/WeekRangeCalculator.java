@@ -15,14 +15,6 @@ public final class WeekRangeCalculator {
     }
 
     /**
-     * 월요일 시작 ~ 일요일 종료 기준의 "이번 주" 범위를 반환합니다.
-     */
-    public static WeekRangeDto getCurrentWeekRange() {
-        LocalDate today = LocalDate.now(KST);
-        return weekRangeOf(today);
-    }
-
-    /**
      * 주어진 날짜가 속한 주(월~일) 범위를 반환합니다.
      */
     public static WeekRangeDto weekRangeOf(LocalDate date) {
@@ -30,4 +22,14 @@ public final class WeekRangeCalculator {
         LocalDate end = date.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
         return new WeekRangeDto(start, end);
     }
+
+    /**
+     * 월요일 시작 ~ 일요일 종료 기준의 "저번 주" 범위를 반환합니다.
+     */
+    public static WeekRangeDto getLastWeekRange() {
+        LocalDate today = LocalDate.now(KST);
+        LocalDate lastWeekDate = today.minusWeeks(1);
+        return weekRangeOf(lastWeekDate);
+    }
+
 }

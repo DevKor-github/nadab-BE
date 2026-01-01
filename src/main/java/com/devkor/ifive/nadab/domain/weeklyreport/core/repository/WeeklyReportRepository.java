@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long> {
 
     /**
-     * 이번 주(weekStartDate 기준) WeeklyReport 조회
+     * 저번 주(weekStartDate 기준) WeeklyReport 조회
      * - UniqueConstraint(user_id, week_start_date)를 활용해 weekStartDate로 찾음
      */
     Optional<WeeklyReport> findByUserAndWeekStartDate(User user, LocalDate weekStartDate);
@@ -57,7 +57,7 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
     );
 
     /**
-     * 이번 주 레코드를 조회하기 위한 범위 조회 쿼리
+     * 저번 주 레코드를 조회하기 위한 범위 조회 쿼리
      */
     @Query("""
         SELECT wr
@@ -66,7 +66,7 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
            AND wr.weekStartDate = :weekStartDate
            AND wr.weekEndDate = :weekEndDate
     """)
-    Optional<WeeklyReport> findThisWeek(
+    Optional<WeeklyReport> findLastWeek(
             @Param("user") User user,
             @Param("weekStartDate") LocalDate weekStartDate,
             @Param("weekEndDate") LocalDate weekEndDate

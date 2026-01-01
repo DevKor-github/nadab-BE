@@ -30,7 +30,7 @@ public class WeeklyReportGenerationListener {
             TransactionPhase.AFTER_COMMIT)
     public void handle(WeeklyReportGenerationRequestedEventDto event) {
 
-        WeekRangeDto range = WeekRangeCalculator.getCurrentWeekRange();
+        WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
 
         List<WeeklyReportEntryInputDto> rows = weeklyQueryRepository.findWeeklyInputs(event.userId(), range.weekStartDate(), range.weekEndDate());
         String entries = WeeklyEntriesAssembler.assemble(rows);
