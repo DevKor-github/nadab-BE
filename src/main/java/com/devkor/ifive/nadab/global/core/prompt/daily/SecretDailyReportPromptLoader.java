@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.global.core.prompt;
+package com.devkor.ifive.nadab.global.core.prompt.daily;
 
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;

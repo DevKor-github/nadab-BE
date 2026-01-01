@@ -71,6 +71,10 @@ jobs:
             INSIGHT_PROMPT="$(printf '%s' "$INSIGHT_PROMPT_B64" | base64 -d | tr -d '\r')"
             export INSIGHT_PROMPT
             
+            WEEKLY_PROMPT_B64="${{ secrets.WEEKLY_PROMPT_B64 }}"
+            WEEKLY_PROMPT="$(printf '%s' "$WEEKLY_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export WEEKLY_PROMPT
+            
             DB_URL="${{ secrets.DB_URL }}" \
             DB_USERNAME="${{ secrets.DB_USERNAME }}" \
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \

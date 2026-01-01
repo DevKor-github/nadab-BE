@@ -2,7 +2,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.infra;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.LlmResultDto;
-import com.devkor.ifive.nadab.global.core.prompt.DailyReportPromptLoader;
+import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
