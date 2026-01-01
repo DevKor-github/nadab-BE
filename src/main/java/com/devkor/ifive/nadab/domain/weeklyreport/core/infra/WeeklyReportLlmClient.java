@@ -1,8 +1,8 @@
-package com.devkor.ifive.nadab.domain.dailyreport.infra;
+package com.devkor.ifive.nadab.domain.weeklyreport.core.infra;
 
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.LlmDailyResultDto;
-import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.AiWeeklyReportResultDto;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.LlmWeeklyResultDto;
+import com.devkor.ifive.nadab.global.core.prompt.weekly.WeeklyReportPromptLoader;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,16 +13,22 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class DailyReportLlmClient {
+public class WeeklyReportLlmClient {
 
     private final ChatClient chatClient;
-    private final DailyReportPromptLoader dailyReportPromptLoader;
+    private final WeeklyReportPromptLoader weeklyReportPromptLoader;
     private final ObjectMapper objectMapper;
 
-    public AiDailyReportResultDto generate(String question, String answer) {
-        String prompt = dailyReportPromptLoader.loadPrompt()
-                .replace("{question}", question)
-                .replace("{answer}", answer);
+    /**
+     * @param weekStartDate 예: 2026-01-01
+     * @param weekEndDate   예: 2026-01-07
+     * @param entries       WeeklyEntriesAssembler 결과 문자열
+     */
+    public AiWeeklyReportResultDto generate(String weekStartDate, String weekEndDate, String entries) {
+        String prompt = weeklyReportPromptLoader.loadPrompt()
+                .replace("{weekStartDate}", weekStartDate)
+                .replace("{weekEndDate}", weekEndDate)
+                .replace("{entries}", entries);
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .temperature(0.3)
@@ -40,23 +46,21 @@ public class DailyReportLlmClient {
         }
 
         try {
-            // 3. JSON → DTO 역직렬화
-            LlmDailyResultDto result = objectMapper.readValue(content, LlmDailyResultDto.class);
+            LlmWeeklyResultDto result = objectMapper.readValue(content, LlmWeeklyResultDto.class);
 
-            String message = result.message();
-            String emotion = result.emotion();
+            String discovered = result.discovered();
+            String good = result.good();
+            String improve = result.improve();
 
-            if (isBlank(message) || isBlank(emotion)) {
+            if (isBlank(discovered) || isBlank(good) || isBlank(improve)) {
                 throw new AiResponseParseException("AI 응답 JSON의 필수 필드가 비어있습니다.");
             }
 
-            return new AiDailyReportResultDto(
-                    message,
-                    emotion
-            );
+            return new AiWeeklyReportResultDto(discovered, good, improve);
 
+        } catch (AiResponseParseException e) {
+            throw e;
         } catch (Exception e) {
-            // GPT가 JSON 형식을 지키지 못했을 경우 대비
             throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
         }
     }

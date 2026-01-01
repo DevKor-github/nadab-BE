@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.application.helper;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionName;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportEntryInput;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportEntryInputDto;
 
 import java.util.Comparator;
 import java.util.List;
@@ -14,20 +14,20 @@ public final class WeeklyEntriesAssembler {
     private WeeklyEntriesAssembler() {
     }
 
-    public static String assemble(List<WeeklyReportEntryInput> inputs) {
+    public static String assemble(List<WeeklyReportEntryInputDto> inputs) {
         if (inputs == null || inputs.isEmpty()) {
             return "";
         }
 
-        List<WeeklyReportEntryInput> sorted = inputs.stream()
+        List<WeeklyReportEntryInputDto> sorted = inputs.stream()
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(WeeklyReportEntryInput::date, Comparator.nullsLast(Comparator.naturalOrder())))
+                .sorted(Comparator.comparing(WeeklyReportEntryInputDto::date, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
 
         StringBuilder sb = new StringBuilder();
         int idx = 1;
 
-        for (WeeklyReportEntryInput e : sorted) {
+        for (WeeklyReportEntryInputDto e : sorted) {
             sb.append("- D").append(idx).append("(").append(valueOrNa(e.date() == null ? null : e.date().toString())).append(")\n")
                     .append("  question: ").append(valueOrNa(e.question())).append("\n")
                     .append("  answer: ").append(valueOrNa(e.answer())).append("\n")

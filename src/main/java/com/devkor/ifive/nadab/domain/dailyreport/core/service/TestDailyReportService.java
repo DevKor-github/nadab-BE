@@ -2,7 +2,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.core.service;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.TestDailyReportResponse;
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,7 +47,7 @@ public class TestDailyReportService {
 
         try {
             // 3. JSON → DTO 역직렬화
-            AiReportResultDto result = objectMapper.readValue(response, AiReportResultDto.class);
+            AiDailyReportResultDto result = objectMapper.readValue(response, AiDailyReportResultDto.class);
 
             String message = result.message();
             String emotion = result.emotion();
