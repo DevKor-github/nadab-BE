@@ -6,7 +6,7 @@ import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.CrystalLogRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReserveResult;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReserveResultDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
@@ -34,7 +34,7 @@ public class WeeklyReportTxService {
      * (Tx) WeeklyReport(PENDING) + reserve consume + CrystalLog(PENDING)
      * 커밋되면 리포트 생성 작업을 시작할 준비가 완료됨
      */
-    public WeeklyReserveResult reserveWeekly(User user) {
+    public WeeklyReserveResultDto reserveWeekly(User user) {
 
         // Report: 있으면 기존 사용, 없으면 새로 PENDING 생성
         WeeklyReport report = pendingWeeklyReportService.getOrCreatePendingWeeklyReport(user);
@@ -62,7 +62,7 @@ public class WeeklyReportTxService {
                 )
         );
 
-        return new WeeklyReserveResult(report.getId(), log.getId(), user.getId());
+        return new WeeklyReserveResultDto(report.getId(), log.getId(), user.getId());
     }
 
     public void confirmWeekly(Long reportId, Long logId, String discovered, String good, String improve) {
