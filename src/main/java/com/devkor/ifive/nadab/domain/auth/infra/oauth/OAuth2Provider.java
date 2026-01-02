@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.auth.infra.oauth;
 
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 
 /**
@@ -16,6 +17,6 @@ public enum OAuth2Provider {
                 return p;
             }
         }
-        throw new BadRequestException("지원하지 않는 OAuth2 제공자입니다: " + provider);
+        throw new BadRequestException(ErrorCode.AUTH_UNSUPPORTED_OAUTH2_PROVIDER);
     }
 }

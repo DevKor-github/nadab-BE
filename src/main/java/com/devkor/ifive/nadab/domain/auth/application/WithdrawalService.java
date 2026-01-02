@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.auth.core.repository.SocialAccountRepositor
 import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.UnauthorizedException;
@@ -27,11 +28,11 @@ public class WithdrawalService {
 
     public void withdrawUser(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // 이미 탈퇴한 경우
         if (user.getDeletedAt() != null) {
-            throw new BadRequestException("이미 탈퇴한 계정입니다");
+            throw new BadRequestException(ErrorCode.AUTH_ALREADY_WITHDRAWN);
         }
 
         // Soft Delete
@@ -46,26 +47,26 @@ public class WithdrawalService {
     public TokenBundle restoreUser(String email, String password) {
         // 1. User 조회
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // 2. 탈퇴하지 않은 계정
         if (user.getDeletedAt() == null) {
-            throw new BadRequestException("탈퇴하지 않은 계정입니다");
+            throw new BadRequestException(ErrorCode.AUTH_NOT_WITHDRAWN);
         }
 
         // 3. 소셜 로그인 계정 차단
         if (socialAccountRepository.existsByUser(user)) {
-            throw new BadRequestException("소셜 로그인 계정은 일반 계정 복구를 사용할 수 없습니다");
+            throw new BadRequestException(ErrorCode.AUTH_SOCIAL_ACCOUNT_RESTORE_FORBIDDEN);
         }
 
         // 4. 비밀번호 검증
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new UnauthorizedException("비밀번호가 일치하지 않습니다");
+            throw new UnauthorizedException(ErrorCode.AUTH_INVALID_PASSWORD);
         }
 
         // 5. 14일 이내인지 확인
         if (user.getDeletedAt().isBefore(OffsetDateTime.now().minusDays(14))) {
-            throw new BadRequestException("복구 가능 기간(14일)이 지났습니다");
+            throw new BadRequestException(ErrorCode.AUTH_RESTORE_PERIOD_EXPIRED);
         }
 
         // 6. 복구 처리

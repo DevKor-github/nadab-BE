@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.email.core.entity.VerificationType;
 import com.devkor.ifive.nadab.domain.email.core.repository.EmailVerificationRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.UnauthorizedException;
@@ -36,19 +37,19 @@ public class PasswordService {
         // 1. 이메일 인증 완료 확인
         EmailVerification verification = emailVerificationRepository
                 .findByEmailAndVerificationType(email, VerificationType.PASSWORD_RESET)
-                .orElseThrow(() -> new BadRequestException("이메일 인증을 먼저 완료해주세요"));
+                .orElseThrow(() -> new BadRequestException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED));
 
         if (!verification.getIsVerified()) {
-            throw new BadRequestException("이메일 인증이 완료되지 않았습니다");
+            throw new BadRequestException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
         }
 
         // 2. User 조회 (이메일 인증 단계에서 소셜 계정/탈퇴 계정은 이미 차단돼서 검증X)
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // 3. 이전 비밀번호 재사용 검증
         if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
-            throw new BadRequestException("이전 비밀번호와 동일한 비밀번호는 사용할 수 없습니다");
+            throw new BadRequestException(ErrorCode.AUTH_PASSWORD_REUSE_NOT_ALLOWED);
         }
 
         // 4. 비밀번호 해싱 및 변경
@@ -66,21 +67,21 @@ public class PasswordService {
     public TokenBundle changePassword(Long userId, String currentPassword, String newPassword) {
         // 1. User 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // 2. 소셜 로그인 사용자 차단
         if (socialAccountRepository.existsByUser(user)) {
-            throw new BadRequestException("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다");
+            throw new BadRequestException(ErrorCode.AUTH_SOCIAL_ACCOUNT_PASSWORD_CHANGE_FORBIDDEN);
         }
 
         // 3. 현재 비밀번호 검증
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new UnauthorizedException("현재 비밀번호가 일치하지 않습니다");
+            throw new UnauthorizedException(ErrorCode.AUTH_INVALID_PASSWORD);
         }
 
         // 4. 이전 비밀번호 재사용 검증
         if (currentPassword.equals(newPassword)) {
-            throw new BadRequestException("이전 비밀번호와 동일한 비밀번호는 사용할 수 없습니다");
+            throw new BadRequestException(ErrorCode.AUTH_PASSWORD_REUSE_NOT_ALLOWED);
         }
 
         // 5. 새 비밀번호 해싱 및 변경

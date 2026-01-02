@@ -10,6 +10,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
@@ -42,15 +43,15 @@ public class BasicAuthService {
         // 1. 이메일 인증 완료 확인
         EmailVerification verification = emailVerificationRepository
                 .findByEmailAndVerificationType(email, VerificationType.SIGNUP)
-                .orElseThrow(() -> new BadRequestException("이메일 인증을 먼저 완료해주세요"));
+                .orElseThrow(() -> new BadRequestException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED));
 
         if (!verification.getIsVerified()) {
-            throw new BadRequestException("이메일 인증이 완료되지 않았습니다");
+            throw new BadRequestException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
         }
 
         // 2. 이메일 중복 확인
         if (userRepository.existsByEmail(email)) {
-            throw new ConflictException("이미 사용 중인 이메일입니다");
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         // 3. 비밀번호 해싱
@@ -79,11 +80,11 @@ public class BasicAuthService {
     public TokenBundle login(String email, String password) {
         // 1. User 조회
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // 2. 비밀번호 검증
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new UnauthorizedException("비밀번호가 일치하지 않습니다");
+            throw new UnauthorizedException(ErrorCode.AUTH_INVALID_PASSWORD);
         }
 
         // 3. 탈퇴한 계정 체크
@@ -92,7 +93,7 @@ public class BasicAuthService {
                     user.getNickname(),
                     user.getDeletedAt().toLocalDate().plusDays(15)
             );
-            throw new WithdrawnException("탈퇴한 계정입니다. 계정 복구를 진행해주세요.", accountInfo);
+            throw new WithdrawnException(ErrorCode.AUTH_ACCOUNT_WITHDRAWN, accountInfo);
         }
 
         // 4. 토큰 발급
