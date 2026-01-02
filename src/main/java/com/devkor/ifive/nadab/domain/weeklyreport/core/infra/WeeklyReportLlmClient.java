@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,8 +32,9 @@ public class WeeklyReportLlmClient {
                 .replace("{entries}", entries);
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .temperature(0.3)
-                .maxTokens(512)
+                .model(OpenAiApi.ChatModel.GPT_5_MINI)
+                .reasoningEffort("low")
+                .temperature(1.0)
                 .build();
 
         String content = chatClient.prompt()
