@@ -57,4 +57,11 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
                 weekEndDate
         );
     }
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE DailyReport w SET w.status = :status WHERE w.id = :id")
+    int updateStatus(
+            @Param("id") Long id,
+            @Param("status") DailyReportStatus status
+    );
 }

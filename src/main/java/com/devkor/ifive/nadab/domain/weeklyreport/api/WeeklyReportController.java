@@ -78,7 +78,12 @@ public class WeeklyReportController {
     @PermitAll
     @Operation(
             summary = "id로 주간 리포트 조회",
-            description = "주간 리포트를 id로 조회합니다.",
+            description = """
+                    주간 리포트를 id로 조회합니다.
+                    생성 중인 경우 status = "PENDING" 으로 반환됩니다.
+                    생성에 실패한 경우 status = "FAILED" 로 반환됩니다.
+                    생성에 성공한 경우 status = "COMPLETED" 로 반환됩니다.
+                    """,
             responses = {
                     @ApiResponse(
                             responseCode = "200",

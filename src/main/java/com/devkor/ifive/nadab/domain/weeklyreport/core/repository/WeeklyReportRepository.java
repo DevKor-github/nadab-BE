@@ -56,19 +56,10 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
             @Param("status") WeeklyReportStatus status
     );
 
-    /**
-     * 저번 주 레코드를 조회하기 위한 범위 조회 쿼리
-     */
-    @Query("""
-        SELECT wr
-          FROM WeeklyReport wr
-         WHERE wr.user = :user
-           AND wr.weekStartDate = :weekStartDate
-           AND wr.weekEndDate = :weekEndDate
-    """)
-    Optional<WeeklyReport> findLastWeek(
-            @Param("user") User user,
-            @Param("weekStartDate") LocalDate weekStartDate,
-            @Param("weekEndDate") LocalDate weekEndDate
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE WeeklyReport w SET w.status = :status WHERE w.id = :id")
+    int updateStatus(
+            @Param("id") Long id,
+            @Param("status") WeeklyReportStatus status
     );
 }
