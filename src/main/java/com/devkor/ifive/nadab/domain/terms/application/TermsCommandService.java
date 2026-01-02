@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.terms.core.repository.TermRepository;
 import com.devkor.ifive.nadab.domain.terms.core.repository.UserTermRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class TermsCommandService {
 
     public void saveConsents(Long userId, Boolean service, Boolean privacy, Boolean ageVerification, Boolean marketing) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // 필수 약관 검증
         validateRequiredTerms(service, privacy, ageVerification);
@@ -50,7 +51,7 @@ public class TermsCommandService {
 
     public void updateMarketingConsent(Long userId, Boolean agreed) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         processConsent(user, TermsType.MARKETING, agreed);
         log.info("마케팅 동의 변경: userId={}, agreed={}", userId, agreed);
@@ -59,7 +60,7 @@ public class TermsCommandService {
     private void processConsent(User user, TermsType termsType, Boolean agreed) {
         // 최신 활성화된 약관 조회
         Term term = termRepository.findByTermsTypeAndIsActiveTrue(termsType)
-                .orElseThrow(() -> new NotFoundException("약관을 찾을 수 없습니다. termsType: " + termsType));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.TERMS_NOT_FOUND));
 
         Optional<UserTerm> existingUserTerm = userTermRepository.findByUserIdAndTermId(user.getId(), term.getId());
 
@@ -83,7 +84,7 @@ public class TermsCommandService {
         Term term = activeTerms.stream()
                 .filter(t -> t.getTermsType() == termsType)
                 .findFirst()
-                .orElseThrow(() -> new NotFoundException("약관을 찾을 수 없습니다. termsType: " + termsType));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.TERMS_NOT_FOUND));
 
         // existingUserTerms에서 해당 약관 찾기
         UserTerm existingUserTerm = existingUserTerms.stream()
@@ -107,13 +108,13 @@ public class TermsCommandService {
 
     private void validateRequiredTerms(Boolean service, Boolean privacy, Boolean ageVerification) {
         if (!service) {
-            throw new BadRequestException("서비스 이용약관에 동의해야 합니다");
+            throw new BadRequestException(ErrorCode.TERMS_SERVICE_AGREEMENT_REQUIRED);
         }
         if (!privacy) {
-            throw new BadRequestException("개인정보 처리방침에 동의해야 합니다");
+            throw new BadRequestException(ErrorCode.TERMS_PRIVACY_POLICY_REQUIRED);
         }
         if (!ageVerification) {
-            throw new BadRequestException("만 14세 이상 확인에 동의해야 합니다");
+            throw new BadRequestException(ErrorCode.TERMS_AGE_VERIFICATION_REQUIRED);
         }
     }
 }

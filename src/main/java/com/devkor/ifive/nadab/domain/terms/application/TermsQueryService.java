@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.terms.core.entity.TermsType;
 import com.devkor.ifive.nadab.domain.terms.core.entity.UserTerm;
 import com.devkor.ifive.nadab.domain.terms.core.repository.TermRepository;
 import com.devkor.ifive.nadab.domain.terms.core.repository.UserTermRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -66,7 +67,7 @@ public class TermsQueryService {
 
     public boolean hasAgreedToMarketing(Long userId) {
         Term marketingTerm = termRepository.findByTermsTypeAndIsActiveTrue(TermsType.MARKETING)
-                .orElseThrow(() -> new NotFoundException("마케팅 약관을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.TERMS_NOT_FOUND));
 
         return userTermRepository.findByUserIdAndTermId(userId, marketingTerm.getId())
                 .map(UserTerm::getAgreed)
