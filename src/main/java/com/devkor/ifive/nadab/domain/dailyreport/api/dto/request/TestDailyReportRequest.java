@@ -6,9 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "테스트용 오늘의 리포트 생성 요청")
 public record TestDailyReportRequest(
-        @Schema(example = "0.3")
-        @NotNull(message = "temperature은 필수입니다")
-        Double temperature,
 
         @Schema(example = "질문")
         @NotBlank(message = "question은 필수입니다")
