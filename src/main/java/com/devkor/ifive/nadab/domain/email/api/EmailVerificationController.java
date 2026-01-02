@@ -57,19 +57,23 @@ public class EmailVerificationController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                                    - 이메일 형식 오류, 인증 타입 누락
-                                    - PASSWORD_RESET: 탈퇴한 계정 또는 소셜 로그인 계정은 비밀번호 찾기를 위한 이메일 인증 불가
+                                    잘못된 요청
+                                    - ErrorCode: EMAIL_INVALID_VERIFICATION_TYPE - 유효하지 않은 인증 타입
+                                    - ErrorCode: EMAIL_SOCIAL_ACCOUNT_PASSWORD_RESET_FORBIDDEN - 소셜 로그인 계정 (PASSWORD_RESET)
+                                    - ErrorCode: EMAIL_WITHDRAWN_ACCOUNT_PASSWORD_RESET_FORBIDDEN - 탈퇴한 계정 (PASSWORD_RESET)
+                                    - ErrorCode: EMAIL_WITHDRAWN_ACCOUNT_SIGNUP_FORBIDDEN - 탈퇴한 계정 (SIGNUP)
+                                    - ErrorCode: VALIDATION_FAILED - 이메일 형식 오류
                                     """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = "PASSWORD_RESET: 등록되지 않은 이메일",
+                            description = "ErrorCode: USER_NOT_FOUND - 등록되지 않은 이메일 (PASSWORD_RESET)",
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "SIGNUP: 이미 사용 중인 이메일",
+                            description = "ErrorCode: EMAIL_ALREADY_EXISTS - 이미 사용 중인 이메일 (SIGNUP)",
                             content = @Content
                     )
             }
@@ -101,12 +105,19 @@ public class EmailVerificationController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "이메일/인증 코드 형식 오류, 코드 불일치, 만료된 코드, 이미 인증 완료",
+                            description = """
+                                    잘못된 요청
+                                    - ErrorCode: EMAIL_ALREADY_VERIFIED - 이미 인증 완료된 이메일
+                                    - ErrorCode: EMAIL_VERIFICATION_CODE_EXPIRED - 인증 코드 만료 (3분 초과)
+                                    - ErrorCode: EMAIL_VERIFICATION_CODE_MISMATCH - 인증 코드 불일치
+                                    - ErrorCode: EMAIL_INVALID_VERIFICATION_TYPE - 유효하지 않은 인증 타입
+                                    - ErrorCode: VALIDATION_FAILED - 이메일/인증코드 형식 오류
+                                    """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = "인증 요청을 찾을 수 없음 - 발송 이력이 없거나 코드가 존재하지 않는 경우",
+                            description = "ErrorCode: EMAIL_VERIFICATION_NOT_FOUND - 인증 요청을 찾을 수 없음 (발송 이력 없음)",
                             content = @Content
                     )
             }

@@ -65,7 +65,15 @@ public class TermsController {
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = """
+                                    인증 실패 (JWT 토큰 관련)
+                                    - ErrorCode: AUTH_TOKEN_EXPIRED - JWT Access Token 만료
+                                    - ErrorCode: AUTH_TOKEN_SIGNATURE_INVALID - 토큰 서명 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_MALFORMED - 토큰 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_VERIFICATION_FAILED - 토큰 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_USERID_INVALID - 토큰의 유저 ID 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_ROLES_MISSING - 토큰에 권한 정보 없음
+                                    """,
                             content = @Content
                     )
             }
@@ -110,12 +118,25 @@ public class TermsController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "필수 약관 미동의",
+                            description = """
+                                    잘못된 요청
+                                    - ErrorCode: TERMS_SERVICE_AGREEMENT_REQUIRED - 서비스 이용약관 미동의
+                                    - ErrorCode: TERMS_PRIVACY_POLICY_REQUIRED - 개인정보 처리방침 미동의
+                                    - ErrorCode: TERMS_AGE_VERIFICATION_REQUIRED - 만 14세 이상 확인 미동의
+                                    """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = """
+                                    인증 실패 (JWT 토큰 관련)
+                                    - ErrorCode: AUTH_TOKEN_EXPIRED - JWT Access Token 만료
+                                    - ErrorCode: AUTH_TOKEN_SIGNATURE_INVALID - 토큰 서명 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_MALFORMED - 토큰 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_VERIFICATION_FAILED - 토큰 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_USERID_INVALID - 토큰의 유저 ID 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_ROLES_MISSING - 토큰에 권한 정보 없음
+                                    """,
                             content = @Content
                     )
             }
@@ -148,7 +169,15 @@ public class TermsController {
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = """
+                                    인증 실패 (JWT 토큰 관련)
+                                    - ErrorCode: AUTH_TOKEN_EXPIRED - JWT Access Token 만료
+                                    - ErrorCode: AUTH_TOKEN_SIGNATURE_INVALID - 토큰 서명 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_MALFORMED - 토큰 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_VERIFICATION_FAILED - 토큰 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_USERID_INVALID - 토큰의 유저 ID 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_ROLES_MISSING - 토큰에 권한 정보 없음
+                                    """,
                             content = @Content
                     )
             }
@@ -174,7 +203,15 @@ public class TermsController {
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = """
+                                    인증 실패 (JWT 토큰 관련)
+                                    - ErrorCode: AUTH_TOKEN_EXPIRED - JWT Access Token 만료
+                                    - ErrorCode: AUTH_TOKEN_SIGNATURE_INVALID - 토큰 서명 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_MALFORMED - 토큰 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_VERIFICATION_FAILED - 토큰 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_USERID_INVALID - 토큰의 유저 ID 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_ROLES_MISSING - 토큰에 권한 정보 없음
+                                    """,
                             content = @Content
                     )
             }
