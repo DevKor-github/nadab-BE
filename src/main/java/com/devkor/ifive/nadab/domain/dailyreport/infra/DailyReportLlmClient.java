@@ -1,8 +1,8 @@
 package com.devkor.ifive.nadab.domain.dailyreport.infra;
 
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.LlmResultDto;
-import com.devkor.ifive.nadab.global.core.prompt.DailyReportPromptLoader;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.LlmDailyResultDto;
+import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +19,7 @@ public class DailyReportLlmClient {
     private final DailyReportPromptLoader dailyReportPromptLoader;
     private final ObjectMapper objectMapper;
 
-    public AiReportResultDto generate(String question, String answer) {
+    public AiDailyReportResultDto generate(String question, String answer) {
         String prompt = dailyReportPromptLoader.loadPrompt()
                 .replace("{question}", question)
                 .replace("{answer}", answer);
@@ -41,12 +41,16 @@ public class DailyReportLlmClient {
 
         try {
             // 3. JSON → DTO 역직렬화
-            LlmResultDto result = objectMapper.readValue(content, LlmResultDto.class);
+            LlmDailyResultDto result = objectMapper.readValue(content, LlmDailyResultDto.class);
 
             String message = result.message();
             String emotion = result.emotion();
 
-            return new AiReportResultDto(
+            if (isBlank(message) || isBlank(emotion)) {
+                throw new AiResponseParseException("AI 응답 JSON의 필수 필드가 비어있습니다.");
+            }
+
+            return new AiDailyReportResultDto(
                     message,
                     emotion
             );
@@ -57,4 +61,7 @@ public class DailyReportLlmClient {
         }
     }
 
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
 }

@@ -4,7 +4,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequ
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.infra.DailyReportLlmClient;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
@@ -53,7 +53,7 @@ public class DailyReportService {
 
         AnswerEntry answerEntry = prep.entry();
 
-        AiReportResultDto dto;
+        AiDailyReportResultDto dto;
         try {
             dto = dailyReportLlmClient.generate(question.getQuestionText(), answerEntry.getContent());
         } catch (Exception e) {

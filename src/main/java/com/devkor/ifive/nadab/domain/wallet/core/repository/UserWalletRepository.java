@@ -50,7 +50,7 @@ public interface UserWalletRepository extends JpaRepository<UserWallet, Long> {
     """)
     int refund(@Param("userId") Long userId, @Param("amount") long amount);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE UserWallet w
         SET w.crystalBalance = w.crystalBalance + :amount

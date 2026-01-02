@@ -2,7 +2,8 @@ package com.devkor.ifive.nadab.domain.dailyreport.core.service;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.TestDailyReportResponse;
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
+import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,19 +19,18 @@ public class TestDailyReportService {
 
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
+    private final DailyReportPromptLoader dailyReportPromptLoader;
 
     @Transactional
-    public TestDailyReportResponse generateTestDailyReport(TestDailyReportRequest request, String promptInput) {
+    public TestDailyReportResponse generateTestDailyReport(TestDailyReportRequest request) {
         String question = request.question();
         String answer = request.answer();
-        String prompt = promptInput
+        String prompt = dailyReportPromptLoader.loadPrompt()
                 .replace("{question}", question)
                 .replace("{answer}", answer);
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .temperature(
-                        request.temperature() != null ? request.temperature() : 0.0
-                )
+                .temperature(0.3)
                 .maxTokens(512)
                 .build();
 
@@ -47,7 +47,7 @@ public class TestDailyReportService {
 
         try {
             // 3. JSON → DTO 역직렬화
-            AiReportResultDto result = objectMapper.readValue(response, AiReportResultDto.class);
+            AiDailyReportResultDto result = objectMapper.readValue(response, AiDailyReportResultDto.class);
 
             String message = result.message();
             String emotion = result.emotion();

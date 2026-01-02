@@ -2,7 +2,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.application;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
-import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiReportResultDto;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.Emotion;
@@ -52,7 +52,7 @@ public class DailyReportTxService {
         return new PrepareDailyResultDto(entry, report.getId(), user.getId());
     }
 
-    protected ConfirmDailyAndRewardDto confirmDailyAndReward(PrepareDailyResultDto prep, AiReportResultDto aiResult) {
+    protected ConfirmDailyAndRewardDto confirmDailyAndReward(PrepareDailyResultDto prep, AiDailyReportResultDto aiResult) {
 
         Emotion emotion = emotionRepository.findByName(EmotionName.valueOf(aiResult.emotion()))
                 .orElseThrow(() -> new NotFoundException("감정 코드를 찾을 수 없습니다: " + aiResult.emotion()));

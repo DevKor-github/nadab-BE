@@ -36,6 +36,10 @@ public class PendingDailyReportService {
             throw new ConflictException("이미 작성된 일간 리포트가 존재합니다. reportId: " + report.getId());
         }
 
+        if (report.getStatus() == DailyReportStatus.FAILED) {
+            dailyReportRepository.updateStatus(report.getId(), DailyReportStatus.PENDING);
+        }
+
         return report;
     }
 }
