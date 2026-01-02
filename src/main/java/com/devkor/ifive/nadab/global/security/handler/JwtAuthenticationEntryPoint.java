@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.global.security.handler;
 
-import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
+import com.devkor.ifive.nadab.global.core.response.ApiErrorResponseDto;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,10 +33,25 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
 
-        ApiResponseDto<Void> body = ApiResponseDto.error(
-                HttpServletResponse.SC_UNAUTHORIZED,
-                "JWT 인증에 실패했습니다."
-        );
+        // Request attribute에서 ErrorCode 추출
+        ErrorCode errorCode = (ErrorCode) request.getAttribute("errorCode");
+
+        ApiErrorResponseDto<Void> body;
+        if (errorCode != null) {
+            // ErrorCode가 있으면 사용 (JwtAuthException에서 전달된 경우)
+            body = ApiErrorResponseDto.error(
+                    errorCode.getHttpStatus().value(),
+                    errorCode.getCode(),
+                    errorCode.getMessage()
+            );
+        } else {
+            // ErrorCode가 없으면 기본 메시지
+            body = ApiErrorResponseDto.error(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "AUTH_FAILED",
+                    "JWT 인증에 실패했습니다."
+            );
+        }
 
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
