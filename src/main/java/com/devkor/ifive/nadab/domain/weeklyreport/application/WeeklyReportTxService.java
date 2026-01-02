@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.CrystalLogRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReserveResultDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
@@ -14,6 +15,7 @@ import com.devkor.ifive.nadab.domain.weeklyreport.core.service.PendingWeeklyRepo
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,8 @@ public class WeeklyReportTxService {
     private final WeeklyReportRepository weeklyReportRepository;
     private final UserWalletRepository userWalletRepository;
     private final CrystalLogRepository crystalLogRepository;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final long WEEKLY_REPORT_COST = 30L;
 
@@ -63,6 +67,20 @@ public class WeeklyReportTxService {
         );
 
         return new WeeklyReserveResultDto(report.getId(), log.getId(), user.getId());
+    }
+
+    @Transactional
+    public WeeklyReserveResultDto reserveWeeklyAndPublish(User user) {
+        WeeklyReserveResultDto reserve = reserveWeekly(user);
+
+        // 트랜잭션 안에서 publish (AFTER_COMMIT 트리거 보장)
+        eventPublisher.publishEvent(new WeeklyReportGenerationRequestedEventDto(
+                reserve.reportId(),
+                user.getId(),
+                reserve.crystalLogId()
+        ));
+
+        return reserve;
     }
 
     public void confirmWeekly(Long reportId, Long logId, String discovered, String good, String improve) {

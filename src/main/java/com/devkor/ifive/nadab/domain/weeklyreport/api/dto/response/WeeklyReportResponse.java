@@ -18,6 +18,9 @@ public record WeeklyReportResponse(
         String good,
 
         @Schema(description = "다음엔 이렇게 보완해볼까요?")
-        String improve
+        String improve,
+
+        @Schema(description = "상태", example = "PENDING")
+        String status
 ) {
 }

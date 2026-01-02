@@ -4,14 +4,12 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepo
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportStartResponse;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReserveResultDto;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,7 +20,6 @@ public class WeeklyReportService {
     private final DailyReportRepository dailyReportRepository;
 
     private final WeeklyReportTxService weeklyReportTxService;
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 비동기 시작 API: 즉시 reportId 반환
@@ -42,14 +39,7 @@ public class WeeklyReportService {
         }
 
         // (Tx) Report(PENDING) + reserve consume + log(PENDING)
-        WeeklyReserveResultDto reserve = weeklyReportTxService.reserveWeekly(user);
-
-        // 커밋 이후 비동기 실행을 위해 이벤트 발행 (리스너가 AFTER_COMMIT에서 받음)
-        eventPublisher.publishEvent(new WeeklyReportGenerationRequestedEventDto(
-                reserve.reportId(),
-                user.getId(),
-                reserve.crystalLogId()
-        ));
+        WeeklyReserveResultDto reserve = weeklyReportTxService.reserveWeeklyAndPublish(user);
 
         return new WeeklyReportStartResponse(reserve.reportId(), "PENDING");
     }
