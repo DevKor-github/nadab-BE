@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -75,7 +74,7 @@ public class WeeklyReportController {
     }
 
     @GetMapping("/{id}")
-    @PermitAll
+    @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "id로 주간 리포트 조회",
             description = """
@@ -85,6 +84,7 @@ public class WeeklyReportController {
                     생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. </br>
                     생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다.
                     """,
+            security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
                             responseCode = "200",

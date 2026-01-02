@@ -8,5 +8,8 @@ public record WeeklyReportStartResponse(
         Long reportId,
 
         @Schema(description = "상태", example = "PENDING")
-        String status
+        String status,
+
+        @Schema(description = "리포트 작성 후 크리스탈 잔액", example = "100")
+        Long balanceAfter
 ) {}
