@@ -39,6 +39,10 @@ public class PendingWeeklyReportService {
             throw new ConflictException("이미 작성된 주간 리포트가 존재합니다. reportId: " + report.getId());
         }
 
+        if (report.getStatus() == WeeklyReportStatus.IN_PROGRESS) {
+            throw new ConflictException("주간 리포트를 이미 작성 중입니다. reportId: " + report.getId());
+        }
+
         if (report.getStatus() == WeeklyReportStatus.FAILED) {
             weeklyReportRepository.updateStatus(report.getId(), WeeklyReportStatus.PENDING);
         }

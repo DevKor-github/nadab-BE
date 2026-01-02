@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
@@ -28,6 +29,10 @@ public class WeeklyReportQueryService {
 
         WeeklyReport report = weeklyReportRepository.findByUserAndWeekStartDate(user, range.weekStartDate())
                 .orElseThrow(() -> new NotFoundException("지난 주간 리포트를 찾을 수 없습니다. userId: " + userId));
+
+        if (report.getStatus() != WeeklyReportStatus.COMPLETED) {
+            throw new NotFoundException("지난 주간 리포트가 작성되지 않았습니다. userId: " + userId);
+        }
 
         return new WeeklyReportResponse(
                 range.weekStartDate().getMonthValue(),

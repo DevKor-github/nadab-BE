@@ -25,7 +25,7 @@ public class WeeklyReportGenerationListener {
     private final WeeklyReportLlmClient weeklyReportLlmClient;
     private final WeeklyReportTxService weeklyReportTxService;
 
-    @Async
+    @Async("weeklyReportTaskExecutor")
     @TransactionalEventListener(phase =
             TransactionPhase.AFTER_COMMIT)
     public void handle(WeeklyReportGenerationRequestedEventDto event) {

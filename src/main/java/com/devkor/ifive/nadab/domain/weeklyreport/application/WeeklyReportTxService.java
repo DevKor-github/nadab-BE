@@ -70,7 +70,9 @@ public class WeeklyReportTxService {
     }
 
     public WeeklyReserveResultDto reserveWeeklyAndPublish(User user) {
-        WeeklyReserveResultDto reserve = reserveWeekly(user);
+        WeeklyReserveResultDto reserve = this.reserveWeekly(user);
+
+        weeklyReportRepository.updateStatus(reserve.reportId(), WeeklyReportStatus.IN_PROGRESS);
 
         // 트랜잭션 안에서 publish (AFTER_COMMIT 트리거 보장)
         eventPublisher.publishEvent(new WeeklyReportGenerationRequestedEventDto(
