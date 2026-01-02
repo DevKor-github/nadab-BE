@@ -38,4 +38,20 @@ public class WeeklyReportQueryService {
                 report.getStatus().name()
         );
     }
+
+    public WeeklyReportResponse getWeeklyReportById(Long id) {
+        WeeklyReport report = weeklyReportRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("주간 리포트를 찾을 수 없습니다. id: " + id));
+
+        WeekRangeDto range = WeekRangeCalculator.weekRangeOf(report.getWeekStartDate());
+
+        return new WeeklyReportResponse(
+                range.weekStartDate().getMonthValue(),
+                WeekRangeCalculator.getWeekOfMonth(range),
+                report.getDiscovered(),
+                report.getGood(),
+                report.getImprove(),
+                report.getStatus().name()
+        );
+    }
 }

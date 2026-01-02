@@ -69,7 +69,6 @@ public class WeeklyReportTxService {
         return new WeeklyReserveResultDto(report.getId(), log.getId(), user.getId());
     }
 
-    @Transactional
     public WeeklyReserveResultDto reserveWeeklyAndPublish(User user) {
         WeeklyReserveResultDto reserve = reserveWeekly(user);
 
