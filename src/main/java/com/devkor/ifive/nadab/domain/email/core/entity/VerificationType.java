@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.email.core.entity;
 
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 
 /**
@@ -17,6 +18,6 @@ public enum VerificationType {
                 return vt;
             }
         }
-        throw new BadRequestException("올바르지 않은 인증 타입입니다: " + type);
+        throw new BadRequestException(ErrorCode.EMAIL_INVALID_VERIFICATION_TYPE);
     }
 }

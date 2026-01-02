@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.email.core.repository.EmailVerificationRepo
 import com.devkor.ifive.nadab.domain.email.core.service.EmailSendService;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
@@ -56,21 +57,21 @@ public class EmailVerificationCommandService {
         // 인증 레코드 조회
         EmailVerification verification = emailVerificationRepository
                 .findByEmailAndVerificationType(email, type)
-                .orElseThrow(() -> new NotFoundException("인증 요청을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.EMAIL_VERIFICATION_NOT_FOUND));
 
         // 이미 인증 완료된 경우
         if (verification.getIsVerified()) {
-            throw new BadRequestException("이미 인증이 완료되었습니다.");
+            throw new BadRequestException(ErrorCode.EMAIL_ALREADY_VERIFIED);
         }
 
         // 만료 확인
         if (verification.isExpired()) {
-            throw new BadRequestException("인증 코드가 만료되었습니다. 재발송을 요청해주세요.");
+            throw new BadRequestException(ErrorCode.EMAIL_VERIFICATION_CODE_EXPIRED);
         }
 
         // 코드 검증
         if (!verification.matchesCode(code)) {
-            throw new BadRequestException("인증 코드가 일치하지 않습니다.");
+            throw new BadRequestException(ErrorCode.EMAIL_VERIFICATION_CODE_MISMATCH);
         }
 
         // 인증 완료 처리
@@ -92,9 +93,9 @@ public class EmailVerificationCommandService {
         // 이메일 중복 체크 및 탈퇴 계정 확인
         userRepository.findByEmail(email).ifPresent(user -> {
             if (user.getDeletedAt() != null) {
-                throw new BadRequestException("탈퇴한 계정입니다. 로그인 후 계정 복구를 진행해주세요.");
+                throw new BadRequestException(ErrorCode.EMAIL_WITHDRAWN_ACCOUNT_SIGNUP_FORBIDDEN);
             }
-            throw new ConflictException("이미 사용 중인 이메일입니다");
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         });
     }
 
@@ -102,16 +103,16 @@ public class EmailVerificationCommandService {
     private void validatePasswordResetEmail(String email) {
         // 1. User 존재 확인
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("등록되지 않은 이메일입니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.EMAIL_NOT_REGISTERED));
 
         // 2. 소셜 로그인 사용자 차단
         if (socialAccountRepository.existsByUser(user)) {
-            throw new BadRequestException("소셜 로그인 계정은 비밀번호 찾기를 사용할 수 없습니다");
+            throw new BadRequestException(ErrorCode.EMAIL_SOCIAL_ACCOUNT_PASSWORD_RESET_FORBIDDEN);
         }
 
         // 3. 탈퇴한 계정 차단
         if (user.getDeletedAt() != null) {
-            throw new BadRequestException("탈퇴한 계정입니다. 계정 복구는 비밀번호를 기억하는 경우에만 가능합니다.");
+            throw new BadRequestException(ErrorCode.EMAIL_WITHDRAWN_ACCOUNT_PASSWORD_RESET_FORBIDDEN);
         }
     }
 
