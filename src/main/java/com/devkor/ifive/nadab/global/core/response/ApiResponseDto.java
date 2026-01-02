@@ -38,6 +38,8 @@ public class ApiResponseDto<T> {
                 .build();
     }
 
+    // TODO: 모든 에러 응답 개선 후 아래 실패 응답 지우기
+
     // 실패 응답 (data 있는 경우)
     public static <T> ApiResponseDto<T> error(int status, String message, T data) {
         return ApiResponseDto.<T>builder()
