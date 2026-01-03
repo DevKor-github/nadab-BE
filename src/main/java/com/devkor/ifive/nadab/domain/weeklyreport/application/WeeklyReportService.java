@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportStartResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReserveResultDto;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
@@ -31,9 +32,9 @@ public class WeeklyReportService {
      */
     public WeeklyReportStartResponse startWeeklyReport(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
         UserWallet wallet = userWalletRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("지갑을 찾을 수 없습니다. userId: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
 
 
         // 주간 리포트 작성 자격 확인 (저번 주에 4회 이상 완료)
@@ -43,7 +44,7 @@ public class WeeklyReportService {
         boolean eligible = completedCount >= 4;
 
         if (!eligible) {
-            throw new BadRequestException("주간 리포트 작성 자격이 없습니다. 지난 주 완료된 일일 리포트 수: " + completedCount);
+            throw new BadRequestException(ErrorCode.WEEKLY_REPORT_NOT_ENOUGH_REPORTS);
         }
 
         // (Tx) Report(PENDING) + reserve consume + log(PENDING)

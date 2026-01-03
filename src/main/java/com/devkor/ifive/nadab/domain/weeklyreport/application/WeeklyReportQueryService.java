@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportR
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
@@ -23,15 +24,15 @@ public class WeeklyReportQueryService {
 
     public WeeklyReportResponse getLastWeekWeeklyReport(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
 
         WeeklyReport report = weeklyReportRepository.findByUserAndWeekStartDate(user, range.weekStartDate())
-                .orElseThrow(() -> new NotFoundException("지난 주간 리포트를 찾을 수 없습니다. userId: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WEEKLY_REPORT_NOT_FOUND));
 
         if (report.getStatus() != WeeklyReportStatus.COMPLETED) {
-            throw new NotFoundException("지난 주간 리포트가 작성되지 않았습니다. userId: " + userId);
+            throw new NotFoundException(ErrorCode.WEEKLY_REPORT_NOT_COMPLETED);
         }
 
         return new WeeklyReportResponse(
@@ -46,7 +47,7 @@ public class WeeklyReportQueryService {
 
     public WeeklyReportResponse getWeeklyReportById(Long id) {
         WeeklyReport report = weeklyReportRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("주간 리포트를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WEEKLY_REPORT_NOT_FOUND));
 
         WeekRangeDto range = WeekRangeCalculator.weekRangeOf(report.getWeekStartDate());
 

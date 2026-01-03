@@ -12,6 +12,7 @@ import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.service.PendingWeeklyReportService;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -46,11 +47,11 @@ public class WeeklyReportTxService {
         // 선차감(원자적) + balanceAfter 확보
         int updated = userWalletRepository.tryConsume(user.getId(), WEEKLY_REPORT_COST);
         if (updated == 0) {
-            throw new NotEnoughCrystalException("크리스탈이 부족합니다.");
+            throw new NotEnoughCrystalException(ErrorCode.WALLET_INSUFFICIENT_BALANCE);
         }
 
         UserWallet wallet = userWalletRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new NotFoundException("지갑을 찾을 수 없습니다. userId: " + user.getId()));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
         long balanceAfter = wallet.getCrystalBalance();
 
 
@@ -99,7 +100,7 @@ public class WeeklyReportTxService {
         int updated = userWalletRepository.refund(userId, WEEKLY_REPORT_COST);
         if (updated == 0) {
             // wallet이 없을 수 있는 상황
-            throw new NotFoundException("지갑을 찾을 수 없습니다. userId: " + userId);
+            throw new NotFoundException(ErrorCode.WALLET_NOT_FOUND);
         }
 
         // log를 REFUNDED로

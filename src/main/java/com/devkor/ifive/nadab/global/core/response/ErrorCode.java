@@ -102,6 +102,9 @@ public enum ErrorCode {
     QUESTION_ALREADY_ANSWERED(HttpStatus.CONFLICT, "오늘의 질문에 이미 답변을 작성한 후에는 질문을 새로 받을 수 없습니다"),
 
     // ==================== WALLET (지갑) ====================
+    // 400 Bad Request
+    WALLET_INSUFFICIENT_BALANCE(HttpStatus.BAD_REQUEST, "보유한 크리스탈이 부족합니다"),
+
     //404 Not Found
     WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 지갑을 찾을 수 없습니다"),
 
@@ -111,6 +114,18 @@ public enum ErrorCode {
 
     // 409 Conflict - 일간
     DAILY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 일간 리포트가 존재합니다"),
+
+    // ==================== WEEKLY_REPORT (주간 리포트) ====================
+    // 400 Bad Request
+    WEEKLY_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "주간 리포트 작성 자격이 없습니다. (지난 주 4회 이상 완료 필요)"),
+
+    // 404 Not Found
+    WEEKLY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "주간 리포트를 찾을 수 없습니다"),
+    WEEKLY_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 주간 리포트가 아직 생성 완료되지 않았습니다"),
+
+    // 409 Conflict
+    WEEKLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 주간 리포트가 존재합니다"),
+    WEEKLY_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 주간 리포트를 생성 중입니다"),
 
     // ==================== AI (인공지능) ====================
     // 502 Bad Gateway
