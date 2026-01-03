@@ -142,7 +142,16 @@ public enum ErrorCode {
 
     // ==================== ANSWER (답변) ====================
     // 404 Not Found
-    ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "작성된 답변 내역을 찾을 수 없습니다");
+    ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "작성된 답변 내역을 찾을 수 없습니다"),
+
+    // ==================== PROMPT (프롬프트) ====================
+    // 400 Bad Request
+    PROMPT_DAILY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "일간 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_DAILY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 일간 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_DAILY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "INSIGHT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+    PROMPT_WEEKLY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "주간 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_WEEKLY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 주간 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_WEEKLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "WEEKLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다");
 
     private final HttpStatus httpStatus;
     private final String message;

@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.global.core.prompt.weekly;
 
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -22,7 +23,8 @@ public class LocalWeeklyReportPromptLoader implements WeeklyReportPromptLoader{
             ClassPathResource resource = new ClassPathResource(PROMPT_PATH);
 
             if (!resource.exists()) {
-                throw new BadRequestException("주간 리포트 프롬프트 파일이 존재하지 않습니다: " + PROMPT_PATH);
+                log.error("주간 리포트 프롬프트 파일이 존재하지 않습니다: {}", PROMPT_PATH);
+                throw new BadRequestException(ErrorCode.PROMPT_WEEKLY_FILE_NOT_FOUND);
             }
 
             byte[] bytes = resource.getContentAsByteArray();
@@ -30,7 +32,7 @@ public class LocalWeeklyReportPromptLoader implements WeeklyReportPromptLoader{
 
         } catch (IOException e) {
             log.error("로컬 주간 리포트 프롬프트 파일 읽기 실패: {}", PROMPT_PATH, e);
-            throw new BadRequestException("로컬 주간 리포트 프롬프트 파일을 읽을 수 없습니다: " + PROMPT_PATH);
+            throw new BadRequestException(ErrorCode.PROMPT_WEEKLY_FILE_READ_FAILED);
         }
     }
 }

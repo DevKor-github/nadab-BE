@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.global.core.prompt.weekly;
 
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ public class SecretWeeklyReportPromptLoader implements WeeklyReportPromptLoader{
     public String loadPrompt() {
         if (rawPrompt == null || rawPrompt.isBlank()) {
             log.error("환경 변수 WEEKLY_PROMPT가 비어있습니다.");
-            throw new BadRequestException("WEEKLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다.");
+            throw new BadRequestException(ErrorCode.PROMPT_WEEKLY_ENV_VAR_NOT_SET);
         }
 
         return rawPrompt;
