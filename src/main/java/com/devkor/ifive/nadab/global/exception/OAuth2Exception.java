@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.global.exception;
 
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import lombok.Getter;
 
 /**
@@ -8,10 +9,10 @@ import lombok.Getter;
  */
 @Getter
 public class OAuth2Exception extends RuntimeException {
-    private final int statusCode;
+    private final ErrorCode errorCode;
 
-    public OAuth2Exception(String message, int statusCode) {
-        super(message);
-        this.statusCode = statusCode;
+    public OAuth2Exception(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
     }
 }

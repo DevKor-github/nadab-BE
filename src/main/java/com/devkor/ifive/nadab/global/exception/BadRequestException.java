@@ -1,7 +1,10 @@
 package com.devkor.ifive.nadab.global.exception;
 
-public class BadRequestException extends RuntimeException {
-    public BadRequestException(String message) {
-        super(message);
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+
+public class BadRequestException extends BusinessException {
+
+    public BadRequestException(ErrorCode errorCode) {
+        super(errorCode);
     }
 }

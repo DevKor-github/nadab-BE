@@ -1,7 +1,10 @@
 package com.devkor.ifive.nadab.global.exception;
 
-public class NotFoundException extends RuntimeException {
-    public NotFoundException(String message) {
-        super(message);
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+
+public class NotFoundException extends BusinessException {
+
+    public NotFoundException(ErrorCode errorCode) {
+        super(errorCode);
     }
 }

@@ -14,10 +14,12 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.OAuth2Exception;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ import java.time.OffsetDateTime;
  * - Authorization URL 생성
  * - OAuth2 로그인 처리 (사용자 조회/생성 + 토큰 발급)
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -58,7 +61,8 @@ public class SocialAuthService {
     public TokenBundle executeOAuth2Login(OAuth2Provider provider, String code, String state) {
         // 1. State 검증
         if (!stateManager.validateAndRemove(state)) {
-            throw new OAuth2Exception("유효하지 않거나 만료된 state입니다.", 401);
+            log.warn("OAuth2 state 검증 실패");
+            throw new OAuth2Exception(ErrorCode.AUTH_INVALID_STATE);
         }
 
         // 2. Access Token 발급
@@ -101,9 +105,9 @@ public class SocialAuthService {
         // 이메일 중복 체크 및 탈퇴 계정 확인
         userRepository.findByEmail(email).ifPresent(user -> {
             if (user.getDeletedAt() != null) {
-                throw new BadRequestException("탈퇴한 계정입니다. 원래 로그인 방식으로 복구를 진행해주세요.");
+                throw new BadRequestException(ErrorCode.AUTH_WITHDRAWN_ACCOUNT_RESTORE_REQUIRED);
             }
-            throw new ConflictException("이미 가입된 이메일입니다. 다른 로그인 방식을 사용해주세요.");
+            throw new ConflictException(ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD);
         });
 
         // User 생성 및 저장
@@ -126,12 +130,12 @@ public class SocialAuthService {
     private User restoreWithdrawnAccount(User user) {
         // 14일 이내인지 확인
         if (user.getDeletedAt().isBefore(OffsetDateTime.now().minusDays(14))) {
-            throw new BadRequestException("복구 가능 기간(14일)이 지났습니다");
+            throw new BadRequestException(ErrorCode.AUTH_RESTORE_PERIOD_EXPIRED);
         }
 
         // 소셜 로그인 계정이 아닌 경우 차단 (일반 계정은 비밀번호 확인 필요)
         if (!socialAccountRepository.existsByUser(user)) {
-            throw new BadRequestException("탈퇴한 계정입니다. 원래 로그인 방식으로 복구를 진행해주세요.");
+            throw new BadRequestException(ErrorCode.AUTH_WITHDRAWN_ACCOUNT_RESTORE_REQUIRED);
         }
 
         // 복구 처리

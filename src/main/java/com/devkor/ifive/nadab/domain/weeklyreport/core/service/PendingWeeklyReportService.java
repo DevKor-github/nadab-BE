@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
@@ -36,11 +37,11 @@ public class PendingWeeklyReportService {
                 )));
 
         if (report.getStatus() == WeeklyReportStatus.COMPLETED) {
-            throw new ConflictException("이미 작성된 주간 리포트가 존재합니다. reportId: " + report.getId());
+            throw new ConflictException(ErrorCode.WEEKLY_REPORT_ALREADY_COMPLETED);
         }
 
         if (report.getStatus() == WeeklyReportStatus.IN_PROGRESS) {
-            throw new ConflictException("주간 리포트를 이미 작성 중입니다. reportId: " + report.getId());
+            throw new ConflictException(ErrorCode.WEEKLY_REPORT_IN_PROGRESS);
         }
 
         if (report.getStatus() == WeeklyReportStatus.FAILED) {

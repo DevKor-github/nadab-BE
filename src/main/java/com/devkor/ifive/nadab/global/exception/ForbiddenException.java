@@ -1,7 +1,10 @@
 package com.devkor.ifive.nadab.global.exception;
 
-public class ForbiddenException extends RuntimeException {
-    public ForbiddenException(String message) {
-        super(message);
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+
+public class ForbiddenException extends BusinessException {
+
+    public ForbiddenException(ErrorCode errorCode) {
+        super(errorCode);
     }
 }

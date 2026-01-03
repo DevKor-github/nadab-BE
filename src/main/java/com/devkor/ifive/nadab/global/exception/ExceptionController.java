@@ -1,12 +1,12 @@
 package com.devkor.ifive.nadab.global.exception;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
-import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
+import com.devkor.ifive.nadab.global.core.response.ApiErrorResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -23,99 +23,98 @@ import java.util.stream.Collectors;
 public class ExceptionController {
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleBadRequestException(BadRequestException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleBadRequestException(BadRequestException ex) {
         log.warn("BadRequestException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(WithdrawnException.class)
-    public ResponseEntity<ApiResponseDto<WithdrawnInfoResponse>> handleWithdrawnException(WithdrawnException ex) {
+    public ResponseEntity<ApiErrorResponseDto<WithdrawnInfoResponse>> handleWithdrawnException(WithdrawnException ex) {
         log.warn("WithdrawnException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getWithdrawnInfo());
+        return ApiResponseEntity.error(ex.getErrorCode(), ex.getWithdrawnInfo());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         log.warn("MethodArgumentNotValidException: {}", ex.getMessage(), ex);
 
         // 모든 validation 에러 메시지를 쉼표로 합침
-        String message = ex.getBindingResult()
+        String validationErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
-        if (message.isEmpty()) {
-            message = "입력값이 올바르지 않습니다";
+        if (validationErrors.isEmpty()) {
+            return ApiResponseEntity.error(ErrorCode.VALIDATION_FAILED);
         }
 
-        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, message);
+        // ErrorCode의 code는 사용하되, message는 validation 에러들로
+        return ApiResponseEntity.error(ErrorCode.VALIDATION_FAILED, validationErrors);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleUnauthorizedException(UnauthorizedException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleUnauthorizedException(UnauthorizedException ex) {
         log.warn("UnauthorizedException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(OAuth2Exception.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleOAuth2Exception(OAuth2Exception ex) {
-        log.warn("OAuth2Exception: {}", ex.getMessage(), ex);
-
-        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode());
-        return ApiResponseEntity.error(status, ex.getMessage());
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleOAuth2Exception(OAuth2Exception ex) {
+        // 로그는 OAuth2Client, SocialAuthService에서 이미 남김 (상세 정보 포함)
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleForbiddenException(ForbiddenException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleForbiddenException(ForbiddenException ex) {
         log.warn("ForbiddenException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.FORBIDDEN, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleNotFoundException(NotFoundException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleNotFoundException(NotFoundException ex) {
         log.warn("NotFoundException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.NOT_FOUND, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(NoSuchKeyException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleNoSuchKeyException(NoSuchKeyException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleNoSuchKeyException(NoSuchKeyException ex) {
         log.warn("NoSuchKeyException: {}", ex.getMessage(), ex);
         // S3에서 객체를 찾을 수 없을 때 404 NOT_FOUND 응답
-        return ApiResponseEntity.error(HttpStatus.NOT_FOUND, "S3에서 요청된 파일을 찾을 수 없습니다.");
+        return ApiResponseEntity.error(ErrorCode.FILE_STORAGE_NOT_FOUND);
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleConflictException(ConflictException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleConflictException(ConflictException ex) {
         log.warn("ConflictException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.CONFLICT, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(AiServiceUnavailableException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleAiServiceUnavailableException(AiServiceUnavailableException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleAiServiceUnavailableException(AiServiceUnavailableException ex) {
         log.warn("AI Service Unavailable: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(AiResponseParseException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleAiResponseParseException(AiResponseParseException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleAiResponseParseException(AiResponseParseException ex) {
         log.warn("AI Response Parse Error: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.BAD_GATEWAY, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(NotEnoughCrystalException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleNotEnoughCrystalException(NotEnoughCrystalException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleNotEnoughCrystalException(NotEnoughCrystalException ex) {
         log.warn("NotEnoughCrystalException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleRuntimeException(RuntimeException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleRuntimeException(RuntimeException ex) {
         if (ex instanceof AuthenticationException || ex instanceof AccessDeniedException) {
             throw ex; // 다시 던져서 Security FilterChain이 처리하게
         }
 
         log.error("Internal Server Error (RuntimeException): {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 예상치 못한 오류가 발생했습니다.");
+        return ApiResponseEntity.error(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }

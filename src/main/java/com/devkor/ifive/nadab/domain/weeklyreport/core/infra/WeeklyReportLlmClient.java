@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.weeklyreport.core.infra;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.AiWeeklyReportResultDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.LlmWeeklyResultDto;
 import com.devkor.ifive.nadab.global.core.prompt.weekly.WeeklyReportPromptLoader;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,7 +45,7 @@ public class WeeklyReportLlmClient {
                 .content();
 
         if (content == null || content.trim().isEmpty()) {
-            throw new AiServiceUnavailableException("AI 서비스로부터 응답을 받지 못했습니다.");
+            throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
         }
 
         try {
@@ -55,7 +56,7 @@ public class WeeklyReportLlmClient {
             String improve = result.improve();
 
             if (isBlank(discovered) || isBlank(good) || isBlank(improve)) {
-                throw new AiResponseParseException("AI 응답 JSON의 필수 필드가 비어있습니다.");
+                throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
             }
 
             return new AiWeeklyReportResultDto(discovered, good, improve);
@@ -63,7 +64,7 @@ public class WeeklyReportLlmClient {
         } catch (AiResponseParseException e) {
             throw e;
         } catch (Exception e) {
-            throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
 

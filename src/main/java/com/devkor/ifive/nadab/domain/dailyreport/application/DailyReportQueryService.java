@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepo
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
@@ -26,15 +27,15 @@ public class DailyReportQueryService {
 
     public DailyReportResponse getDailyReport(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
         AnswerEntry entry = answerEntryRepository.findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
-                .orElseThrow(() -> new NotFoundException("오늘의 답변 항목을 찾을 수 없습니다. userId: " + id));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
 
         DailyReport report = dailyReportRepository.findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
-                .orElseThrow(() -> new NotFoundException("오늘의 리포트를 찾을 수 없습니다. userId: " + id));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
 
         return new DailyReportResponse(
                 report.getContent(),

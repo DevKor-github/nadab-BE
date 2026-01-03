@@ -1,7 +1,10 @@
 package com.devkor.ifive.nadab.global.exception;
 
-public class ConflictException extends RuntimeException {
-    public ConflictException(String message) {
-        super(message);
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+
+public class ConflictException extends BusinessException {
+
+    public ConflictException(ErrorCode errorCode) {
+        super(errorCode);
     }
 }

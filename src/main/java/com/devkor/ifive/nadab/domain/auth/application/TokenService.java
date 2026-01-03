@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.auth.core.repository.RefreshTokenRepository
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.properties.TokenProperties;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.UnauthorizedException;
 import com.devkor.ifive.nadab.global.security.token.AccessTokenProvider;
@@ -39,7 +40,7 @@ public class TokenService {
     public TokenBundle issueTokens(Long userId) {
         // User 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         // Access Token 생성 (TODO: role 관련 코드는 추후 권한 관리 때 수정 예정)
         List<String> roles = List.of("USER");
@@ -61,11 +62,11 @@ public class TokenService {
         // Refresh Token 해싱 및 DB 조회
         String hashedToken = refreshTokenProvider.hash(rawRefreshToken);
         RefreshToken refreshToken = refreshTokenRepository.findByHashedToken(hashedToken)
-                .orElseThrow(() -> new UnauthorizedException("유효하지 않은 Refresh Token입니다."));
+                .orElseThrow(() -> new UnauthorizedException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN));
 
         // 사용 가능한지 검증 (만료, revoke 확인)
         if (!refreshToken.isUsable()) {
-            throw new UnauthorizedException("만료되거나 취소된 Refresh Token입니다.");
+            throw new UnauthorizedException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
         }
 
         Long userId = refreshToken.getUser().getId();

@@ -9,6 +9,7 @@ import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyQueryRep
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -18,6 +19,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class WeeklyReportGenerationListener {
 
     private final WeeklyQueryRepository weeklyQueryRepository;
@@ -40,6 +42,9 @@ public class WeeklyReportGenerationListener {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
             dto = weeklyReportLlmClient.generate(range.weekStartDate().toString(), range.weekEndDate().toString(), entries);
         } catch (Exception e) {
+            log.error("[WEEKLY_REPORT][LLM_FAILED] userId={}, reportId={}",
+                    event.userId(), event.reportId(), e);
+
             // 실패 확정 + 환불은 별도 트랜잭션에서
             weeklyReportTxService.failAndRefundWeekly(
                     event.userId(),

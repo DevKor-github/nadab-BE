@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.auth.infra.cookie;
 
 import com.devkor.ifive.nadab.global.core.properties.TokenProperties;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.UnauthorizedException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -74,6 +75,6 @@ public class CookieManager {
                 }
             }
         }
-        throw new UnauthorizedException("Refresh Token이 없습니다.");
+        throw new UnauthorizedException(ErrorCode.AUTH_REFRESH_TOKEN_NOT_FOUND);
     }
 }

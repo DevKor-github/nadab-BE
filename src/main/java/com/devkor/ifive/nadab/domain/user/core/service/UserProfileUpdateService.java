@@ -23,7 +23,6 @@ public class UserProfileUpdateService {
     }
 
     public void updateNickname(User user, String nickname) {
-        // 닉네임 유효성 검사 추가 예정
         user.updateNickname(nickname);
     }
 

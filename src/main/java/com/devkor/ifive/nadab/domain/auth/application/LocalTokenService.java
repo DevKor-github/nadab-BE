@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.security.token.AccessTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class LocalTokenService {
     // 로컬 로그인용 토큰 발급
     public LocalTokenResponse issueDummyAccessToken() {
         User user = userRepository.findById(11111L)
-                .orElseThrow(() -> new NotFoundException("더미 유저(ID: 11111)가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.AUTH_DUMMY_USER_NOT_FOUND));
 
         UserWallet wallet = getOrCreateWallet(user);
 

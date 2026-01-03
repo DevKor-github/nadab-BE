@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.entity.UserInterest;
 import com.devkor.ifive.nadab.domain.user.core.repository.InterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserInterestRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class UserInterestService {
      */
     public void updateUserInterest(User user, InterestCode code) {
         Interest interest = interestRepository.findByCode(code)
-                .orElseThrow(() -> new NotFoundException("유효하지 않은 관심 주제입니다: " + code));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.INTEREST_NOT_FOUND));
 
         updateOrCreateUserInterest(user, interest);
     }

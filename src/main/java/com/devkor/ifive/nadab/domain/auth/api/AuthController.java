@@ -73,7 +73,7 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "잘못된 요청 - provider가 'naver' 또는 'google'이 아닌 경우",
+                            description = "ErrorCode: AUTH_UNSUPPORTED_OAUTH2_PROVIDER - provider가 'naver' 또는 'google'이 아닌 경우",
                             content = @Content)
             }
     )
@@ -114,19 +114,17 @@ public class AuthController {
                             responseCode = "400",
                             description = """
                                     잘못된 요청
-                                    - 이메일 인증이 완료되지 않은 경우
-                                    - 필수 약관 미동의한 경우
-                                    - 이메일 형식이 올바르지 않은 경우
-                                    - 비밀번호 형식이 올바르지 않은 경우 (영문, 숫자, 특수문자 포함 8자 이상)
+                                    - ErrorCode: AUTH_EMAIL_NOT_VERIFIED - 이메일 인증 미완료
+                                    - ErrorCode: TERMS_SERVICE_AGREEMENT_REQUIRED - 서비스 이용약관 미동의
+                                    - ErrorCode: TERMS_PRIVACY_POLICY_REQUIRED - 개인정보 처리방침 미동의
+                                    - ErrorCode: TERMS_AGE_VERIFICATION_REQUIRED - 만 14세 이상 확인 미동의
+                                    - ErrorCode: VALIDATION_FAILED - 이메일/비밀번호 형식 오류
                                     """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = """
-                                    이메일 중복
-                                    - 이미 사용 중인 이메일입니다
-                                    """,
+                            description = "ErrorCode: EMAIL_ALREADY_EXISTS - 이미 사용 중인 이메일",
                             content = @Content
                     )
             }
@@ -175,28 +173,20 @@ public class AuthController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                                    잘못된 요청
-                                    - 이메일 형식이 올바르지 않은 경우
-                                    - 탈퇴한 계정 (message: "탈퇴한 계정입니다. 계정 복구를 진행해주세요.")
-                                      → data 필드에 탈퇴 계정 정보 포함 (닉네임, 완전 삭제 예정일)
-                                      → 프론트엔드: 복구 선택 화면으로 이동 (POST /auth/restore 안내)
+                                    - ErrorCode: AUTH_ACCOUNT_WITHDRAWN - 탈퇴한 계정
+                                        - data 필드에 탈퇴 계정 정보 포함 (닉네임, 완전 삭제 예정일)
+                                    - ErrorCode: VALIDATION_FAILED - 이메일 형식 오류
                                     """,
                             content = @Content(schema = @Schema(implementation = WithdrawnInfoResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = """
-                                    인증 실패
-                                    - 비밀번호가 일치하지 않는 경우
-                                    """,
+                            description = "ErrorCode: AUTH_INVALID_PASSWORD - 비밀번호 불일치",
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = """
-                                    사용자를 찾을 수 없습니다
-                                    - 등록되지 않은 이메일일 경우
-                                    """,
+                            description = "ErrorCode: USER_NOT_FOUND - 등록되지 않은 이메일",
                             content = @Content
                     )
             }
@@ -242,8 +232,8 @@ public class AuthController {
                             responseCode = "400",
                             description = """
                                     잘못된 요청
-                                    - code 또는 state 값이 누락된 경우
-                                    - provider가 'naver' 또는 'google'이 아닌 경우
+                                    - ErrorCode: AUTH_UNSUPPORTED_OAUTH2_PROVIDER - provider가 'naver' 또는 'google'이 아닌 경우
+                                    - ErrorCode: VALIDATION_FAILED - code 또는 state 값이 누락된 경우
                                     """,
                             content = @Content
                     ),
@@ -251,19 +241,15 @@ public class AuthController {
                             responseCode = "401",
                             description = """
                                     OAuth2 인증 실패
-                                    - State 검증 실패 (CSRF 공격 방지, 10분 내 사용해야 함)
-                                    - Authorization Code가 유효하지 않거나 만료된 경우
-                                    - OAuth2 제공자로부터 Access Token 발급 실패
-                                    - OAuth2 제공자로부터 사용자 정보 조회 실패
+                                    - ErrorCode: AUTH_INVALID_STATE - State 검증 실패 (CSRF 공격 방지, 10분 내 사용해야 함)
+                                    - ErrorCode: AUTH_OAUTH2_TOKEN_FAILED - OAuth2 제공자로부터 Access Token 발급 실패
+                                    - ErrorCode: AUTH_OAUTH2_USERINFO_FAILED - OAuth2 제공자로부터 사용자 정보 조회 실패
                                     """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = """
-                                    이메일 중복
-                                    - 해당 네이버, 구글 이메일이 다른 방법으로 이미 가입된 경우
-                                    """,
+                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
                             content = @Content
                     )
             }
@@ -307,9 +293,8 @@ public class AuthController {
                             responseCode = "401",
                             description = """
                                     인증 실패
-                                    - 쿠키에 Refresh Token이 없는 경우
-                                    - Refresh Token이 만료된 경우 (발급 후 14일 경과)
-                                    - Refresh Token이 삭제된 경우 (로그아웃, 탈퇴, 또는 DB에 존재하지 않음)
+                                    - ErrorCode: AUTH_REFRESH_TOKEN_NOT_FOUND - 쿠키에 Refresh Token이 없는 경우
+                                    - ErrorCode: AUTH_INVALID_REFRESH_TOKEN - Refresh Token이 만료되었거나 DB에 존재하지 않음
                                     """,
                             content = @Content
                     )
@@ -351,10 +336,13 @@ public class AuthController {
                     @ApiResponse(
                             responseCode = "401",
                             description = """
-                                    인증 실패
-                                    - Authorization 헤더에 JWT Access Token이 없는 경우
-                                    - JWT Access Token이 만료된 경우 (발급 후 1시간 경과)
-                                    - JWT Access Token이 유효하지 않은 경우 (변조, 잘못된 서명)
+                                    인증 실패 (JWT 토큰 관련)
+                                    - ErrorCode: AUTH_TOKEN_EXPIRED - JWT Access Token 만료
+                                    - ErrorCode: AUTH_TOKEN_SIGNATURE_INVALID - 토큰 서명 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_MALFORMED - 토큰 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_VERIFICATION_FAILED - 토큰 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_USERID_INVALID - 토큰의 유저 ID 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_ROLES_MISSING - 토큰에 권한 정보 없음
                                     """,
                             content = @Content
                     )
@@ -390,18 +378,16 @@ public class AuthController {
                             responseCode = "400",
                             description = """
                                     잘못된 요청
-                                    - 이메일 인증 미완료
-                                    - 소셜 로그인 계정
-                                    - 탈퇴한 계정
-                                    - 이전 비밀번호와 동일
+                                    - ErrorCode: EMAIL_SOCIAL_ACCOUNT_PASSWORD_RESET_FORBIDDEN - 소셜 로그인 계정
+                                    - ErrorCode: EMAIL_WITHDRAWN_ACCOUNT_PASSWORD_RESET_FORBIDDEN - 탈퇴한 계정
+                                    - ErrorCode: AUTH_PASSWORD_REUSE_NOT_ALLOWED - 이전 비밀번호와 동일
+                                    - ErrorCode: EMAIL_VERIFICATION_NOT_FOUND - 이메일 인증 미완료
+                                    - ErrorCode: VALIDATION_FAILED - 이메일/비밀번호 형식 오류
                                     """,
                             content = @Content
                     ),
                     @ApiResponse(responseCode = "404",
-                            description = """
-                                    사용자를 찾을 수 없음
-                                    - 등록되지 않은 이메일일 경우
-                                    """,
+                            description = "ErrorCode: USER_NOT_FOUND - 등록되지 않은 이메일",
                             content = @Content)
             }
     )
@@ -434,17 +420,14 @@ public class AuthController {
                             responseCode = "400",
                             description = """
                                     잘못된 요청
-                                    - 소셜 로그인 계정이 비밀번호를 변경하려는 경우
-                                    - 이전 비밀번호와 동일한 비밀번호를 사용하려는 경우
+                                    - ErrorCode: AUTH_SOCIAL_ACCOUNT_PASSWORD_CHANGE_FORBIDDEN - 소셜 로그인 계정
+                                    - ErrorCode: AUTH_PASSWORD_REUSE_NOT_ALLOWED - 이전 비밀번호와 동일
                                     """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = """
-                                    인증 실패
-                                    - 현재 비밀번호가 불일치할 경우
-                                    """,
+                            description = "ErrorCode: AUTH_INVALID_PASSWORD - 현재 비밀번호 불일치",
                             content = @Content
                     )
             }
@@ -483,12 +466,20 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "이미 탈퇴한 계정",
+                            description = "ErrorCode: AUTH_ALREADY_WITHDRAWN - 이미 탈퇴한 계정",
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = """
+                                    인증 실패 (JWT 토큰 관련)
+                                    - ErrorCode: AUTH_TOKEN_EXPIRED - JWT Access Token 만료
+                                    - ErrorCode: AUTH_TOKEN_SIGNATURE_INVALID - 토큰 서명 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_MALFORMED - 토큰 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_VERIFICATION_FAILED - 토큰 검증 실패
+                                    - ErrorCode: AUTH_TOKEN_USERID_INVALID - 토큰의 유저 ID 형식 오류
+                                    - ErrorCode: AUTH_TOKEN_ROLES_MISSING - 토큰에 권한 정보 없음
+                                    """,
                             content = @Content
                     )
             }
@@ -530,20 +521,20 @@ public class AuthController {
                             responseCode = "400",
                             description = """
                                     잘못된 요청
-                                    - 탈퇴하지 않은 계정
-                                    - 소셜 로그인 계정
-                                    - 복구 가능 기간(14일) 초과
+                                    - ErrorCode: AUTH_NOT_WITHDRAWN - 탈퇴하지 않은 계정
+                                    - ErrorCode: AUTH_SOCIAL_ACCOUNT_RESTORE_FORBIDDEN - 소셜 로그인 계정
+                                    - ErrorCode: AUTH_RESTORE_PERIOD_EXPIRED - 복구 가능 기간(14일) 초과
                                     """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "비밀번호 불일치",
+                            description = "ErrorCode: AUTH_INVALID_PASSWORD - 비밀번호 불일치",
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = "사용자를 찾을 수 없음",
+                            description = "ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음",
                             content = @Content
                     )
             }

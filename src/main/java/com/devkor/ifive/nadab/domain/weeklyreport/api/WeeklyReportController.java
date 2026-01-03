@@ -42,6 +42,35 @@ public class WeeklyReportController {
                             responseCode = "200",
                             description = "주간 리포트 생성 시작 성공",
                             content = @Content(schema = @Schema(implementation = WeeklyReportStartResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    - ErrorCode: WEEKLY_REPORT_NOT_ENOUGH_REPORTS - 주간 리포트 작성 자격 미달
+                                    - ErrorCode: WALLET_INSUFFICIENT_BALANCE - 크리스탈 잔액 부족
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: WALLET_NOT_FOUND - 지갑을 찾을 수 없음
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = """
+                                    - ErrorCode: WEEKLY_REPORT_ALREADY_COMPLETED - 이미 작성된 주간 리포트가 존재함
+                                    - ErrorCode: WEEKLY_REPORT_IN_PROGRESS - 현재 주간 리포트를 생성 중임
+                                    """,
+                            content = @Content
                     )
             }
     )
@@ -63,6 +92,20 @@ public class WeeklyReportController {
                             responseCode = "200",
                             description = "나의 주간 리포트 조회 성공",
                             content = @Content(schema = @Schema(implementation = WeeklyReportResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: WEEKLY_REPORT_NOT_FOUND - 주간 리포트를 찾을 수 없음
+                                    - ErrorCode: WEEKLY_REPORT_NOT_COMPLETED - 해당 주간 리포트가 아직 생성 완료되지 않음
+                                    """,
+                            content = @Content
                     )
             }
     )
@@ -90,6 +133,11 @@ public class WeeklyReportController {
                             responseCode = "200",
                             description = "주간 리포트 조회 성공",
                             content = @Content(schema = @Schema(implementation = WeeklyReportResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "- ErrorCode: WEEKLY_REPORT_NOT_FOUND - 주간 리포트를 찾을 수 없음",
+                            content = @Content
                     )
             }
     )

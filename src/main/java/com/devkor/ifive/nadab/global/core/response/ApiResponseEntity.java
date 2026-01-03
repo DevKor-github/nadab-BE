@@ -37,17 +37,34 @@ public class ApiResponseEntity {
                 .body(ApiResponseDto.success(status.value(), status.getReasonPhrase()));
     }
 
-    // 에러 응답 - data 있음
-    public static <T> ResponseEntity<ApiResponseDto<T>> error(HttpStatus httpStatus, String message, T data) {
+    // 에러 응답 (ErrorCode) - data 있음
+    public static <T> ResponseEntity<ApiErrorResponseDto<T>> error(ErrorCode errorCode, T data) {
         return ResponseEntity
-                .status(httpStatus)
-                .body(ApiResponseDto.error(httpStatus.value(), message, data));
+                .status(errorCode.getHttpStatus())
+                .body(ApiErrorResponseDto.error(
+                        errorCode.getHttpStatus().value(),
+                        errorCode.getCode(),
+                        errorCode.getMessage(),
+                        data));
     }
 
-    // 에러 응답 - data 없음
-    public static <T> ResponseEntity<ApiResponseDto<T>> error(HttpStatus httpStatus, String message) {
+    // 에러 응답 (ErrorCode) - data 없음
+    public static <T> ResponseEntity<ApiErrorResponseDto<T>> error(ErrorCode errorCode) {
         return ResponseEntity
-                .status(httpStatus)
-                .body(ApiResponseDto.error(httpStatus.value(), message));
+                .status(errorCode.getHttpStatus())
+                .body(ApiErrorResponseDto.error(
+                        errorCode.getHttpStatus().value(),
+                        errorCode.getCode(),
+                        errorCode.getMessage()));
+    }
+
+    // 에러 응답 (ErrorCode + 커스텀 메시지) - code는 ErrorCode, message는 커스텀
+    public static <T> ResponseEntity<ApiErrorResponseDto<T>> error(ErrorCode errorCode, String customMessage) {
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ApiErrorResponseDto.error(
+                        errorCode.getHttpStatus().value(),
+                        errorCode.getCode(),
+                        customMessage));
     }
 }

@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.user.core.service;
 
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -75,12 +76,16 @@ public class ProfileImageService {
         String contentType = metadata.contentType();
         Long size = metadata.contentLength();
 
-        if (size == null || contentType == null || !List.of("image/jpeg", "image/png", "image/webp").contains(contentType)) {
-            throw new BadRequestException("지원하지 않는 이미지 형식 또는 메타데이터가 누락되었습니다.");
+        if (size == null || contentType == null) {
+            throw new BadRequestException(ErrorCode.IMAGE_METADATA_INVALID);
+        }
+
+        if (!List.of("image/jpeg", "image/png", "image/webp").contains(contentType)) {
+            throw new BadRequestException(ErrorCode.IMAGE_UNSUPPORTED_TYPE);
         }
         if (size > 5 * 1024 * 1024) {
             this.deleteProfileImage(objectKey);
-            throw new BadRequestException("이미지 용량이 너무 큽니다. (최대 5MB)");
+            throw new BadRequestException(ErrorCode.IMAGE_SIZE_EXCEEDED);
         }
     }
 }

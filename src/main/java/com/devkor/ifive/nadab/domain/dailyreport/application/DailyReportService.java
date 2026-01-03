@@ -13,6 +13,7 @@ import com.devkor.ifive.nadab.domain.question.core.repository.DailyQuestionRepos
 import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 
@@ -37,16 +38,16 @@ public class DailyReportService {
 
     public CreateDailyReportResponse generateDailyReport(Long userId, DailyReportRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         DailyQuestion question = dailyQuestionRepository.findById(request.questionId())
-                .orElseThrow(() -> new NotFoundException("질문을 찾을 수 없습니다. id: " + request.questionId()));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NOT_FOUND));
 
         LocalDate today = TodayDateTimeProvider.getTodayDate();
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
-                .orElseThrow(() -> new BadRequestException("오늘의 질문이 사용자에게 할당되지 않았습니다. date: " + today));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_QUESTION_NOT_FOUND));
         if (!udq.getDailyQuestion().getId().equals(request.questionId())) {
-            throw new BadRequestException("요청의 질문이 사용자에게 할당된 오늘의 질문과 일치하지 않습니다. 할당된 questionId: " + udq.getDailyQuestion().getId());
+            throw new BadRequestException(ErrorCode.DAILY_QUESTION_MISMATCH);
         }
 
         PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer());

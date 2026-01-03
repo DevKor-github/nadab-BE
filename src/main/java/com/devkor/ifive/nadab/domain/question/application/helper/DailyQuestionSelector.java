@@ -2,6 +2,8 @@ package com.devkor.ifive.nadab.domain.question.application.helper;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.repository.DailyQuestionRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -17,13 +19,13 @@ public class DailyQuestionSelector {
         return dailyQuestionRepository.findRandomByInterestExcludingAnswered(userId, interestId, levelOnly, PageRequest.of(0, 1))
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("조건에 맞는 질문이 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NOT_FOUND_FOR_CONDITION));
     }
 
     public DailyQuestion pickReroll(Long userId, Long interestId, Long excludeQuestionId, Integer levelOnly) {
         return dailyQuestionRepository.findRandomByInterestExcludingAnsweredAndExcludingId(userId, interestId, excludeQuestionId, levelOnly, PageRequest.of(0, 1))
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("리롤 가능한 질문이 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NO_ALTERNATIVE));
     }
 }

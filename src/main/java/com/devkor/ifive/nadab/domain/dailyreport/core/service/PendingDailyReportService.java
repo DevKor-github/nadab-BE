@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
@@ -33,7 +34,7 @@ public class PendingDailyReportService {
                 .orElseGet(() -> dailyReportRepository.save(DailyReport.createPending(entry, today)));
 
         if (report.getStatus() == DailyReportStatus.COMPLETED) {
-            throw new ConflictException("이미 작성된 일간 리포트가 존재합니다. reportId: " + report.getId());
+            throw new ConflictException(ErrorCode.DAILY_REPORT_ALREADY_COMPLETED);
         }
 
         if (report.getStatus() == DailyReportStatus.FAILED) {

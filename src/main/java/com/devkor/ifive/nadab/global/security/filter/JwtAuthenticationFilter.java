@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.global.security.filter;
 
+import com.devkor.ifive.nadab.global.exception.JwtAuthException;
 import com.devkor.ifive.nadab.global.security.handler.JwtAuthenticationEntryPoint;
 import com.devkor.ifive.nadab.global.security.token.AccessTokenProvider;
 import jakarta.servlet.FilterChain;
@@ -44,6 +45,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 log.warn("JWT 인증 실패 - URI: {}, 원인: {}", request.getRequestURI(), e.getMessage());
                 SecurityContextHolder.clearContext();
+
+                // JwtAuthException이면 ErrorCode를 request attribute에 저장
+                if (e instanceof JwtAuthException jwtAuthException) {
+                    request.setAttribute("errorCode", jwtAuthException.getErrorCode());
+                }
+
                 jwtAuthenticationEntryPoint.commence(
                         request,
                         response,

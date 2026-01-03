@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReport
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.TestDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,7 +43,7 @@ public class TestDailyReportService {
                 .content();
 
         if (response == null || response.trim().isEmpty()) {
-            throw new AiServiceUnavailableException("AI 서비스로부터 응답을 받지 못했습니다.");
+            throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
         }
 
         try {
@@ -60,7 +61,7 @@ public class TestDailyReportService {
 
         } catch (Exception e) {
             // GPT가 JSON 형식을 지키지 못했을 경우 대비
-            throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
 }

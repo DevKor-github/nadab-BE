@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.*;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.devkor.ifive.nadab.global.core.properties.TokenProperties;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.JwtAuthException;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -66,13 +67,13 @@ public class AccessTokenProvider {
                     .build()
                     .verify(token);
         } catch (TokenExpiredException e) {
-            throw new JwtAuthException("토큰이 만료되었습니다.");
+            throw new JwtAuthException(ErrorCode.AUTH_TOKEN_EXPIRED);
         } catch (SignatureVerificationException e) {
-            throw new JwtAuthException("토큰 서명 검증에 실패했습니다.");
+            throw new JwtAuthException(ErrorCode.AUTH_TOKEN_SIGNATURE_INVALID);
         } catch (JWTDecodeException e) {
-            throw new JwtAuthException("토큰 형식이 올바르지 않습니다.");
+            throw new JwtAuthException(ErrorCode.AUTH_TOKEN_MALFORMED);
         } catch (JWTVerificationException e) {
-            throw new JwtAuthException("토큰 검증에 실패했습니다.");
+            throw new JwtAuthException(ErrorCode.AUTH_TOKEN_VERIFICATION_FAILED);
         }
     }
 
@@ -82,7 +83,7 @@ public class AccessTokenProvider {
         try {
             return Long.parseLong(subject);
         } catch (NumberFormatException e) {
-            throw new JwtAuthException("토큰의 유저 ID 형식이 올바르지 않습니다.");
+            throw new JwtAuthException(ErrorCode.AUTH_TOKEN_USERID_INVALID);
         }
     }
 
@@ -90,7 +91,7 @@ public class AccessTokenProvider {
     private List<String> extractRoles(DecodedJWT decodedJWT) {
         List<String> roles = decodedJWT.getClaim("roles").asList(String.class);
         if (roles == null) {
-            throw new JwtAuthException("토큰에 권한 정보가 없습니다.");
+            throw new JwtAuthException(ErrorCode.AUTH_TOKEN_ROLES_MISSING);
         }
         return roles;
     }

@@ -1,8 +1,12 @@
 package com.devkor.ifive.nadab.global.exception.ai;
 
-public class AiServiceException extends RuntimeException {
-    public AiServiceException(String message) {
-        super(message);
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BusinessException;
+
+public class AiServiceException extends BusinessException {
+
+    public AiServiceException(ErrorCode errorCode) {
+        super(errorCode);
     }
 }
 
