@@ -86,6 +86,9 @@ public enum ErrorCode {
     IMAGE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "이미지 크기가 제한을 초과했습니다 (최대 5MB)"),
     IMAGE_METADATA_INVALID(HttpStatus.BAD_REQUEST, "파일 메타데이터를 읽을 수 없습니다. 다시 시도해주세요.");
 
+    // ==================== QUESTION (질문) ====================
+    // 400 Bad Request
+
     private final HttpStatus httpStatus;
     private final String message;
 

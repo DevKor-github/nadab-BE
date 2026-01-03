@@ -48,17 +48,16 @@ public class UserController {
                             content = @Content(schema = @Schema(implementation = UserProfileResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
-                            responseCode = "400",
-                            description = """
-                                    잘못된 요청
-                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
-                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
-                                    """,
+                            responseCode = "401",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "401",
-                            description = "인증 실패 (JWT 토큰 관련)",
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
+                                    """,
                             content = @Content
                     )
             }
@@ -92,7 +91,6 @@ public class UserController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                                    잘못된 요청
                                     - ErrorCode: IMAGE_UNSUPPORTED_TYPE - 지원하지 않는 이미지 타입
                                     """,
                             content = @Content
@@ -126,16 +124,15 @@ public class UserController {
                             content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "400",
-                            description = """
-                                    잘못된 요청
-                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
-                                    """,
+                            responseCode = "401",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "401",
-                            description = "인증 실패 (JWT 토큰 관련)",
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    """,
                             content = @Content
                     )
             }
@@ -173,8 +170,6 @@ public class UserController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                                    잘못된 요청
-                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
                                     - ErrorCode: USER_UPDATE_NO_DATA - 수정할 프로필 정보가 없음
                                     - ErrorCode: IMAGE_SIZE_EXCEEDED - 이미지 크기 제한 초과 (5MB)
                                     - ErrorCode: IMAGE_UNSUPPORTED_TYPE - 지원하지 않는 이미지 타입
@@ -185,6 +180,13 @@ public class UserController {
                     @ApiResponse(
                             responseCode = "401",
                             description = "인증 실패 (JWT 토큰 관련)",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    """,
                             content = @Content
                     )
             }
@@ -249,17 +251,16 @@ public class UserController {
                             content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "400",
-                            description = """
-                                    잘못된 요청
-                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
-                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
-                                    """,
+                            responseCode = "401",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "401",
-                            description = "인증 실패 (JWT 토큰 관련)",
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
+                                    """,
                             content = @Content
                     )
             }

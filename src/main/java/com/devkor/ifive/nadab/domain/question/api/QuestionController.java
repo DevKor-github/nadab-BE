@@ -42,7 +42,7 @@ public class QuestionController {
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "사용자 인증 실패",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     )
             }
