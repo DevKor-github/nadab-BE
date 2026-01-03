@@ -38,6 +38,7 @@ public class DailyReportQueryService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
 
         return new DailyReportResponse(
+                entry.getContent(),
                 report.getContent(),
                 report.getEmotion().getCode().toString()
         );

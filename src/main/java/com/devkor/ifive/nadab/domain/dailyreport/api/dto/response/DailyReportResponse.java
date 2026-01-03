@@ -4,6 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "오늘의 리포트 조회 응답")
 public record DailyReportResponse(
+
+        @Schema(description = "나의 답변")
+        String answer,
+
         @Schema(description = "오늘의 리포트 내용")
         String content,
 
