@@ -53,6 +53,16 @@ public class DailyReportController {
                             responseCode = "400",
                             description = "잘못된 요청"
                     ),
+                    @ApiResponse(
+                            responseCode = "502",
+                            description = "- ErrorCode: AI_RESPONSE_PARSE_FAILED - AI 응답 형식을 해석할 수 없음",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "503",
+                            description = "- ErrorCode: AI_NO_RESPONSE - AI 서비스로부터 응답을 받지 못함",
+                            content = @Content
+                    )
             }
     )
     public ResponseEntity<ApiResponseDto<TestDailyReportResponse>> generateDailyReport(

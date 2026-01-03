@@ -251,6 +251,11 @@ public class UserController {
                             content = @Content
                     ),
                     @ApiResponse(
+                            responseCode = "400",
+                            description = "- ErrorCode: USER_INTEREST_CODE_INVALID - 지원하지 않는 관심 주제 코드",
+                            content = @Content
+                    ),
+                    @ApiResponse(
                             responseCode = "401",
                             description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
