@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.user.core.entity;
 
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 
 /**
@@ -19,6 +20,6 @@ public enum InterestCode {
                 return interestCode;
             }
         }
-        throw new BadRequestException("지원하지 않는 관심 주제 코드입니다: " + code);
+        throw new BadRequestException(ErrorCode.USER_INTEREST_CODE_INVALID);
     }
 }

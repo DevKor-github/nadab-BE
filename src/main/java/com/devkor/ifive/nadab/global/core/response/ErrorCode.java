@@ -77,6 +77,7 @@ public enum ErrorCode {
     // ==================== USER (유저) ====================
     // 400 Bad Request
     USER_UPDATE_NO_DATA(HttpStatus.BAD_REQUEST, "수정할 프로필 정보가 없습니다"),
+    USER_INTEREST_CODE_INVALID(HttpStatus.BAD_REQUEST, "지원하지 않는 관심 주제 코드입니다"),
 
     // 404 Not Found
     INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "관심 주제를 찾을 수 없습니다"),
