@@ -89,8 +89,10 @@ public enum ErrorCode {
 
     // ==================== QUESTION (질문) ====================
     // 400 Bad Request
+    DAILY_QUESTION_MISMATCH(HttpStatus.BAD_REQUEST, "요청한 질문이 사용자에게 할당된 오늘의 질문과 일치하지 않습니다"),
 
     // 404 Not Found
+    QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다"),
     QUESTION_NOT_FOUND_FOR_CONDITION(HttpStatus.NOT_FOUND, "조건에 맞는 질문을 찾을 수 없습니다"),
     QUESTION_NO_ALTERNATIVE(HttpStatus.NOT_FOUND, "리롤 가능한 질문이 없습니다"),
     DAILY_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 질문이 아직 생성되지 않았습니다"),
@@ -101,7 +103,30 @@ public enum ErrorCode {
 
     // ==================== WALLET (지갑) ====================
     //404 Not Found
-    WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 지갑을 찾을 수 없습니다");
+    WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 지갑을 찾을 수 없습니다"),
+
+    // ==================== DAILY_REPORT (일간 리포트) ====================
+    // 404 Not Found
+    DAILY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "일간 리포트를 찾을 수 없습니다"),
+
+    // 409 Conflict - 일간
+    DAILY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 일간 리포트가 존재합니다"),
+
+    // ==================== AI (인공지능) ====================
+    // 502 Bad Gateway
+    AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "AI 응답 형식을 해석할 수 없습니다"),
+    AI_RESPONSE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "AI 응답 JSON의 필수 필드가 비어있습니다"),
+
+    // 503 Service Unavailable
+    AI_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 서비스로부터 응답을 받지 못했습니다"),
+
+    // ==================== EMOTION (감정) ====================
+    // 404 Not Found
+    EMOTION_NOT_FOUND(HttpStatus.NOT_FOUND, "감정 정보를 찾을 수 없습니다"),
+
+    // ==================== ANSWER (답변) ====================
+    // 404 Not Found
+    ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "작성된 답변 내역을 찾을 수 없습니다");
 
     private final HttpStatus httpStatus;
     private final String message;

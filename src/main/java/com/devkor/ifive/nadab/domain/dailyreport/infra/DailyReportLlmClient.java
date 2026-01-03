@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.infra;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.LlmDailyResultDto;
 import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +20,8 @@ public class DailyReportLlmClient {
     private final DailyReportPromptLoader dailyReportPromptLoader;
     private final ObjectMapper objectMapper;
 
-    public AiDailyReportResultDto generate(String question, String answer) {
+    public AiDailyReportResultDto
+    generate(String question, String answer) {
         String prompt = dailyReportPromptLoader.loadPrompt()
                 .replace("{question}", question)
                 .replace("{answer}", answer);
@@ -36,7 +38,7 @@ public class DailyReportLlmClient {
                 .content();
 
         if (content == null || content.trim().isEmpty()) {
-            throw new AiServiceUnavailableException("AI 서비스로부터 응답을 받지 못했습니다.");
+            throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
         }
 
         try {
@@ -44,10 +46,11 @@ public class DailyReportLlmClient {
             LlmDailyResultDto result = objectMapper.readValue(content, LlmDailyResultDto.class);
 
             String message = result.message();
+
             String emotion = result.emotion();
 
             if (isBlank(message) || isBlank(emotion)) {
-                throw new AiResponseParseException("AI 응답 JSON의 필수 필드가 비어있습니다.");
+                throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
             }
 
             return new AiDailyReportResultDto(
@@ -57,7 +60,7 @@ public class DailyReportLlmClient {
 
         } catch (Exception e) {
             // GPT가 JSON 형식을 지키지 못했을 경우 대비
-            throw new AiResponseParseException("AI 응답 형식을 해석할 수 없습니다.");
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
 

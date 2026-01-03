@@ -19,6 +19,7 @@ import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.CrystalLogRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,7 @@ public class DailyReportTxService {
     protected ConfirmDailyAndRewardDto confirmDailyAndReward(PrepareDailyResultDto prep, AiDailyReportResultDto aiResult) {
 
         Emotion emotion = emotionRepository.findByName(EmotionName.valueOf(aiResult.emotion()))
-                .orElseThrow(() -> new NotFoundException("감정 코드를 찾을 수 없습니다: " + aiResult.emotion()));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.EMOTION_NOT_FOUND));
 
         // 1) 리포트 완료
         dailyReportRepository.markCompleted(prep.reportId(), aiResult.message(), emotion.getId());
@@ -64,11 +65,11 @@ public class DailyReportTxService {
         int updated = userWalletRepository.charge(prep.userId(), DAILY_REPORT_REWARD);
         if (updated == 0) {
             // wallet이 없을 수 있는 상황
-            throw new NotFoundException("지갑을 찾을 수 없습니다. userId: " + prep.userId());
+            throw new NotFoundException(ErrorCode.WALLET_NOT_FOUND);
         }
 
         UserWallet wallet = userWalletRepository.findByUserId(prep.userId())
-                .orElseThrow(() -> new NotFoundException("지갑을 찾을 수 없습니다. userId: " + prep.userId()));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
 
         long balanceAfter = wallet.getCrystalBalance();
 

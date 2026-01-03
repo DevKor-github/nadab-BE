@@ -91,24 +91,49 @@ public class DailyReportController {
                             content = @Content(schema = @Schema(implementation = CreateDailyReportResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
-                            responseCode = "401",
-                            description = "인증 실패"
-                    ),
-                    @ApiResponse(
                             responseCode = "400",
-                            description = "잘못된 요청"
+                            description = """
+                                    - ErrorCode: DAILY_QUESTION_MISMATCH - 요청한 질문이 사용자에게 할당된 오늘의 질문과 일치하지 않음
+                                    """,
+                            content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "502",
-                            description = "AI 응답 JSON 파싱 실패"
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "503",
-                            description = "외부 AI 서비스 연동 실패"
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: QUESTION_NOT_FOUND - 질문이 존재하지 않음
+                                    - ErrorCode: DAILY_QUESTION_NOT_FOUND - 오늘의 질문이 아직 생성되지 않음
+                                    - ErrorCode: EMOTION_NOT_FOUND - 감정 정보를 찾을 수 없음
+                                    - ErrorCode: WALLET_NOT_FOUND - 사용자의 지갑을 찾을 수 없음
+                                    """,
+                            content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "오늘의 리포트가 이미 생성된 경우"
+                            description = """
+                                    - ErrorCode: DAILY_REPORT_ALREADY_COMPLETED - 이미 작성된 일간 리포트가 존재함
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "502",
+                            description = """
+                                    - ErrorCode: AI_RESPONSE_PARSE_FAILED - AI 응답 형식을 해석할 수 없음
+                                    - ErrorCode: AI_RESPONSE_FORMAT_INVALID - AI 응답 JSON의 필수 필드가 비어있음
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "503",
+                            description = """
+                                    - ErrorCode: AI_NO_RESPONSE - AI 서비스로부터 응답을 받지 못함
+                                    """,
+                            content = @Content
                     )
             }
     )
@@ -139,7 +164,11 @@ public class DailyReportController {
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = "오늘의 리포트가 존재하지 않는 경우",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: ANSWER_NOT_FOUND - 작성된 답변 내역을 찾을 수 없음
+                                    - ErrorCode: DAILY_REPORT_NOT_FOUND - 일간 리포트를 찾을 수 없음
+                                    """,
                             content = @Content
                     )
             }
