@@ -80,10 +80,10 @@ public class ExceptionController {
     }
 
     @ExceptionHandler(NoSuchKeyException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleNoSuchKeyException(NoSuchKeyException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleNoSuchKeyException(NoSuchKeyException ex) {
         log.warn("NoSuchKeyException: {}", ex.getMessage(), ex);
         // S3에서 객체를 찾을 수 없을 때 404 NOT_FOUND 응답
-        return ApiResponseEntity.error(HttpStatus.NOT_FOUND, "S3에서 요청된 파일을 찾을 수 없습니다.");
+        return ApiResponseEntity.error(ErrorCode.FILE_STORAGE_NOT_FOUND);
     }
 
     @ExceptionHandler(ConflictException.class)
