@@ -2,13 +2,11 @@ package com.devkor.ifive.nadab.global.exception;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiErrorResponseDto;
-import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -93,21 +91,21 @@ public class ExceptionController {
     }
 
     @ExceptionHandler(AiServiceUnavailableException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleAiServiceUnavailableException(AiServiceUnavailableException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleAiServiceUnavailableException(AiServiceUnavailableException ex) {
         log.warn("AI Service Unavailable: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(AiResponseParseException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleAiResponseParseException(AiResponseParseException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleAiResponseParseException(AiResponseParseException ex) {
         log.warn("AI Response Parse Error: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.BAD_GATEWAY, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(NotEnoughCrystalException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleNotEnoughCrystalException(NotEnoughCrystalException ex) {
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleNotEnoughCrystalException(NotEnoughCrystalException ex) {
         log.warn("NotEnoughCrystalException: {}", ex.getMessage(), ex);
-        return ApiResponseEntity.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ApiResponseEntity.error(ex.getErrorCode());
     }
 
     @ExceptionHandler(RuntimeException.class)
