@@ -78,16 +78,26 @@ public enum ErrorCode {
     USER_UPDATE_NO_DATA(HttpStatus.BAD_REQUEST, "수정할 프로필 정보가 없습니다"),
 
     // 404 Not Found
-    USER_INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "관심 주제를 찾을 수 없습니다"),
+    INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "관심 주제를 찾을 수 없습니다"),
+    USER_INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 관심 주제를 찾을 수 없습니다"),
 
     // ==================== IMAGE (이미지) ====================
     // 400 Bad Request
     IMAGE_UNSUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 이미지 타입입니다"),
     IMAGE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "이미지 크기가 제한을 초과했습니다 (최대 5MB)"),
-    IMAGE_METADATA_INVALID(HttpStatus.BAD_REQUEST, "파일 메타데이터를 읽을 수 없습니다. 다시 시도해주세요.");
+    IMAGE_METADATA_INVALID(HttpStatus.BAD_REQUEST, "파일 메타데이터를 읽을 수 없습니다. 다시 시도해주세요."),
 
     // ==================== QUESTION (질문) ====================
     // 400 Bad Request
+
+    // 404 Not Found
+    QUESTION_NOT_FOUND_FOR_CONDITION(HttpStatus.NOT_FOUND, "조건에 맞는 질문을 찾을 수 없습니다"),
+    QUESTION_NO_ALTERNATIVE(HttpStatus.NOT_FOUND, "리롤 가능한 질문이 없습니다"),
+    DAILY_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 질문이 아직 생성되지 않았습니다"),
+
+    // 409 Conflict
+    QUESTION_REROLL_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘의 질문은 하루에 한 번만 새로 받을 수 있습니다"),
+    QUESTION_ALREADY_ANSWERED(HttpStatus.CONFLICT, "오늘의 질문에 이미 답변을 작성한 후에는 질문을 새로 받을 수 없습니다");
 
     private final HttpStatus httpStatus;
     private final String message;

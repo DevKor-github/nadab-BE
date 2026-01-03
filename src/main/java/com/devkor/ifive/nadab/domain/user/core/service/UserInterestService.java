@@ -25,7 +25,7 @@ public class UserInterestService {
      */
     public void updateUserInterest(User user, InterestCode code) {
         Interest interest = interestRepository.findByCode(code)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_INTEREST_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.INTEREST_NOT_FOUND));
 
         updateOrCreateUserInterest(user, interest);
     }

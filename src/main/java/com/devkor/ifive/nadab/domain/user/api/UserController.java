@@ -56,7 +56,7 @@ public class UserController {
                             responseCode = "404",
                             description = """
                                     - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
-                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 유저의 관심 주제를 찾을 수 없음
                                     """,
                             content = @Content
                     )
@@ -259,7 +259,7 @@ public class UserController {
                             responseCode = "404",
                             description = """
                                     - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
-                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
+                                    - ErrorCode: INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
                                     """,
                             content = @Content
                     )

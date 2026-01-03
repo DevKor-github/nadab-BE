@@ -44,6 +44,15 @@ public class QuestionController {
                             responseCode = "401",
                             description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없습니다.
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없습니다.
+                                    - ErrorCode: QUESTION_NOT_FOUND_FOR_CONDITION - 조건에 맞는 질문을 찾을 수 없습니다.
+                                    """,
+                            content = @Content
                     )
             }
     )
@@ -72,8 +81,20 @@ public class QuestionController {
                             content = @Content
                     ),
                     @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: DAILY_QUESTION_NOT_FOUND - 오늘의 질문이 아직 생성되지 않았습니다.
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 유저의 관심 주제를 찾을 수 없습니다.
+                                    - ErrorCode: QUESTION_NO_ALTERNATIVE - 리롤 가능한 질문이 없습니다.
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
                             responseCode = "409",
-                            description = "오늘의 질문은 하루에 한 번만 새로 받을 수 있습니다.",
+                            description = """
+                                    - ErrorCode: QUESTION_REROLL_LIMIT_EXCEEDED - 오늘의 질문은 하루에 한 번만 새로 받을 수 있습니다.
+                                    - ErrorCode: QUESTION_ALREADY_ANSWERED - 오늘의 질문에 이미 답변을 작성함
+                                    """,
                             content = @Content
                     )
             }

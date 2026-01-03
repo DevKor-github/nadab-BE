@@ -12,6 +12,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.InterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserInterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
@@ -43,7 +44,7 @@ public class QuestionCommandService {
     public DailyQuestionResponse getOrCreateTodayQuestion(Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         LocalDate today = TodayDateTimeProvider.getTodayDate();
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
@@ -76,10 +77,10 @@ public class QuestionCommandService {
         // -> insert 시도 후 unique 위반이면 다시 조회해서 반환
         try {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
             Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
-                    .orElseThrow(() -> new NotFoundException("사용자의 관심 주제를 찾을 수 없습니다. id: " + userId));
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.USER_INTEREST_NOT_FOUND));
 
             Integer levelOnly = questionLevelPolicy.levelOnlyFor(user, OffsetDateTime.now());
 
@@ -109,21 +110,21 @@ public class QuestionCommandService {
         TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
-                .orElseThrow(() -> new ConflictException("오늘의 첫 질문이 아직 생성되지 않았습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_QUESTION_NOT_FOUND));
 
         if (udq.isRerollUsed()) {
-            throw new BadRequestException("오늘의 질문은 하루에 한 번만 새로 받을 수 있습니다.");
+            throw new ConflictException(ErrorCode.QUESTION_REROLL_LIMIT_EXCEEDED);
         }
 
         User user = udq.getUser();
 
         boolean alreadyAnswered = answerEntryRepository.existsByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow());
         if (alreadyAnswered) {
-            throw new BadRequestException("오늘의 질문에 이미 답변을 작성한 후에는 질문을 새로 받을 수 없습니다.");
+            throw new ConflictException(ErrorCode.QUESTION_ALREADY_ANSWERED);
         }
 
         Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("유저 관심 주제가 없습니다. id: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_INTEREST_NOT_FOUND));
 
         List<Long> allInterestIds = interestRepository.findAllIds();
         Long selectedInterestId = weightedInterestPicker.pickForReroll(userInterestId, allInterestIds);
