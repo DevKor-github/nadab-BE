@@ -71,7 +71,20 @@ public enum ErrorCode {
     TERMS_AGE_VERIFICATION_REQUIRED(HttpStatus.BAD_REQUEST, "만 14세 이상 확인에 동의해야 합니다"),
 
     // 404 Not Found
-    TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "약관을 찾을 수 없습니다");
+    TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "약관을 찾을 수 없습니다"),
+
+    // ==================== USER (유저) ====================
+    // 400 Bad Request
+    USER_UPDATE_NO_DATA(HttpStatus.BAD_REQUEST, "수정할 프로필 정보가 없습니다"),
+
+    // 404 Not Found
+    USER_INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "관심 주제를 찾을 수 없습니다"),
+
+    // ==================== IMAGE (이미지) ====================
+    // 400 Bad Request
+    IMAGE_UNSUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 이미지 타입입니다"),
+    IMAGE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "이미지 크기가 제한을 초과했습니다 (최대 5MB)"),
+    IMAGE_METADATA_INVALID(HttpStatus.BAD_REQUEST, "파일 메타데이터를 읽을 수 없습니다. 다시 시도해주세요.");
 
     private final HttpStatus httpStatus;
     private final String message;

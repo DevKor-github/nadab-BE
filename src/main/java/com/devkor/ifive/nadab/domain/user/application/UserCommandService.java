@@ -13,6 +13,7 @@ import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
 import com.devkor.ifive.nadab.domain.user.core.service.UserInterestService;
 import com.devkor.ifive.nadab.domain.user.core.service.UserProfileUpdateService;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -44,13 +45,13 @@ public class UserCommandService {
         String contentType = request.contentType();
         if (!"image/jpeg".equalsIgnoreCase(contentType)
                 && !"image/png".equalsIgnoreCase(contentType)) {
-            throw new BadRequestException("지원하지 않는 이미지 형식입니다. (jpg, png만 허용)");
+            throw new BadRequestException(ErrorCode.IMAGE_UNSUPPORTED_TYPE);
         }
 
         String extension = switch (contentType) {
             case "image/jpeg" -> "jpg";
             case "image/png" -> "png";
-            default -> throw new BadRequestException("지원하지 않는 이미지 형식입니다.");
+            default -> throw new BadRequestException(ErrorCode.IMAGE_UNSUPPORTED_TYPE);
         };
 
         String uuid = UUID.randomUUID().toString();
@@ -64,17 +65,17 @@ public class UserCommandService {
 
     public void deleteProfileImage(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         userProfileUpdateService.deleteProfileImage(user);
     }
 
     public UpdateUserProfileResponse updateUserProfile(Long id, UpdateUserProfileRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         if (request.nickname() == null && request.objectKey() == null) {
-            throw new BadRequestException("수정할 프로필 정보가 없습니다.");
+            throw new BadRequestException(ErrorCode.USER_UPDATE_NO_DATA);
         }
 
         if (request.nickname() != null) {
@@ -98,7 +99,7 @@ public class UserCommandService {
 
     public void updateUserInterest(Long userId, UpdateUserInterestRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다. id: " + userId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         InterestCode code = InterestCode.fromString(request.interestCode());
 

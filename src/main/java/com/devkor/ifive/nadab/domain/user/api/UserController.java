@@ -48,8 +48,17 @@ public class UserController {
                             content = @Content(schema = @Schema(implementation = UserProfileResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    잘못된 요청
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     )
             }
@@ -82,12 +91,15 @@ public class UserController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "잘못된 요청 (예: 지원하지 않는 확장자)",
+                            description = """
+                                    잘못된 요청
+                                    - ErrorCode: IMAGE_UNSUPPORTED_TYPE - 지원하지 않는 이미지 타입
+                                    """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     )
             }
@@ -114,8 +126,16 @@ public class UserController {
                             content = @Content
                     ),
                     @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    잘못된 요청
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     )
             }
@@ -152,12 +172,19 @@ public class UserController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "잘못된 요청 (예: 닉네임 중복)",
+                            description = """
+                                    잘못된 요청
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: USER_UPDATE_NO_DATA - 수정할 프로필 정보가 없음
+                                    - ErrorCode: IMAGE_SIZE_EXCEEDED - 이미지 크기 제한 초과 (5MB)
+                                    - ErrorCode: IMAGE_UNSUPPORTED_TYPE - 지원하지 않는 이미지 타입
+                                    - ErrorCode: IMAGE_METADATA_INVALID - 파일 메타데이터를 읽을 수 없음
+                                    """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     )
             }
@@ -189,12 +216,7 @@ public class UserController {
                             responseCode = "200",
                             description = "조회 성공 - 사용 가능 여부는 응답 내용으로 판단",
                             content = @Content(schema = @Schema(implementation = CheckNicknameResponse.class), mediaType = "application/json")
-                    ),
-                    @ApiResponse(
-                            responseCode = "400",
-                            description = "잘못된 요청 - 닉네임 누락 또는 빈 문자열",
-                            content = @Content
-                    ),
+                    )
             }
     )
     public ResponseEntity<ApiResponseDto<CheckNicknameResponse>> checkNickname(
@@ -228,12 +250,16 @@ public class UserController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "잘못된 요청 (예: 지원하지 않는 관심 주제)",
+                            description = """
+                                    잘못된 요청
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 관심 주제를 찾을 수 없음
+                                    """,
                             content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
-                            description = "인증 실패",
+                            description = "인증 실패 (JWT 토큰 관련)",
                             content = @Content
                     )
             }
