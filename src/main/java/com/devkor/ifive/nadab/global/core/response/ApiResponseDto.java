@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(name = "ApiResponseDto", description = "공통 API 응답 형식")
+@Schema(name = "ApiResponseDto", description = "공통 API 성공 응답 형식")
 public class ApiResponseDto<T> {
 
     @Schema(description = "HTTP 상태 코드", example = "200")
@@ -31,26 +31,6 @@ public class ApiResponseDto<T> {
 
     // 성공 응답 (data 없는 경우)
     public static <T> ApiResponseDto<T> success(int status, String message) {
-        return ApiResponseDto.<T>builder()
-                .status(status)
-                .message(message)
-                .data(null)
-                .build();
-    }
-
-    // TODO: 모든 에러 응답 개선 후 아래 실패 응답 지우기
-
-    // 실패 응답 (data 있는 경우)
-    public static <T> ApiResponseDto<T> error(int status, String message, T data) {
-        return ApiResponseDto.<T>builder()
-                .status(status)
-                .message(message)
-                .data(data)
-                .build();
-    }
-
-    // 실패 응답 (data 없는 경우)
-    public static <T> ApiResponseDto<T> error(int status, String message) {
         return ApiResponseDto.<T>builder()
                 .status(status)
                 .message(message)

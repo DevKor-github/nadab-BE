@@ -12,12 +12,6 @@ import lombok.Getter;
 public abstract class BusinessException extends RuntimeException {
     private ErrorCode errorCode;
 
-    // 기존 방식 (모든 에러 응답 개선 후 제거)
-    protected BusinessException(String message) {
-        super(message);
-    }
-
-    // 새로운 방식 (ErrorCode 기반)
     protected BusinessException(ErrorCode errorCode) {
         super(errorCode.getMessage());
         this.errorCode = errorCode;

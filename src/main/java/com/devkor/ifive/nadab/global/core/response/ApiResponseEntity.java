@@ -37,22 +37,6 @@ public class ApiResponseEntity {
                 .body(ApiResponseDto.success(status.value(), status.getReasonPhrase()));
     }
 
-    // TODO: 모든 에러 응답 개선 후 아래 실패 응답 2가지 지우기
-
-    // 에러 응답 - data 있음
-    public static <T> ResponseEntity<ApiResponseDto<T>> error(HttpStatus httpStatus, String message, T data) {
-        return ResponseEntity
-                .status(httpStatus)
-                .body(ApiResponseDto.error(httpStatus.value(), message, data));
-    }
-
-    // 에러 응답 - data 없음
-    public static <T> ResponseEntity<ApiResponseDto<T>> error(HttpStatus httpStatus, String message) {
-        return ResponseEntity
-                .status(httpStatus)
-                .body(ApiResponseDto.error(httpStatus.value(), message));
-    }
-
     // 에러 응답 (ErrorCode) - data 있음
     public static <T> ResponseEntity<ApiErrorResponseDto<T>> error(ErrorCode errorCode, T data) {
         return ResponseEntity

@@ -13,13 +13,6 @@ import lombok.Getter;
 public class WithdrawnException extends BusinessException {
     private final WithdrawnInfoResponse withdrawnInfo;
 
-    // 기존 방식 (모든 에러 응답 개선 후 제거)
-    public WithdrawnException(String message, WithdrawnInfoResponse withdrawnInfo) {
-        super(message);
-        this.withdrawnInfo = withdrawnInfo;
-    }
-
-    // 새로운 방식 (ErrorCode 기반)
     public WithdrawnException(ErrorCode errorCode, WithdrawnInfoResponse withdrawnInfo) {
         super(errorCode);
         this.withdrawnInfo = withdrawnInfo;
