@@ -39,8 +39,19 @@ public class WalletController {
                             description = "성공",
                             content = @Content(schema = @Schema(implementation = WalletBalanceResponse.class), mediaType = "application/json")
                     ),
-                    @ApiResponse(responseCode = "401", description = "인증 실패"),
-                    @ApiResponse(responseCode = "403", description = "권한 없음")
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND: 사용자를 찾을 수 없음
+                                    - ErrorCode: WALLET_NOT_FOUND: 사용자의 지갑을 찾을 수 없음
+                                    """,
+                            content = @Content
+                    )
             }
     )
     public ResponseEntity<ApiResponseDto<WalletBalanceResponse>> getWalletBalance(

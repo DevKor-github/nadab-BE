@@ -97,7 +97,11 @@ public enum ErrorCode {
 
     // 409 Conflict
     QUESTION_REROLL_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘의 질문은 하루에 한 번만 새로 받을 수 있습니다"),
-    QUESTION_ALREADY_ANSWERED(HttpStatus.CONFLICT, "오늘의 질문에 이미 답변을 작성한 후에는 질문을 새로 받을 수 없습니다");
+    QUESTION_ALREADY_ANSWERED(HttpStatus.CONFLICT, "오늘의 질문에 이미 답변을 작성한 후에는 질문을 새로 받을 수 없습니다"),
+
+    // ==================== WALLET (지갑) ====================
+    //404 Not Found
+    WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 지갑을 찾을 수 없습니다");
 
     private final HttpStatus httpStatus;
     private final String message;
