@@ -23,7 +23,7 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
         where ae.user.id = :userId
           and (:keyword is null or ae.question.questionText like :keyword escape '\\' or ae.content like :keyword escape '\\')
           and (:emotionCode is null or e.code = :emotionCode)
-          and (:cursorDate is null or ae.date < :cursorDate)
+          and (cast(:cursorDate as date) is null or ae.date < :cursorDate)
         order by ae.date desc
         limit :size
         """)
