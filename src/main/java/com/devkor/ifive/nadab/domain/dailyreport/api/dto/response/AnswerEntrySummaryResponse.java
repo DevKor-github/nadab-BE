@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.api.dto.response;
 
+import com.devkor.ifive.nadab.domain.dailyreport.application.helper.MatchedSnippetExtractor;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -24,4 +26,16 @@ public record AnswerEntrySummaryResponse(
         @Schema(description = "답변 작성일", example = "2025-12-25")
         LocalDate answerDate
 ) {
+    public static AnswerEntrySummaryResponse toResponse(SearchAnswerEntryDto dto, String keyword) {
+        String snippet = MatchedSnippetExtractor.extract(dto.answerContent(), keyword);
+
+        return new AnswerEntrySummaryResponse(
+                dto.answerId(),
+                dto.interestCode() != null ? dto.interestCode().name() : null,
+                dto.emotionCode() != null ? dto.emotionCode().name() : null,
+                dto.questionText(),
+                snippet,
+                dto.answerDate()
+        );
+    }
 }

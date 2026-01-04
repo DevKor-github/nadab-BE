@@ -7,7 +7,6 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryQueryRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.application.helper.CursorParser;
-import com.devkor.ifive.nadab.domain.dailyreport.application.helper.MatchedSnippetExtractor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +47,7 @@ public class AnswerQueryService {
 
         // DTO 변환
         List<AnswerEntrySummaryResponse> responseItems = items.stream()
-                .map(dto -> toSummaryResponse(dto, request.keyword()))
+                .map(dto -> AnswerEntrySummaryResponse.toResponse(dto, request.keyword()))
                 .toList();
 
         // nextCursor 생성
@@ -59,22 +58,6 @@ public class AnswerQueryService {
         }
 
         return new SearchAnswerEntryResponse(responseItems, nextCursor, hasNext);
-    }
-
-    /**
-     * Dto → SummaryResponse 변환
-     */
-    private AnswerEntrySummaryResponse toSummaryResponse(SearchAnswerEntryDto dto, String keyword) {
-        String snippet = MatchedSnippetExtractor.extract(dto.answerContent(), keyword);
-
-        return new AnswerEntrySummaryResponse(
-                dto.answerId(),
-                dto.interestCode() != null ? dto.interestCode().name() : null,
-                dto.emotionCode() != null ? dto.emotionCode().name() : null,
-                dto.questionText(),
-                snippet,
-                dto.answerDate()
-        );
     }
 
     /**

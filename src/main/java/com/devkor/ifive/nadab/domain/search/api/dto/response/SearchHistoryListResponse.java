@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.search.api.dto.response;
 
+import com.devkor.ifive.nadab.domain.search.core.entity.SearchHistory;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -18,4 +19,10 @@ public record SearchHistoryListResponse(
         @Schema(description = "검색어 리스트 (최신순 10개)")
         List<SearchHistoryResponse> histories
 ) {
+    public static SearchHistoryListResponse from(List<SearchHistory> histories) {
+        List<SearchHistoryResponse> items = histories.stream()
+                .map(SearchHistoryResponse::from)
+                .toList();
+        return new SearchHistoryListResponse(items);
+    }
 }

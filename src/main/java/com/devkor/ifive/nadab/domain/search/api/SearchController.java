@@ -1,7 +1,6 @@
 package com.devkor.ifive.nadab.domain.search.api;
 
 import com.devkor.ifive.nadab.domain.search.api.dto.response.SearchHistoryListResponse;
-import com.devkor.ifive.nadab.domain.search.api.dto.response.SearchHistoryResponse;
 import com.devkor.ifive.nadab.domain.search.application.SearchHistoryCommandService;
 import com.devkor.ifive.nadab.domain.search.application.SearchHistoryQueryService;
 import com.devkor.ifive.nadab.domain.search.core.entity.SearchHistory;
@@ -50,7 +49,7 @@ public class SearchController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         List<SearchHistory> histories = searchHistoryQueryService.getRecentSearches(principal.getId());
-        SearchHistoryListResponse response = toListResponse(histories);
+        SearchHistoryListResponse response = SearchHistoryListResponse.from(histories);
         return ApiResponseEntity.ok(response);
     }
 
@@ -96,7 +95,7 @@ public class SearchController {
 
         // 삭제 후 최신 10개 조회
         List<SearchHistory> histories = searchHistoryQueryService.getRecentSearches(principal.getId());
-        SearchHistoryListResponse response = toListResponse(histories);
+        SearchHistoryListResponse response = SearchHistoryListResponse.from(histories);
         return ApiResponseEntity.ok(response);
     }
 
@@ -116,22 +115,5 @@ public class SearchController {
     ) {
         searchHistoryCommandService.deleteAllSearchHistories(principal.getId());
         return ApiResponseEntity.noContent();
-    }
-
-    /**
-     * Entity → Response 변환 메서드
-     */
-    private SearchHistoryListResponse toListResponse(List<SearchHistory> histories) {
-        List<SearchHistoryResponse> items = histories.stream()
-                .map(this::toResponse)
-                .toList();
-        return new SearchHistoryListResponse(items);
-    }
-
-    private SearchHistoryResponse toResponse(SearchHistory history) {
-        return new SearchHistoryResponse(
-                history.getId(),
-                history.getKeyword()
-        );
     }
 }
