@@ -64,4 +64,12 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
             @Param("id") Long id,
             @Param("status") DailyReportStatus status
     );
+
+    @Query("""
+        SELECT dr
+        FROM DailyReport dr
+        WHERE dr.answerEntry.id = :answerId
+          AND dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+        """)
+    Optional<DailyReport> findByAnswerEntryIdAndCompleted(@Param("answerId") Long answerId);
 }
