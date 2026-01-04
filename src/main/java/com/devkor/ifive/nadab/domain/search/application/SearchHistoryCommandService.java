@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.search.core.entity.SearchHistory;
 import com.devkor.ifive.nadab.domain.search.core.repository.SearchHistoryRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -65,11 +66,11 @@ public class SearchHistoryCommandService {
     public void deleteSearchHistory(Long userId, Long historyId) {
         // 검색어 존재 확인
         SearchHistory history = searchHistoryRepository.findById(historyId)
-                .orElseThrow(() -> new NotFoundException("검색어를 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.SEARCH_HISTORY_NOT_FOUND));
 
         // 권한 확인
         if (!history.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("본인의 검색어만 삭제할 수 있습니다");
+            throw new ForbiddenException(ErrorCode.SEARCH_HISTORY_ACCESS_FORBIDDEN);
         }
 
         // 삭제
