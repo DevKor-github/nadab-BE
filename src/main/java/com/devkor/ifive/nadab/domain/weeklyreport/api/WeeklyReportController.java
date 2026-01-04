@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.api;
 
+import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportStartResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportQueryService;
@@ -46,10 +47,10 @@ public class WeeklyReportController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                                    - ErrorCode: WEEKLY_REPORT_NOT_ENOUGH_REPORTS - 주간 리포트 작성 자격 미달
+                                    - ErrorCode: WEEKLY_REPORT_NOT_ENOUGH_REPORTS - 주간 리포트 작성 자격 미달 **(이 경우 data의 completedCount 필드에 지난 주에 작성된 오늘의 리포트 수가 포함됩니다.)**
                                     - ErrorCode: WALLET_INSUFFICIENT_BALANCE - 크리스탈 잔액 부족
                                     """,
-                            content = @Content
+                            content = @Content(schema = @Schema(implementation = CompletedCountResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
