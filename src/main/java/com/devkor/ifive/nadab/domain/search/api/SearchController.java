@@ -66,9 +66,25 @@ public class SearchController {
                             description = "삭제 성공",
                             content = @Content(schema = @Schema(implementation = SearchHistoryListResponse.class))
                     ),
-                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
-                    @ApiResponse(responseCode = "403", description = "본인의 검색어가 아님", content = @Content),
-                    @ApiResponse(responseCode = "404", description = "검색어를 찾을 수 없음", content = @Content)
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = """
+                                    - ErrorCode: SEARCH_HISTORY_ACCESS_FORBIDDEN - 본인의 검색어가 아님
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: SEARCH_HISTORY_NOT_FOUND - 검색어를 찾을 수 없음
+                                    """,
+                            content = @Content
+                    )
 
             }
     )
