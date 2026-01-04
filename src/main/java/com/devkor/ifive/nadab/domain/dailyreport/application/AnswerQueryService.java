@@ -8,6 +8,8 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryQueryRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.application.helper.CursorParser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -30,14 +32,29 @@ public class AnswerQueryService {
         EmotionCode emotionCode = parseEmotionCode(request.emotionCode());
         LocalDate cursorDate = CursorParser.parse(request.cursor());
 
-        // 검색 실행 (PAGE_SIZE + 1개 조회)
-        List<SearchAnswerEntryDto> results = answerEntryQueryRepository.searchAnswerEntries(
-                userId,
-                keyword,
-                emotionCode,
-                cursorDate,
-                PAGE_SIZE + 1
-        );
+        // Pageable 생성 (PAGE_SIZE + 1개 조회)
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1);
+
+        // 검색 실행 - 조건별 분기
+        List<SearchAnswerEntryDto> results;
+        if (cursorDate == null) {
+            // 첫 페이지 조회
+            results = answerEntryQueryRepository.searchAnswerEntriesFirstPage(
+                    userId,
+                    keyword,
+                    emotionCode,
+                    pageable
+            );
+        } else {
+            // 다음 페이지 조회 (cursor 있음)
+            results = answerEntryQueryRepository.searchAnswerEntriesWithCursor(
+                    userId,
+                    keyword,
+                    emotionCode,
+                    cursorDate,
+                    pageable
+            );
+        }
 
         // hasNext 판단
         boolean hasNext = results.size() > PAGE_SIZE;
