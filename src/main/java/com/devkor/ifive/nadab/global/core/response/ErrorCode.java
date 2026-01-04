@@ -142,8 +142,18 @@ public enum ErrorCode {
     EMOTION_NOT_FOUND(HttpStatus.NOT_FOUND, "감정 정보를 찾을 수 없습니다"),
 
     // ==================== ANSWER (답변) ====================
+    // 403 Forbidden
+    ANSWER_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 답변만 조회할 수 있습니다"),
+
     // 404 Not Found
     ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "작성된 답변 내역을 찾을 수 없습니다"),
+
+    // ==================== SEARCH (검색) ====================
+    // 403 Forbidden
+    SEARCH_HISTORY_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 검색어만 삭제할 수 있습니다"),
+
+    // 404 Not Found
+    SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색어를 찾을 수 없습니다"),
 
     // ==================== PROMPT (프롬프트) ====================
     // 400 Bad Request
