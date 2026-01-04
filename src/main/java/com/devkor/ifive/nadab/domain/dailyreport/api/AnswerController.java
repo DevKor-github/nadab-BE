@@ -48,24 +48,24 @@ public class AnswerController {
                     - 페이지 크기: 20개 고정
 
                     ### Request Parameters (모두 선택)
-                    - `keyword` (선택): 검색어 (1~100자, 생략 시 키워드 검색 안 함)
-                    - `emotionCode` (선택): 감정 코드 (대문자, 생략 시 감정 필터링 안 함)
-                    - `cursor` (선택): 이전 응답의 `nextCursor` 값을 그대로 사용 (첫 페이지 요청 시에는 생략)
+                    - keyword (선택): 검색어 (1~100자, 생략 시 키워드 검색 안 함)
+                    - emotionCode (선택): 감정 코드 (대문자, 생략 시 감정 필터링 안 함)
+                    - cursor (선택): 이전 응답의 nextCursor 값을 그대로 사용 (첫 페이지 요청 시에는 생략)
 
                     ### Response
-                    - `items`: 검색 결과 리스트 (최대 20개)
-                    - `nextCursor`: 다음 페이지 요청 시 사용할 커서 (마지막 페이지면 null)
-                    - `hasNext`: 다음 페이지 존재 여부
+                    - items: 검색 결과 리스트 (최대 20개)
+                    - nextCursor: 다음 페이지 요청 시 사용할 커서 (마지막 페이지면 null)
+                    - hasNext: 다음 페이지 존재 여부
 
                     ### 무한 스크롤 구현 (쿼리 파라미터 형식)
-                    1. 첫 페이지: `GET /api/v1/answers?keyword=안녕`
-                    2. 다음 페이지: `GET /api/v1/answers?keyword=안녕&cursor=2025-12-06`
+                    1. 첫 페이지: GET /api/v1/answers?keyword=안녕
+                    2. 다음 페이지: GET /api/v1/answers?keyword=안녕&cursor=2025-12-06
                        (response의 nextCursor 값을 cursor 파라미터로 전달)
-                    3. `hasNext=false`가 될 때까지 반복
+                    3. hasNext=false가 될 때까지 반복
 
                     예시) emotionCode와 함께 사용:
-                    - `GET /api/v1/answers?keyword=행복&emotionCode=JOY`
-                    - `GET /api/v1/answers?keyword=행복&emotionCode=JOY&cursor=2025-12-06`
+                    - GET /api/v1/answers?keyword=행복&emotionCode=JOY
+                    - GET /api/v1/answers?keyword=행복&emotionCode=JOY&cursor=2025-12-06
 
                     ### 참고사항
                     - 검색어는 자동으로 저장됩니다.
