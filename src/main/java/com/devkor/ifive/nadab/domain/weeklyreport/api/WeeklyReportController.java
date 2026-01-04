@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.api;
 
+import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportStartResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportQueryService;
@@ -46,10 +47,10 @@ public class WeeklyReportController {
                     @ApiResponse(
                             responseCode = "400",
                             description = """
-                                    - ErrorCode: WEEKLY_REPORT_NOT_ENOUGH_REPORTS - 주간 리포트 작성 자격 미달
+                                    - ErrorCode: WEEKLY_REPORT_NOT_ENOUGH_REPORTS - 주간 리포트 작성 자격 미달 **(이 경우 data의 completedCount 필드에 지난 주에 작성된 오늘의 리포트 수가 포함됩니다.)**
                                     - ErrorCode: WALLET_INSUFFICIENT_BALANCE - 크리스탈 잔액 부족
                                     """,
-                            content = @Content
+                            content = @Content(schema = @Schema(implementation = CompletedCountResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -124,8 +125,8 @@ public class WeeklyReportController {
                     주간 리포트를 id로 조회합니다. </br>
                     생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
                     생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
-                    생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. </br>
-                    생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다.
+                    생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
+                    생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

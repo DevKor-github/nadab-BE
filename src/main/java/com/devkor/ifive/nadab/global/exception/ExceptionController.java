@@ -1,11 +1,13 @@
 package com.devkor.ifive.nadab.global.exception;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
+import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiErrorResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.exception.report.WeeklyReportNotEligibleException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -106,6 +108,12 @@ public class ExceptionController {
     public ResponseEntity<ApiErrorResponseDto<Void>> handleNotEnoughCrystalException(NotEnoughCrystalException ex) {
         log.warn("NotEnoughCrystalException: {}", ex.getMessage(), ex);
         return ApiResponseEntity.error(ex.getErrorCode());
+    }
+
+    @ExceptionHandler(WeeklyReportNotEligibleException.class)
+    public ResponseEntity<ApiErrorResponseDto<CompletedCountResponse>> handleWeeklyReportNotEligibleException(WeeklyReportNotEligibleException ex) {
+        log.warn("WeeklyReportNotEligibleException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(ex.getErrorCode(), ex.getCompletedCountResponse());
     }
 
     @ExceptionHandler(RuntimeException.class)

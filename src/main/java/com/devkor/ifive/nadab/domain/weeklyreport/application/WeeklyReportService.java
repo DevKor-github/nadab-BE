@@ -5,11 +5,13 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
+import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportStartResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReserveResultDto;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.exception.report.WeeklyReportNotEligibleException;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +46,8 @@ public class WeeklyReportService {
         boolean eligible = completedCount >= 4;
 
         if (!eligible) {
-            throw new BadRequestException(ErrorCode.WEEKLY_REPORT_NOT_ENOUGH_REPORTS);
+            CompletedCountResponse response = new CompletedCountResponse(completedCount);
+            throw new WeeklyReportNotEligibleException(ErrorCode.WEEKLY_REPORT_NOT_ENOUGH_REPORTS, response);
         }
 
         // (Tx) Report(PENDING) + reserve consume + log(PENDING)
