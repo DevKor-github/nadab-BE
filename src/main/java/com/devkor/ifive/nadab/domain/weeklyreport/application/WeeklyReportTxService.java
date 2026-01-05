@@ -67,7 +67,7 @@ public class WeeklyReportTxService {
                 )
         );
 
-        return new WeeklyReserveResultDto(report.getId(), log.getId(), user.getId());
+        return new WeeklyReserveResultDto(report.getId(), log.getId(), user.getId(), balanceAfter);
     }
 
     public WeeklyReserveResultDto reserveWeeklyAndPublish(User user) {

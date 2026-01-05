@@ -53,7 +53,7 @@ public class WeeklyReportService {
         // (Tx) Report(PENDING) + reserve consume + log(PENDING)
         WeeklyReserveResultDto reserve = weeklyReportTxService.reserveWeeklyAndPublish(user);
 
-        return new WeeklyReportStartResponse(reserve.reportId(), "PENDING", wallet.getCrystalBalance()-WEEKLY_REPORT_COST);
+        return new WeeklyReportStartResponse(reserve.reportId(), "PENDING", reserve.balanceAfter());
     }
 }
 
