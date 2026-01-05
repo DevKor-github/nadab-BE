@@ -22,7 +22,7 @@ public class PendingWeeklyReportService {
 
     private final WeeklyReportRepository weeklyReportRepository;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public WeeklyReport getOrCreatePendingWeeklyReport(User user) {
 
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
