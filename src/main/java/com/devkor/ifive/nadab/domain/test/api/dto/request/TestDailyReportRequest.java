@@ -1,8 +1,7 @@
-package com.devkor.ifive.nadab.domain.dailyreport.api.dto.request;
+package com.devkor.ifive.nadab.domain.test.api.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "테스트용 오늘의 리포트 생성 요청")
 public record TestDailyReportRequest(

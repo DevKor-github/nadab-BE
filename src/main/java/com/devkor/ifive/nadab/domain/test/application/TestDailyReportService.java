@@ -1,7 +1,7 @@
-package com.devkor.ifive.nadab.domain.dailyreport.core.service;
+package com.devkor.ifive.nadab.domain.test.application;
 
-import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.TestDailyReportRequest;
-import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.TestDailyReportResponse;
+import com.devkor.ifive.nadab.domain.test.api.dto.request.TestDailyReportRequest;
+import com.devkor.ifive.nadab.domain.test.api.dto.response.TestDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
