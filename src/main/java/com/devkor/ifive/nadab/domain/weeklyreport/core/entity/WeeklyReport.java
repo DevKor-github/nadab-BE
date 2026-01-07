@@ -38,13 +38,13 @@ public class WeeklyReport extends CreatableEntity {
     @Column(name = "week_end_date", nullable = false)
     private LocalDate weekEndDate;
 
-    @Column(name = "discovered", length = 100)
+    @Column(name = "discovered", length = 250)
     private String discovered;
 
-    @Column(name = "good", length = 100)
+    @Column(name = "good", length = 250)
     private String good;
 
-    @Column(name = "improve", length = 100)
+    @Column(name = "improve", length = 250)
     private String improve;
 
     @Enumerated(EnumType.STRING)
