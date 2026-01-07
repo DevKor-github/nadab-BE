@@ -55,13 +55,26 @@ public class WeeklyReportGenerationListener {
         }
 
         // 성공 확정(별도 트랜잭션)
-        weeklyReportTxService.confirmWeekly(
-                event.reportId(),
-                event.crystalLogId(),
-                dto.discovered(),
-                dto.good(),
-                dto.improve()
-        );
+        try {
+            weeklyReportTxService.confirmWeekly(
+                    event.reportId(),
+                    event.crystalLogId(),
+                    dto.discovered(),
+                    dto.good(),
+                    dto.improve()
+            );
+        } catch (Exception e) {
+            log.error("[WEEKLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
+                    event.userId(), event.reportId(), event.crystalLogId(), e);
+
+            // 저장 실패면 결과를 못 주는 거니까 "실패 확정 + 환불"로 처리
+            weeklyReportTxService.failAndRefundWeekly(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+        }
+
     }
 }
 
