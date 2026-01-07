@@ -37,18 +37,18 @@ public class CookieManager {
                 .httpOnly(true)
                 .secure(isCookieSecure)
                 .sameSite(cookieSameSite)
-                .path("/")
+                .path("/api/v1/auth")
                 .maxAge(maxAge)
                 .build();
     }
 
     // Refresh Token 쿠키 삭제
-    private ResponseCookie deleteWithPath(String path) {
+    private ResponseCookie delete() {
         return ResponseCookie.from(COOKIE_NAME, "")
                 .httpOnly(true)
                 .secure(isCookieSecure)
                 .sameSite(cookieSameSite)
-                .path(path)
+                .path("/api/v1/auth")
                 .maxAge(0) // 즉시 만료
                 .build();
     }
@@ -61,11 +61,8 @@ public class CookieManager {
 
     // Refresh Token 쿠키를 만료시켜 응답에 추가
     public void removeRefreshTokenCookie(HttpServletResponse response) {
-        // 신규 path
-        response.addHeader("Set-Cookie", deleteWithPath("/").toString());
-
-        // 레거시 호환: 예전에 발급했던 path도 함께 삭제
-        response.addHeader("Set-Cookie", deleteWithPath("/api/v1/auth").toString());
+        ResponseCookie cookie = delete();
+        response.addHeader("Set-Cookie", cookie.toString());
     }
 
     // 쿠키에서 Refresh Token 추출
