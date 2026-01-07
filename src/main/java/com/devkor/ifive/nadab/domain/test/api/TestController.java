@@ -5,18 +5,22 @@ import com.devkor.ifive.nadab.domain.test.api.dto.request.PromptTestDailyReportR
 import com.devkor.ifive.nadab.domain.test.api.dto.request.TestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.test.api.dto.response.TestDailyReportResponse;
-import com.devkor.ifive.nadab.domain.test.application.TestDailyReportService;
+import com.devkor.ifive.nadab.domain.test.application.TestReportService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
+import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "테스트 API", description = "테스트와 관련된 API들")
@@ -25,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class TestController {
 
-    private final TestDailyReportService testDailyReportService;
+    private final TestReportService testReportService;
 
     @PostMapping("/generate/daily-report")
     @PermitAll
@@ -60,7 +64,7 @@ public class TestController {
     public ResponseEntity<ApiResponseDto<TestDailyReportResponse>> generateDailyReport(
             @Valid @RequestBody TestDailyReportRequest request
     ) {
-        TestDailyReportResponse response = testDailyReportService.generateTestDailyReport(request);
+        TestDailyReportResponse response = testReportService.generateTestDailyReport(request);
         return ApiResponseEntity.ok(response);
     }
 
@@ -109,7 +113,37 @@ public class TestController {
             @Valid @RequestBody PromptTestDailyReportRequest request,
             @RequestParam String prompt
     ) {
-        TestDailyReportResponse response = testDailyReportService.generateTestDailyReportWithPrompt(request, prompt);
+        TestDailyReportResponse response = testReportService.generateTestDailyReportWithPrompt(request, prompt);
         return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/delete/weekly-report")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "(테스트용) 주간 리포트 삭제 API",
+            description = """
+                    이번 주에 생성된 주간 리포트를 삭제합니다. <br/>
+                    생성된 리포트만 삭제 가능합니다. <br/>
+                    크리스탈 또한 환불됩니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "테스트용 주간 리포트 삭제 성공",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> deleteWeeklyReport(
+            @AuthenticationPrincipal UserPrincipal principal
+            ) {
+        testReportService.deleteThisWeekWeeklyReport(principal.getId());
+        return ApiResponseEntity.noContent();
     }
 }
