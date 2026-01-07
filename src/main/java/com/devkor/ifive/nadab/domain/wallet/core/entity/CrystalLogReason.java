@@ -8,5 +8,7 @@ public enum CrystalLogReason {
     REPORT_GENERATE_YEARLY,
     REPORT_GENERATE_ALL,
 
+    TEST_DELETE_REPORT_REFUND_WEEKLY,
+
     ADMIN_ADJUST
 }

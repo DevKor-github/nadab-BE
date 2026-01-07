@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.dailyreport.api.dto.response;
+package com.devkor.ifive.nadab.domain.test.api.dto.response;
 
 public record TestDailyReportResponse(
     String message,

@@ -110,6 +110,10 @@ public enum ErrorCode {
     //404 Not Found
     WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 지갑을 찾을 수 없습니다"),
 
+    // ==================== CRYSTAL_LOG (크리스탈 로그) ====================
+    // 404 Not Found
+    CRYSTAL_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "크리스탈 로그를 찾을 수 없습니다"),
+
     // ==================== DAILY_REPORT (일간 리포트) ====================
     // 404 Not Found
     DAILY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "일간 리포트를 찾을 수 없습니다"),
