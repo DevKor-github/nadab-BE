@@ -27,6 +27,8 @@ public class WeeklyReportGenerationListener {
     private final WeeklyReportLlmClient weeklyReportLlmClient;
     private final WeeklyReportTxService weeklyReportTxService;
 
+    private static final int MAX_LEN = 150;
+
     @Async("weeklyReportTaskExecutor")
     @TransactionalEventListener(phase =
             TransactionPhase.AFTER_COMMIT)
@@ -55,13 +57,33 @@ public class WeeklyReportGenerationListener {
         }
 
         // 성공 확정(별도 트랜잭션)
-        weeklyReportTxService.confirmWeekly(
-                event.reportId(),
-                event.crystalLogId(),
-                dto.discovered(),
-                dto.good(),
-                dto.improve()
-        );
+        try {
+            weeklyReportTxService.confirmWeekly(
+                    event.reportId(),
+                    event.crystalLogId(),
+                    cut(dto.discovered()),
+                    cut(dto.good()),
+                    cut(dto.improve())
+            );
+        } catch (Exception e) {
+            log.error("[WEEKLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
+                    event.userId(), event.reportId(), event.crystalLogId(), e);
+
+            // 저장 실패면 결과를 못 주는 거니까 "실패 확정 + 환불"로 처리
+            weeklyReportTxService.failAndRefundWeekly(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+        }
+
+    }
+
+    // 최대 길이 자르기
+    private String cut(String s) {
+        if (s == null) return null;
+        s = s.trim();
+        return (s.length() <= MAX_LEN) ? s : s.substring(0, MAX_LEN);
     }
 }
 
