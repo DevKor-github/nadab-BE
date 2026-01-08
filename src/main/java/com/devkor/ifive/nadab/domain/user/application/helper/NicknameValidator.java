@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.user.core.service;
+package com.devkor.ifive.nadab.domain.user.application.helper;
 
 import com.devkor.ifive.nadab.domain.user.core.dto.NicknameValidationResultDto;
 import com.devkor.ifive.nadab.domain.user.infra.ProfanityChecker;
