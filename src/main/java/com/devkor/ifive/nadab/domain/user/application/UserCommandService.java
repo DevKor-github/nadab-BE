@@ -5,9 +5,12 @@ import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserInterestRequ
 import com.devkor.ifive.nadab.domain.user.api.dto.request.UpdateUserProfileRequest;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.CreateProfileImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.user.api.dto.response.UpdateUserProfileResponse;
+import com.devkor.ifive.nadab.domain.user.application.helper.NicknameChangeHelper;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
+import com.devkor.ifive.nadab.domain.user.core.entity.UserNicknameChange;
+import com.devkor.ifive.nadab.domain.user.core.repository.UserNicknameChangeRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
 import com.devkor.ifive.nadab.domain.user.core.service.UserInterestService;
@@ -29,7 +32,11 @@ import java.util.UUID;
 public class UserCommandService {
 
     private final UserRepository userRepository;
+    private final UserNicknameChangeRepository userNicknameChangeRepository;
+
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final NicknameChangeHelper nicknameChangeHelper;
+
     private final ProfileImageService profileImageService;
     private final UserProfileUpdateService userProfileUpdateService;
     private final UserInterestService userInterestService;
@@ -73,14 +80,24 @@ public class UserCommandService {
     public UpdateUserProfileResponse updateUserProfile(Long id, UpdateUserProfileRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+        String oldNickname = user.getNickname();
 
         if (request.nickname() == null && request.objectKey() == null) {
             throw new BadRequestException(ErrorCode.USER_UPDATE_NO_DATA);
         }
 
         if (request.nickname() != null) {
+            nicknameChangeHelper.validateChangeAllowed(user.getId());
             userProfileUpdateService.updateNickname(user, request.nickname());
+
+            UserNicknameChange change = UserNicknameChange.create(
+                    user,
+                    oldNickname,
+                    request.nickname()
+            );
+            userNicknameChangeRepository.save(change);
         }
+
         if (request.objectKey() != null) {
             userProfileUpdateService.updateProfileImage(user, request.objectKey());
         }

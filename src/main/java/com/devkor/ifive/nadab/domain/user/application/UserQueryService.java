@@ -7,7 +7,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.entity.UserInterest;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserInterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
-import com.devkor.ifive.nadab.domain.user.core.service.NicknameValidator;
+import com.devkor.ifive.nadab.domain.user.application.helper.NicknameValidator;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;

@@ -166,7 +166,11 @@ public enum ErrorCode {
     PROMPT_DAILY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "INSIGHT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
     PROMPT_WEEKLY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "주간 리포트 프롬프트 파일이 존재하지 않습니다"),
     PROMPT_WEEKLY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 주간 리포트 프롬프트 파일을 읽을 수 없습니다"),
-    PROMPT_WEEKLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "WEEKLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다");
+    PROMPT_WEEKLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "WEEKLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    // ==================== NICKNAME (닉네임) ====================
+    // 400 Bad Request
+    NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)");
 
     private final HttpStatus httpStatus;
     private final String message;
