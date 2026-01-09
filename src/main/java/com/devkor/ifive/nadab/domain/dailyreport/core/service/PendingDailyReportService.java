@@ -9,8 +9,8 @@ import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -23,15 +23,24 @@ public class PendingDailyReportService {
     private final DailyReportRepository dailyReportRepository;
 
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public DailyReport getOrCreatePendingDailyReport(AnswerEntry entry) {
 
         TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
         LocalDate today = TodayDateTimeProvider.getTodayDate();
 
-        DailyReport report = dailyReportRepository.findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
-                .orElseGet(() -> dailyReportRepository.save(DailyReport.createPending(entry, today)));
+        DailyReport report = dailyReportRepository.
+                findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
+                .orElseGet(() -> {
+                    try {
+                        return dailyReportRepository.save(DailyReport.createPending(entry, today));
+                    } catch (DataIntegrityViolationException e) {
+                        // 동시 요청에서 이미 누가 만들었을 수 있음 -> 재조회로 멱등 처리
+                        return dailyReportRepository.findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
+                                .orElseThrow(() -> e);
+                    }
+                });
 
         if (report.getStatus() == DailyReportStatus.COMPLETED) {
             throw new ConflictException(ErrorCode.DAILY_REPORT_ALREADY_COMPLETED);
