@@ -7,8 +7,8 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -21,15 +21,24 @@ public class AnswerEntryService {
     private final AnswerEntryRepository answerEntryRepository;
 
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText) {
 
         TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
         LocalDate today = TodayDateTimeProvider.getTodayDate();
 
-        return answerEntryRepository.findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
-                .orElseGet(() -> answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, today)));
+        return answerEntryRepository.
+                findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
+                .orElseGet(() -> {
+                    try {
+                        return answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, today));
+                    } catch (DataIntegrityViolationException e) {
+                        // 동시 요청에서 이미 누가 만들었을 수 있음 -> 재조회로 멱등 처리
+                        return answerEntryRepository.findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
+                                .orElseThrow(() -> e);
+                    }
+                });
     }
 }
 
