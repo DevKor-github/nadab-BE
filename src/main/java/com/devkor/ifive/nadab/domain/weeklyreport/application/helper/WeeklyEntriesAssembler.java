@@ -14,6 +14,12 @@ public final class WeeklyEntriesAssembler {
     private WeeklyEntriesAssembler() {
     }
 
+    /**
+     * 프롬프트에 넣을 entries 문자열을 생성합니다.
+     * - date 오름차순 정렬
+     * - D1, D2 ... 번호 부여
+     * - null/blank 값은 N/A로 대체
+     */
     public static String assemble(List<WeeklyReportEntryInputDto> inputs) {
         if (inputs == null || inputs.isEmpty()) {
             return "";
