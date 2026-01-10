@@ -4,7 +4,7 @@ import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportTxServ
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.AiWeeklyReportResultDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportEntryInputDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.infra.WeeklyReportLlmClient;
+import com.devkor.ifive.nadab.domain.weeklyreport.infra.WeeklyReportLlmClient;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyQueryRepository;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
