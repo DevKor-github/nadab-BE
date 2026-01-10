@@ -133,6 +133,8 @@ public enum ErrorCode {
     WEEKLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 주간 리포트가 존재합니다"),
     WEEKLY_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 주간 리포트를 생성 중입니다"),
 
+    // ==================== MONTHLY_REPORT (월간 리포트) ====================
+
     // ==================== AI (인공지능) ====================
     // 502 Bad Gateway
     AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "AI 응답 형식을 해석할 수 없습니다"),
@@ -164,9 +166,14 @@ public enum ErrorCode {
     PROMPT_DAILY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "일간 리포트 프롬프트 파일이 존재하지 않습니다"),
     PROMPT_DAILY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 일간 리포트 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_DAILY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "INSIGHT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
     PROMPT_WEEKLY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "주간 리포트 프롬프트 파일이 존재하지 않습니다"),
     PROMPT_WEEKLY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 주간 리포트 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_WEEKLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "WEEKLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_MONTHLY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "월간 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_MONTHLY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 월간 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_MONTHLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "MONTHLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
 
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request

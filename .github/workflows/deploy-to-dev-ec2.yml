@@ -75,6 +75,10 @@ jobs:
             WEEKLY_PROMPT="$(printf '%s' "$WEEKLY_PROMPT_B64" | base64 -d | tr -d '\r')"
             export WEEKLY_PROMPT
             
+            MONTHLY_PROMPT_B64="${{ secrets.MONTHLY_PROMPT_B64 }}"
+            MONTHLY_PROMPT="$(printf '%s' "$MONTHLY_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export MONTHLY_PROMPT
+            
             DB_URL="${{ secrets.DB_URL }}" \
             DB_USERNAME="${{ secrets.DB_USERNAME }}" \
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
