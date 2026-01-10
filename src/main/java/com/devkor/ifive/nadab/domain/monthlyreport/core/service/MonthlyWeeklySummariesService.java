@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.monthlyreport.application;
+package com.devkor.ifive.nadab.domain.monthlyreport.core.service;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyWeeklySummariesAssembler;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyWeeklySummaryInputDto;

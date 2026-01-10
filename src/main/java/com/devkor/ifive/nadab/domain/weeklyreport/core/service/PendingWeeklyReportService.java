@@ -11,7 +11,6 @@ import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
