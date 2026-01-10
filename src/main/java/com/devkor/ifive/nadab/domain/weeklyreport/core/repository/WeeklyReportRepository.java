@@ -66,6 +66,7 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
 
     /**
      * 특정 월(monthStart ~ monthEnd)과 겹치는 주간 리포트 조회
+     * 월간 리포트 생성을 위해 사용
      */
     @Query("""
         select wr
