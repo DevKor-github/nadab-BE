@@ -34,7 +34,7 @@ public class MonthlyReportTxService {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final long MONTHLY_REPORT_COST = 200L;
+    private static final long MONTHLY_REPORT_COST = 40L;
 
     /**
      * (Tx) MonthlyReport(PENDING) + reserve consume + CrystalLog(PENDING)

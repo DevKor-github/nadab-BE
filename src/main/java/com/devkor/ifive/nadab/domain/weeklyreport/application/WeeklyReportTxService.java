@@ -33,7 +33,7 @@ public class WeeklyReportTxService {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final long WEEKLY_REPORT_COST = 30L;
+    private static final long WEEKLY_REPORT_COST = 20L;
 
     /**
      * (Tx) WeeklyReport(PENDING) + reserve consume + CrystalLog(PENDING)
