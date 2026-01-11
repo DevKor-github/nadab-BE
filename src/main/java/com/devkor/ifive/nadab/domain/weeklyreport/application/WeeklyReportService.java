@@ -30,11 +30,11 @@ public class WeeklyReportService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
-        // 주간 리포트 작성 자격 확인 (저번 주에 4회 이상 완료)
+        // 주간 리포트 작성 자격 확인 (저번 주에 3회 이상 완료)
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
 
         long completedCount = dailyReportRepository.countCompletedInWeek(userId, range.weekStartDate(), range.weekEndDate());
-        boolean eligible = completedCount >= 4;
+        boolean eligible = completedCount >= 3;
 
         if (!eligible) {
             CompletedCountResponse response = new CompletedCountResponse(completedCount);
