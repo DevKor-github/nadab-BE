@@ -31,7 +31,7 @@ public class MonthlyReportGenerationListener {
     private final MonthlyReportTxService monthlyReportTxService;
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
 
-    private static final int MAX_LEN = 200;
+    private static final int MAX_LEN = 240;
 
     @Async("monthlyReportTaskExecutor")
     @TransactionalEventListener(phase =
