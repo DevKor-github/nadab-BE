@@ -134,6 +134,9 @@ public enum ErrorCode {
     WEEKLY_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 주간 리포트를 생성 중입니다"),
 
     // ==================== MONTHLY_REPORT (월간 리포트) ====================
+    // 400 Bad Request
+    MONTHLY_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "월간 리포트 작성 자격이 없습니다. (지난 달 15회 이상 완료 필요)"),
+
     // 404 Not Found
     MONTHLY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "월간 리포트를 찾을 수 없습니다"),
     MONTHLY_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 월간 리포트가 아직 생성 완료되지 않았습니다"),

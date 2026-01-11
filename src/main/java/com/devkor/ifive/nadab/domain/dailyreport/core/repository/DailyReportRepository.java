@@ -58,6 +58,15 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
         );
     }
 
+    default long countCompletedInMonth(Long userId, LocalDate monthStartDate, LocalDate monthEndDate) {
+        return countByAnswerEntry_User_IdAndStatusAndDateBetween(
+                userId,
+                DailyReportStatus.COMPLETED,
+                monthStartDate,
+                monthEndDate
+        );
+    }
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE DailyReport w SET w.status = :status WHERE w.id = :id")
     int updateStatus(
