@@ -1,5 +1,8 @@
 package com.devkor.ifive.nadab.domain.test.application;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportRepository;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.PromptTestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.TestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.response.TestDailyReportResponse;
@@ -21,7 +24,9 @@ import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
+import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -40,10 +45,12 @@ public class TestReportService {
 
     private final UserRepository userRepository;
     private final WeeklyReportRepository weeklyReportRepository;
+    private final MonthlyReportRepository monthlyReportRepository;
     private final TestCrystalLogRepository testCrystalLogRepository;
     private final UserWalletRepository userWalletRepository;
 
-    private static final long WEEKLY_REPORT_COST = 30L;
+    private static final long WEEKLY_REPORT_COST = 20L;
+    private static final long MONTHLY_REPORT_COST = 40L;
 
     @Transactional
     public TestDailyReportResponse generateTestDailyReport(TestDailyReportRequest request) {
@@ -174,5 +181,48 @@ public class TestReportService {
         testCrystalLogRepository.markRefunded(purchaseLog.getId());
 
         weeklyReportRepository.delete(report);
+    }
+
+    @Transactional
+    public void deleteThisMonthMonthlyReport(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
+
+        MonthlyReport report = monthlyReportRepository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate())
+                .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
+
+        if (report.getStatus() != MonthlyReportStatus.COMPLETED) {
+            throw new BadRequestException(ErrorCode.MONTHLY_REPORT_NOT_COMPLETED);
+        }
+
+        CrystalLog purchaseLog = testCrystalLogRepository
+                .findByUserIdAndRefTypeAndRefIdAndReasonAndStatus(
+                        userId,
+                        "MONTHLY_REPORT",
+                        report.getId(),
+                        CrystalLogReason.REPORT_GENERATE_MONTHLY,
+                        CrystalLogStatus.CONFIRMED
+                )
+                .orElseThrow(() -> new BadRequestException(ErrorCode.CRYSTAL_LOG_NOT_FOUND));
+
+        int updated = userWalletRepository.refund(user.getId(), MONTHLY_REPORT_COST);
+        if (updated == 0) {
+            throw new NotFoundException(ErrorCode.WALLET_NOT_FOUND);
+        }
+
+        UserWallet wallet = userWalletRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
+        long balanceAfter = wallet.getCrystalBalance();
+
+
+        CrystalLog refundLog = CrystalLog.createConfirmed(user, MONTHLY_REPORT_COST, balanceAfter,
+                CrystalLogReason.TEST_DELETE_REPORT_REFUND_MONTHLY, "MONTHLY_REPORT_REFUND", report.getId());
+        testCrystalLogRepository.save(refundLog);
+
+        testCrystalLogRepository.markRefunded(purchaseLog.getId());
+
+        monthlyReportRepository.delete(report);
     }
 }

@@ -146,4 +146,34 @@ public class TestController {
         testReportService.deleteThisWeekWeeklyReport(principal.getId());
         return ApiResponseEntity.noContent();
     }
+
+    @PostMapping("/delete/monthly-report")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "(테스트용) 월간 리포트 삭제 API",
+            description = """
+                    이번 달에 생성된 월간 리포트를 삭제합니다. <br/>
+                    생성된 리포트만 삭제 가능합니다. <br/>
+                    크리스탈 또한 환불됩니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "테스트용 월간 리포트 삭제 성공",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> deleteMonthlyReport(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        testReportService.deleteThisMonthMonthlyReport(principal.getId());
+        return ApiResponseEntity.noContent();
+    }
 }
