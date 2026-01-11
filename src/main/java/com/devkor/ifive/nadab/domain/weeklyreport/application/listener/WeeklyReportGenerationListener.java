@@ -28,7 +28,7 @@ public class WeeklyReportGenerationListener {
     private final WeeklyReportLlmClient weeklyReportLlmClient;
     private final WeeklyReportTxService weeklyReportTxService;
 
-    private static final int MAX_LEN = 150;
+    private static final int MAX_LEN = 200;
 
     @Async("weeklyReportTaskExecutor")
     @TransactionalEventListener(phase =
