@@ -3,13 +3,10 @@ package com.devkor.ifive.nadab.domain.weeklyreport.application;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
-import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
-import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportStartResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReserveResultDto;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
-import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.report.WeeklyReportNotEligibleException;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
@@ -23,11 +20,8 @@ public class WeeklyReportService {
 
     private final UserRepository userRepository;
     private final DailyReportRepository dailyReportRepository;
-    private final UserWalletRepository userWalletRepository;
 
     private final WeeklyReportTxService weeklyReportTxService;
-
-    private static final long WEEKLY_REPORT_COST = 30L;
 
     /**
      * 비동기 시작 API: 즉시 reportId 반환
@@ -35,15 +29,12 @@ public class WeeklyReportService {
     public WeeklyReportStartResponse startWeeklyReport(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
-        UserWallet wallet = userWalletRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
 
-
-        // 주간 리포트 작성 자격 확인 (저번 주에 4회 이상 완료)
+        // 주간 리포트 작성 자격 확인 (저번 주에 3회 이상 완료)
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
 
         long completedCount = dailyReportRepository.countCompletedInWeek(userId, range.weekStartDate(), range.weekEndDate());
-        boolean eligible = completedCount >= 4;
+        boolean eligible = completedCount >= 3;
 
         if (!eligible) {
             CompletedCountResponse response = new CompletedCountResponse(completedCount);

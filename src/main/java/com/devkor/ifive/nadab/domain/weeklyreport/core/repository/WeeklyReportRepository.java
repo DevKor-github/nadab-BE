@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long> {
@@ -60,6 +61,26 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
     @Query("UPDATE WeeklyReport w SET w.status = :status WHERE w.id = :id")
     int updateStatus(
             @Param("id") Long id,
+            @Param("status") WeeklyReportStatus status
+    );
+
+    /**
+     * 특정 월(monthStart ~ monthEnd)과 겹치는 주간 리포트 조회
+     * 월간 리포트 생성을 위해 사용
+     */
+    @Query("""
+        select wr
+        from WeeklyReport wr
+        where wr.user.id = :userId
+          and wr.weekStartDate <= :monthEnd
+          and wr.weekEndDate >= :monthStart
+          and wr.status = :status
+        order by wr.weekStartDate asc
+    """)
+    List<WeeklyReport> findMonthlyOverlappedWeeklyReports(
+            @Param("userId") Long userId,
+            @Param("monthStart") LocalDate monthStart,
+            @Param("monthEnd") LocalDate monthEnd,
             @Param("status") WeeklyReportStatus status
     );
 }

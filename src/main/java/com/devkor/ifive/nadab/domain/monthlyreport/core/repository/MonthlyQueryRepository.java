@@ -1,18 +1,18 @@
-package com.devkor.ifive.nadab.domain.weeklyreport.core.repository;
+package com.devkor.ifive.nadab.domain.monthlyreport.core.repository;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
 
-public interface WeeklyQueryRepository extends Repository<AnswerEntry, Long> {
+public interface MonthlyQueryRepository extends JpaRepository<AnswerEntry, Long> {
 
     /**
-     * 주간 리포트 작성을 위한 입력 데이터 조회
+     * 월간 리포트 작성을 위한 입력 데이터 조회
      */
     @Query("""
     select new com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto(
@@ -29,13 +29,12 @@ public interface WeeklyQueryRepository extends Repository<AnswerEntry, Long> {
           and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
     left join dr.emotion em
     where ae.user.id = :userId
-      and ae.date between :weekStart and :weekEnd
+      and ae.date between :monthStart and :monthEnd
     order by ae.date asc
 """)
-
-    List<DailyEntryDto> findWeeklyInputs(
+    List<DailyEntryDto> findMonthlyInputs(
             @Param("userId") Long userId,
-            @Param("weekStart") LocalDate weekStart,
-            @Param("weekEnd") LocalDate weekEnd
+            @Param("monthStart") LocalDate monthStart,
+            @Param("monthEnd") LocalDate monthEnd
     );
 }

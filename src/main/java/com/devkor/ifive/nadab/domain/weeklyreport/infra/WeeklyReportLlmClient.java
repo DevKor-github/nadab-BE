@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.weeklyreport.core.infra;
+package com.devkor.ifive.nadab.domain.weeklyreport.infra;
 
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.AiWeeklyReportResultDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.LlmWeeklyResultDto;
@@ -34,7 +34,7 @@ public class WeeklyReportLlmClient {
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(OpenAiApi.ChatModel.GPT_5_MINI)
-                .reasoningEffort("low")
+                .reasoningEffort("medium")
                 .temperature(1.0)
                 .build();
 

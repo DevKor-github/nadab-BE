@@ -55,4 +55,19 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * 월간 리포트(LLM 호출) 전용 실행기
+     * - LLM은 외부 I/O라 동시성 높게 주되, 무한 큐 적체는 막기 위해 큐 제한
+     */
+    @Bean(name = "monthlyReportTaskExecutor")
+    public ThreadPoolTaskExecutor monthlyReportTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("async-monthly-report-");
+        executor.initialize();
+        return executor;
+    }
 }

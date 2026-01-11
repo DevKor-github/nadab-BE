@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.application.helper;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionName;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportEntryInputDto;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 
 import java.util.Comparator;
 import java.util.List;
@@ -14,20 +14,26 @@ public final class WeeklyEntriesAssembler {
     private WeeklyEntriesAssembler() {
     }
 
-    public static String assemble(List<WeeklyReportEntryInputDto> inputs) {
+    /**
+     * 프롬프트에 넣을 entries 문자열을 생성합니다.
+     * - date 오름차순 정렬
+     * - D1, D2 ... 번호 부여
+     * - null/blank 값은 N/A로 대체
+     */
+    public static String assemble(List<DailyEntryDto> inputs) {
         if (inputs == null || inputs.isEmpty()) {
             return "";
         }
 
-        List<WeeklyReportEntryInputDto> sorted = inputs.stream()
+        List<DailyEntryDto> sorted = inputs.stream()
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(WeeklyReportEntryInputDto::date, Comparator.nullsLast(Comparator.naturalOrder())))
+                .sorted(Comparator.comparing(DailyEntryDto::date, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
 
         StringBuilder sb = new StringBuilder();
         int idx = 1;
 
-        for (WeeklyReportEntryInputDto e : sorted) {
+        for (DailyEntryDto e : sorted) {
             sb.append("- D").append(idx).append("(").append(valueOrNa(e.date() == null ? null : e.date().toString())).append(")\n")
                     .append("  question: ").append(valueOrNa(e.question())).append("\n")
                     .append("  answer: ").append(valueOrNa(e.answer())).append("\n")

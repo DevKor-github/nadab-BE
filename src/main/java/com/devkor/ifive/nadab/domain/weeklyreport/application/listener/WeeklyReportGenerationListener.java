@@ -1,10 +1,11 @@
-package com.devkor.ifive.nadab.domain.weeklyreport.application.helper;
+package com.devkor.ifive.nadab.domain.weeklyreport.application.listener;
 
 import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportTxService;
+import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.AiWeeklyReportResultDto;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportEntryInputDto;
+import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.infra.WeeklyReportLlmClient;
+import com.devkor.ifive.nadab.domain.weeklyreport.infra.WeeklyReportLlmClient;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyQueryRepository;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
@@ -27,7 +28,7 @@ public class WeeklyReportGenerationListener {
     private final WeeklyReportLlmClient weeklyReportLlmClient;
     private final WeeklyReportTxService weeklyReportTxService;
 
-    private static final int MAX_LEN = 150;
+    private static final int MAX_LEN = 240;
 
     @Async("weeklyReportTaskExecutor")
     @TransactionalEventListener(phase =
@@ -36,7 +37,7 @@ public class WeeklyReportGenerationListener {
 
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
 
-        List<WeeklyReportEntryInputDto> rows = weeklyQueryRepository.findWeeklyInputs(event.userId(), range.weekStartDate(), range.weekEndDate());
+        List<DailyEntryDto> rows = weeklyQueryRepository.findWeeklyInputs(event.userId(), range.weekStartDate(), range.weekEndDate());
         String entries = WeeklyEntriesAssembler.assemble(rows);
 
         AiWeeklyReportResultDto dto;
