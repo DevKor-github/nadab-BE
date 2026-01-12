@@ -44,13 +44,13 @@ public class DailyReportController {
                     
                     | 응답의 emotion | 해당 감정 |
                     | :--- | :--- |
-                    | `JOY` | 기쁨 |
+                    | `ACHIEVEMENT` | 성취 |
+                    | `INTEREST` | 흥미 |
+                    | `PEACE` | 평온 |
                     | `PLEASURE` | 즐거움 |
-                    | `SADNESS` | 슬픔 |
-                    | `ANGER` | 분노 |
+                    | `WILL` | 의지 |
+                    | `DEPRESSION` | 우울 |
                     | `REGRET` | 후회 |
-                    | `FRUSTRATION` | 좌절 |
-                    | `GROWTH` | 성장 |
                     | `ETC` | 기타 |
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),

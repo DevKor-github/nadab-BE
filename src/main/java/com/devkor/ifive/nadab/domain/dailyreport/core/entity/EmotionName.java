@@ -1,14 +1,12 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.entity;
 
 public enum EmotionName {
-    기쁨,
+    성취,
+    흥미,
+    평온,
     즐거움,
-    사랑,
-    슬픔,
-    분노,
-    고통,
+    의지,
+    우울,
     후회,
-    좌절,
-    성장,
     기타
 }
