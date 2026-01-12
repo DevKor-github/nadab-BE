@@ -22,7 +22,4 @@ public class Emotion {
     @Enumerated(EnumType.STRING)
     @Column(name = "name",nullable = false, length = 50)
     private EmotionName name;
-
-    @Column(name = "color_code", length = 50)
-    private String colorCode;
 }

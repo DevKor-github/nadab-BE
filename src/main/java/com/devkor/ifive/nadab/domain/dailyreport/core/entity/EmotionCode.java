@@ -1,14 +1,12 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.entity;
 
 public enum EmotionCode {
-    JOY,
+    ACHIEVEMENT,
+    INTEREST,
+    PEACE,
     PLEASURE,
-    LOVE,
-    SADNESS,
-    ANGER,
-    PAIN,
+    WILL,
+    DEPRESSION,
     REGRET,
-    FRUSTRATION,
-    GROWTH,
     ETC
 }
