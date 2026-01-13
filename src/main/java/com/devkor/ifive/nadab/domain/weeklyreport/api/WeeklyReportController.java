@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.api;
 
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
+import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.MyWeeklyReportResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportStartResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportQueryService;
@@ -86,13 +87,18 @@ public class WeeklyReportController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "나의 주간 리포트 조회",
-            description = "사용자의 (지난 주) 주간 리포트를 조회합니다.",
+            description = """
+                    사용자의 (지난 주에 대한) 주간 리포트와 이전 주간 리포트를 조회합니다. </br>
+                    이때 ```report```혹은 ```previousReport```가 ```null```인 경우 해당 주간 리포트가 존재하지 않음을 의미합니다. </br>
+                    ```report```혹은 ```previousReport```가
+                    ```null```이 아닌 경우 ```status```필드는 항상 ```COMPLETED```입니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "나의 주간 리포트 조회 성공",
-                            content = @Content(schema = @Schema(implementation = WeeklyReportResponse.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = MyWeeklyReportResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -103,17 +109,15 @@ public class WeeklyReportController {
                             responseCode = "404",
                             description = """
                                     - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
-                                    - ErrorCode: WEEKLY_REPORT_NOT_FOUND - 주간 리포트를 찾을 수 없음
-                                    - ErrorCode: WEEKLY_REPORT_NOT_COMPLETED - 해당 주간 리포트가 아직 생성 완료되지 않음
                                     """,
                             content = @Content
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<WeeklyReportResponse>> getLastWeekWeeklyReport(
+    public ResponseEntity<ApiResponseDto<MyWeeklyReportResponse>> getMyWeeklyReport(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        WeeklyReportResponse response = weeklyReportQueryService.getLastWeekWeeklyReport(principal.getId());
+        MyWeeklyReportResponse response = weeklyReportQueryService.getMyWeeklyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 

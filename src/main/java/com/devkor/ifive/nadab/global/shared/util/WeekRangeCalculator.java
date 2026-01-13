@@ -33,6 +33,15 @@ public final class WeekRangeCalculator {
     }
 
     /**
+     * 월요일 시작 ~ 일요일 종료 기준의 "2주 전" 범위를 반환합니다.
+     */
+    public static WeekRangeDto getTwoWeeksAgoRange() {
+        LocalDate today = LocalDate.now(KST);
+        LocalDate twoWeeksAgoDate = today.minusWeeks(2);
+        return weekRangeOf(twoWeeksAgoDate);
+    }
+
+    /**
      * 주어진 WeekRange가 해당 월의 몇 주차인지 반환합니다.
      * (월요일 시작 기준, 해당 주의 월요일이 속한 달 기준)
      */
