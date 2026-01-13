@@ -9,7 +9,7 @@ public record SearchAnswerEntryRequest(
         @Size(min = 1, max = 100, message = "검색 키워드는 1~100자입니다")
         String keyword,
 
-        @Schema(description = "감정 코드 (JOY, PLEASURE, SADNESS, ANGER, REGRET, FRUSTRATION, GROWTH, ETC)", example = "JOY")
+        @Schema(description = "감정 코드 (ACHIEVEMENT, INTEREST, PEACE, PLEASURE, WILL, DEPRESSION, REGRET, ETC)", example = "ACHIEVEMENT")
         String emotionCode,
 
         @Schema(description = "다음 페이지 커서 (형식: date)", example = "2025-12-25")

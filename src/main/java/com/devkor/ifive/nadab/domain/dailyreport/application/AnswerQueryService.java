@@ -1,12 +1,21 @@
 package com.devkor.ifive.nadab.domain.dailyreport.application;
 
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.GetMonthlyCalendarRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.SearchAnswerEntryRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerEntrySummaryResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CalendarEntryResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CalendarRecentsResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.MonthlyCalendarResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.SearchAnswerEntryResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.MonthlyCalendarDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryQueryRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.application.helper.CursorParser;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
+import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -64,7 +73,7 @@ public class AnswerQueryService {
 
         // DTO 변환
         List<AnswerEntrySummaryResponse> responseItems = items.stream()
-                .map(dto -> AnswerEntrySummaryResponse.toResponse(dto, request.keyword()))
+                .map(dto -> AnswerEntrySummaryResponse.from(dto, request.keyword()))
                 .toList();
 
         // nextCursor 생성
@@ -75,6 +84,50 @@ public class AnswerQueryService {
         }
 
         return new SearchAnswerEntryResponse(responseItems, nextCursor, hasNext);
+    }
+
+    public MonthlyCalendarResponse getMonthlyCalendar(Long userId, GetMonthlyCalendarRequest request) {
+        // 월의 시작/종료 날짜 계산
+        LocalDate anyDayInMonth = LocalDate.of(request.year(), request.month(), 1);
+        MonthRangeDto range = MonthRangeCalculator.monthRangeOf(anyDayInMonth);
+
+        // 월별 데이터 조회
+        List<MonthlyCalendarDto> results = answerEntryQueryRepository.findCalendarEntriesInMonth(
+                userId,
+                range.monthStartDate(),
+                range.monthEndDate()
+        );
+
+        // DTO 변환
+        List<CalendarEntryResponse> calendarEntries = results.stream()
+                .map(CalendarEntryResponse::from)
+                .toList();
+
+        return new MonthlyCalendarResponse(calendarEntries);
+    }
+
+    public CalendarRecentsResponse getRecentAnswers(Long userId) {
+        // 최근 6개만 조회 (페이지 번호 0, 크기 6)
+        Pageable pageable = PageRequest.of(0, 6);
+
+        List<SearchAnswerEntryDto> results = answerEntryQueryRepository.findRecentAnswers(
+                userId,
+                pageable
+        );
+
+        // DTO 변환
+        List<AnswerEntrySummaryResponse> items = results.stream()
+                .map(AnswerEntrySummaryResponse::from)
+                .toList();
+
+        return CalendarRecentsResponse.from(items);
+    }
+
+    public AnswerEntrySummaryResponse getAnswerByDate(Long userId, LocalDate date) {
+        SearchAnswerEntryDto dto = answerEntryQueryRepository.findByUserAndDate(userId, date)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
+
+        return AnswerEntrySummaryResponse.from(dto);
     }
 
     /**
