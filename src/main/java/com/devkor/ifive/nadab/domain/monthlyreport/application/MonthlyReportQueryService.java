@@ -1,6 +1,8 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponse;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportResponse;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.mapper.MonthlyReportMapper;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportRepository;
@@ -22,25 +24,33 @@ public class MonthlyReportQueryService {
     private final MonthlyReportRepository monthlyReportRepository;
     private final UserRepository userRepository;
 
-    public MonthlyReportResponse getLastMonthMonthlyReport(Long userId) {
+    public MyMonthlyReportResponse getMyMonthlyReport(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
+        MonthlyReportResponse reportResponse =
+                monthlyReportRepository.findByUserIdAndMonthStartDateAndStatus(
+                                user.getId(),
+                                range.monthStartDate(),
+                                MonthlyReportStatus.COMPLETED
+                        )
+                        .map(report -> MonthlyReportMapper.toResponse(range, report))
+                        .orElse(null);
 
-        MonthlyReport report = monthlyReportRepository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
+        MonthRangeDto prevRange = MonthRangeCalculator.getTwoMonthsAgoRange();
+        MonthlyReportResponse prevResponse =
+                monthlyReportRepository.findByUserIdAndMonthStartDateAndStatus(
+                                user.getId(),
+                                prevRange.monthStartDate(),
+                                MonthlyReportStatus.COMPLETED
+                        )
+                        .map(report -> MonthlyReportMapper.toResponse(prevRange, report))
+                        .orElse(null);
 
-        if (report.getStatus() != MonthlyReportStatus.COMPLETED) {
-            throw new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_COMPLETED);
-        }
-
-        return new MonthlyReportResponse(
-                range.monthStartDate().getMonthValue(),
-                report.getDiscovered(),
-                report.getGood(),
-                report.getImprove(),
-                report.getStatus().name()
+        return new MyMonthlyReportResponse(
+                reportResponse,
+                prevResponse
         );
     }
 

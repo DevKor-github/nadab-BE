@@ -14,6 +14,12 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
 
     Optional<MonthlyReport> findByUserIdAndMonthStartDate(Long userId, LocalDate monthStartDate);
 
+    Optional<MonthlyReport> findByUserIdAndMonthStartDateAndStatus(
+            Long userId,
+            LocalDate monthStartDate,
+            MonthlyReportStatus status
+    );
+
     /**
      * PENDING -> COMPLETED 확정
      * - 분석 결과(discovered/good/improve) 저장

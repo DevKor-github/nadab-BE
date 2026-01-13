@@ -33,6 +33,15 @@ public final class MonthRangeCalculator {
     }
 
     /**
+     * KST 기준 "2달 전" 범위를 반환합니다.
+     */
+    public static MonthRangeDto getTwoMonthsAgoRange() {
+        LocalDate today = LocalDate.now(KST);
+        LocalDate lastMonthDate = today.minusMonths(2);
+        return monthRangeOf(lastMonthDate);
+    }
+
+    /**
      * KST 기준 "이번 달" 범위를 반환합니다.
      */
     public static MonthRangeDto getThisMonthRange() {
