@@ -98,7 +98,7 @@ public class MonthlyReportController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "나의 월간 리포트 조회 성공",
-                            content = @Content(schema = @Schema(implementation = MonthlyReportResponse.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = MyMonthlyReportResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
