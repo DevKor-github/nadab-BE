@@ -17,6 +17,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.util.stream.Collectors;
@@ -54,6 +55,16 @@ public class ExceptionController {
 
         // ErrorCode의 code는 사용하되, message는 validation 에러들로
         return ApiResponseEntity.error(ErrorCode.VALIDATION_FAILED, validationErrors);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        log.warn("MethodArgumentTypeMismatchException: {}", ex.getMessage(), ex);
+
+        String parameterName = ex.getName();
+        String errorMessage = String.format("%s 형식이 올바르지 않습니다. 올바른 형식으로 입력해주세요.", parameterName);
+
+        return ApiResponseEntity.error(ErrorCode.VALIDATION_FAILED, errorMessage);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
