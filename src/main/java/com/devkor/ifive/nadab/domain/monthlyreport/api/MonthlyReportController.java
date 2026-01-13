@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.monthlyreport.api;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportQueryService;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportService;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
@@ -86,7 +87,12 @@ public class MonthlyReportController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "나의 월간 리포트 조회",
-            description = "사용자의 (지난 달) 월간 리포트를 조회합니다.",
+            description = """
+                    사용자의 (지난 달에 대한) 월간 리포트와 이전 월간 리포트를 조회합니다. </br>
+                    이때 ```report```혹은 ```previousReport```가 ```null```인 경우 해당 주간 리포트가 존재하지 않음을 의미합니다. </br>
+                    ```report```혹은 ```previousReport```가
+                    ```null```이 아닌 경우 ```status```필드는 항상 ```COMPLETED```입니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
@@ -103,17 +109,15 @@ public class MonthlyReportController {
                             responseCode = "404",
                             description = """
                                     - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
-                                    - ErrorCode: MONTHLY_REPORT_NOT_FOUND - 월간 리포트를 찾을 수 없음
-                                    - ErrorCode: MONTHLY_REPORT_NOT_COMPLETED - 해당 월간 리포트가 아직 생성 완료되지 않음
                                     """,
                             content = @Content
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<MonthlyReportResponse>> getLastMonthMonthlyReport(
+    public ResponseEntity<ApiResponseDto<MyMonthlyReportResponse>> getMyMonthlyReport(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        MonthlyReportResponse response = monthlyReportQueryService.getLastMonthMonthlyReport(principal.getId());
+        MyMonthlyReportResponse response = monthlyReportQueryService.getMyMonthlyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 
