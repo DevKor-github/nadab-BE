@@ -19,8 +19,8 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
      */
     Optional<WeeklyReport> findByUserAndWeekStartDate(User user, LocalDate weekStartDate);
 
-    Optional<WeeklyReport> findByUserAndWeekStartDateAndStatus(
-            User user,
+    Optional<WeeklyReport> findByUserIdAndWeekStartDateAndStatus(
+            Long userId,
             LocalDate weekStartDate,
             WeeklyReportStatus status
     );

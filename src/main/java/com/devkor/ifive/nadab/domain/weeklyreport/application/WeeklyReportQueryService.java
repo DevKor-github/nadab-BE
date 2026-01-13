@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.MyWeeklyReportResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.WeeklyReportResponse;
+import com.devkor.ifive.nadab.domain.weeklyreport.application.mapper.WeeklyReportMapper;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
@@ -28,44 +29,25 @@ public class WeeklyReportQueryService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
-        WeeklyReport report = weeklyReportRepository.findByUserAndWeekStartDateAndStatus(
-                user, range.weekStartDate(), WeeklyReportStatus.COMPLETED
-                )
-                .orElse(null);
-        WeeklyReportResponse reportResponse;
-        if (report != null) {
-            reportResponse = new WeeklyReportResponse(
-                    range.weekStartDate().getMonthValue(),
-                    WeekRangeCalculator.getWeekOfMonth(range),
-                    report.getDiscovered(),
-                    report.getGood(),
-                    report.getImprove(),
-                    report.getStatus().name()
-            );
-        } else {
-            reportResponse = null;
-        }
+        WeeklyReportResponse reportResponse =
+                weeklyReportRepository.findByUserIdAndWeekStartDateAndStatus(
+                                user.getId(),
+                                range.weekStartDate(),
+                                WeeklyReportStatus.COMPLETED
+                        ).
+                        map(report -> WeeklyReportMapper.toResponse(range, report))
+                        .orElse(null);
+
 
         WeekRangeDto prevRange = WeekRangeCalculator.getTwoWeeksAgoRange();
-        WeeklyReport prevReport = weeklyReportRepository.findByUserAndWeekStartDateAndStatus(
-                        user,
-                        prevRange.weekStartDate(),
-                        WeeklyReportStatus.COMPLETED
-                )
-                .orElse(null);
-        WeeklyReportResponse prevReportResponse;
-        if (prevReport != null) {
-            prevReportResponse = new WeeklyReportResponse(
-                    prevRange.weekStartDate().getMonthValue(),
-                    WeekRangeCalculator.getWeekOfMonth(prevRange),
-                    prevReport.getDiscovered(),
-                    prevReport.getGood(),
-                    prevReport.getImprove(),
-                    prevReport.getStatus().name()
-            );
-        } else {
-            prevReportResponse = null;
-        }
+        WeeklyReportResponse prevReportResponse =
+                weeklyReportRepository.findByUserIdAndWeekStartDateAndStatus(
+                                user.getId(),
+                                prevRange.weekStartDate(),
+                                WeeklyReportStatus.COMPLETED
+                        )
+                        .map(report -> WeeklyReportMapper.toResponse(prevRange, report))
+                        .orElse(null);
 
         return new MyWeeklyReportResponse(reportResponse, prevReportResponse);
     }
