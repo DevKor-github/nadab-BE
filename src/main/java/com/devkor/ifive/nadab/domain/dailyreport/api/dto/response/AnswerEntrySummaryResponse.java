@@ -14,7 +14,7 @@ public record AnswerEntrySummaryResponse(
         @Schema(description = "관심분야 코드 (PREFERENCE, EMOTION, ROUTINE, RELATIONSHIP, LOVE, VALUES)", example = "EMOTION")
         String interestCode,
 
-        @Schema(description = "감정 코드 (리포트 생성 완료 시에만 제공, PENDING/FAILED 상태면 null)", example = "JOY")
+        @Schema(description = "감정 코드 (리포트 생성 완료 시에만 제공, PENDING/FAILED 상태면 null)", example = "ACHIEVEMENT")
         String emotionCode,
 
         @Schema(description = "질문 내용", example = "오늘 가장 기뻤던 순간은?")
@@ -26,7 +26,10 @@ public record AnswerEntrySummaryResponse(
         @Schema(description = "답변 작성일", example = "2025-12-25")
         LocalDate answerDate
 ) {
-    public static AnswerEntrySummaryResponse toResponse(SearchAnswerEntryDto dto, String keyword) {
+    /**
+     * 검색 키워드가 있는 경우 (키워드 포함 문장 추출)
+     */
+    public static AnswerEntrySummaryResponse from(SearchAnswerEntryDto dto, String keyword) {
         String snippet = MatchedSnippetExtractor.extract(dto.answerContent(), keyword);
 
         return new AnswerEntrySummaryResponse(
@@ -37,5 +40,12 @@ public record AnswerEntrySummaryResponse(
                 snippet,
                 dto.answerDate()
         );
+    }
+
+    /**
+     * 검색 키워드가 없는 경우 (첫 문장 추출)
+     */
+    public static AnswerEntrySummaryResponse from(SearchAnswerEntryDto dto) {
+        return from(dto, null);
     }
 }

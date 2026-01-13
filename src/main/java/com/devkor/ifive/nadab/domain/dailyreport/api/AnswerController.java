@@ -1,7 +1,11 @@
 package com.devkor.ifive.nadab.domain.dailyreport.api;
 
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.GetMonthlyCalendarRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.SearchAnswerEntryRequest;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerEntrySummaryResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CalendarRecentsResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.MonthlyCalendarResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.SearchAnswerEntryResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.AnswerQueryService;
 import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportQueryService;
@@ -22,7 +26,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "답변 API", description = "답변 검색 및 조회 관련 API")
+import java.time.LocalDate;
+
+@Tag(name = "답변 API", description = "답변 검색, 조회 및 캘린더 관련 API")
 @RestController
 @RequestMapping("${api_prefix}/answers")
 @RequiredArgsConstructor
@@ -79,7 +85,7 @@ public class AnswerController {
                             description = "검색 성공",
                             content = @Content(schema = @Schema(implementation = SearchAnswerEntryResponse.class))
                     ),
-                    @ApiResponse(responseCode = "400", description = "잘못된 요청 (cursor 형식 오류 등)", content = @Content),
+                    @ApiResponse(responseCode = "400", description = "ErrorCode: VALIDATION_FAILED - 잘못된 요청 (cursor 형식 오류 등)", content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
             }
     )
@@ -143,6 +149,104 @@ public class AnswerController {
             @PathVariable Long answerId
     ) {
         DailyReportResponse response = dailyReportQueryService.getDailyReportByAnswerId(principal.getId(), answerId);
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping("/calendar")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "월별 캘린더 조회",
+            description = """
+                    특정 월의 답변이 있는 날짜와 감정 코드를 조회합니다.
+
+                    - 답변이 없는 날짜는 결과에 포함되지 않습니다.
+                    - emotionCode는 리포트가 COMPLETED 상태일 때만 제공됩니다.
+                    - 리포트가 없거나 PENDING/FAILED 상태면 null입니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = MonthlyCalendarResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "400", description = "ErrorCode: VALIDATION_FAILED - 잘못된 요청 (연도/월 범위 오류)", content = @Content),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<MonthlyCalendarResponse>> getMonthlyCalendar(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @ModelAttribute GetMonthlyCalendarRequest request
+    ) {
+        MonthlyCalendarResponse response = answerQueryService.getMonthlyCalendar(
+                principal.getId(),
+                request
+        );
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping("/calendar/recents")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "캘린더 최근 기록 미리보기",
+            description = """
+                    최근 답변을 최대 6개까지 조회합니다. (날짜 내림차순)
+
+                    - 답변이 6개 미만인 경우 전체 답변을 반환합니다.
+                    - 답변이 없는 경우 빈 배열을 반환합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = CalendarRecentsResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<CalendarRecentsResponse>> getCalendarRecents(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        CalendarRecentsResponse response = answerQueryService.getRecentAnswers(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+
+    @GetMapping("/calendar/{date}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "특정 날짜 답변 조회",
+            description = """
+                    특정 날짜의 답변 미리보기를 조회합니다.
+
+                    - 해당 날짜에 답변이 없으면 404 에러를 반환합니다.
+                    - 날짜 형식: yyyy-MM-dd (예: 2026-01-30)
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = AnswerEntrySummaryResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "400", description = "ErrorCode: VALIDATION_FAILED - 잘못된 날짜 형식", content = @Content),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "ErrorCode: ANSWER_NOT_FOUND - 해당 날짜에 답변이 없음",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<AnswerEntrySummaryResponse>> getAnswerByDate(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable LocalDate date
+    ) {
+        AnswerEntrySummaryResponse response = answerQueryService.getAnswerByDate(
+                principal.getId(),
+                date
+        );
         return ApiResponseEntity.ok(response);
     }
 }
