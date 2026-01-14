@@ -90,8 +90,13 @@ public class WeeklyReportController {
             description = """
                     사용자의 (지난 주에 대한) 주간 리포트와 이전 주간 리포트를 조회합니다. </br>
                     이때 ```report```혹은 ```previousReport```가 ```null```인 경우 해당 주간 리포트가 존재하지 않음을 의미합니다. </br>
-                    ```report```혹은 ```previousReport```가
-                    ```null```이 아닌 경우 ```status```필드는 항상 ```COMPLETED```입니다.
+                    ```previousReport```가 ```null```이 아닌 경우 ```status```필드는 항상 ```COMPLETED```입니다. </br>
+                    **<```report```의 state>** </br>
+                    생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
+                    생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
+                    생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
+                    생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
+                    
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

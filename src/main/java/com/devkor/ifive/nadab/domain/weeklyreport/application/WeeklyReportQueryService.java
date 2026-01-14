@@ -30,14 +30,12 @@ public class WeeklyReportQueryService {
 
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
         WeeklyReportResponse reportResponse =
-                weeklyReportRepository.findByUserIdAndWeekStartDateAndStatus(
-                                user.getId(),
-                                range.weekStartDate(),
-                                WeeklyReportStatus.COMPLETED
+                weeklyReportRepository.findByUserAndWeekStartDate(
+                                user,
+                                range.weekStartDate()
                         ).
                         map(report -> WeeklyReportMapper.toResponse(range, report))
                         .orElse(null);
-
 
         WeekRangeDto prevRange = WeekRangeCalculator.getTwoWeeksAgoRange();
         WeeklyReportResponse prevReportResponse =
