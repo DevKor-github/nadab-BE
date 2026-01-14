@@ -30,10 +30,9 @@ public class MonthlyReportQueryService {
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
         MonthlyReportResponse reportResponse =
-                monthlyReportRepository.findByUserIdAndMonthStartDateAndStatus(
+                monthlyReportRepository.findByUserIdAndMonthStartDate(
                                 user.getId(),
-                                range.monthStartDate(),
-                                MonthlyReportStatus.COMPLETED
+                                range.monthStartDate()
                         )
                         .map(report -> MonthlyReportMapper.toResponse(range, report))
                         .orElse(null);
