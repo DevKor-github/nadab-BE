@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Long> {
@@ -18,6 +19,12 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
             Long userId,
             LocalDate monthStartDate,
             MonthlyReportStatus status
+    );
+
+    List<MonthlyReport> findAllByUserIdAndStatusAndMonthEndDateLessThanEqualOrderByMonthStartDateAsc(
+            Long userId,
+            MonthlyReportStatus status,
+            LocalDate snapshotDate
     );
 
     /**
