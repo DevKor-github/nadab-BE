@@ -2,8 +2,9 @@ CREATE TABLE overall_reports (
                                  id BIGSERIAL PRIMARY KEY,
                                  user_id BIGINT NOT NULL,
                                  analysis_type_id BIGINT,
+                                 interest_code VARCHAR(50) NOT NULL,
 
-                                 snapshot_date DATE NOT NULL, -- 이 날짜까지의 기록을 기반으로 생성
+                                 date DATE NOT NULL,
 
                                  type_analysis VARCHAR(400),
                                  persona1_title VARCHAR(15),
@@ -13,20 +14,25 @@ CREATE TABLE overall_reports (
 
                                  status VARCHAR(16) NOT NULL,
                                  analyzed_at TIMESTAMPTZ,
-                                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+                                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                                 deleted_at TIMESTAMPTZ,
+
+                                 CONSTRAINT fk_overall_reports_user
+                                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+                                 CONSTRAINT fk_overall_reports_analysis_type
+                                     FOREIGN KEY (analysis_type_id) REFERENCES analysis_types(id)
 );
 
--- 한 유저가 같은 snapshot_date로 중복 생성 방지
-CREATE UNIQUE INDEX uq_overall_reports_user_snapshot
-    ON overall_reports(user_id, snapshot_date);
+-- 삭제되지 않은 현재 리포트는 interest_code당 1개 (부분 유니크 인덱스)
+CREATE UNIQUE INDEX uq_overall_reports_user_interest_active
+    ON overall_reports (user_id, interest_code)
+    WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_overall_reports_user_created
-    ON overall_reports(user_id, created_at DESC);
+CREATE INDEX idx_overall_reports_not_deleted
+    ON overall_reports (deleted_at);
 
-ALTER TABLE overall_reports
-    ADD CONSTRAINT fk_overall_reports_user
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE overall_reports
-    ADD CONSTRAINT fk_overall_reports_analysis_type
-        FOREIGN KEY (analysis_type_id) REFERENCES analysis_types(id);
+CREATE INDEX idx_overall_reports_user_interest_date
+    ON overall_reports (user_id, interest_code, date DESC);

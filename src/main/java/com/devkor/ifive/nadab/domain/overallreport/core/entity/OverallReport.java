@@ -1,7 +1,8 @@
 package com.devkor.ifive.nadab.domain.overallreport.core.entity;
 
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.global.shared.entity.CreatableEntity;
+import com.devkor.ifive.nadab.global.shared.entity.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,20 +13,9 @@ import java.time.OffsetDateTime;
 
 @Getter
 @Entity
-@Table(
-        name = "overall_reports",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uq_overall_reports_user_snapshot",
-                        columnNames = {"user_id", "snapshot_date"}
-                )
-        },
-        indexes = {
-                @Index(name = "idx_overall_reports_user_created", columnList = "user_id, created_at")
-        }
-)
+@Table(name = "overall_reports")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OverallReport extends CreatableEntity{
+public class OverallReport extends SoftDeletableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,11 +29,12 @@ public class OverallReport extends CreatableEntity{
     @JoinColumn(name = "analysis_type_id")
     private AnalysisType analysisType;
 
-    /**
-     * 이 날짜까지의 기록을 기반으로 생성한 "스냅샷 기준일"
-     */
-    @Column(name = "snapshot_date", nullable = false)
-    private LocalDate snapshotDate;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "interest_code", nullable = false, length = 50)
+    private InterestCode interestCode;
+
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
 
     @Column(name = "type_analysis", length = 400)
     private String typeAnalysis;
@@ -70,6 +61,7 @@ public class OverallReport extends CreatableEntity{
     public static OverallReport create(
             User user,
             AnalysisType analysisType,
+            InterestCode interestCode,
             String typeAnalysis,
             String persona1Title,
             String persona1Content,
@@ -80,21 +72,23 @@ public class OverallReport extends CreatableEntity{
     ) {
         OverallReport report = new OverallReport();
         report.user = user;
+        report.interestCode = interestCode;
         report.analysisType = analysisType;
         report.typeAnalysis = typeAnalysis;
         report.persona1Title = persona1Title;
         report.persona1Content = persona1Content;
         report.persona2Title = persona2Title;
         report.persona2Content = persona2Content;
-        report.snapshotDate = date;
+        report.date = date;
         report.status = status;
         return report;
     }
 
-    public static OverallReport createPending(User user, LocalDate rangeStart, LocalDate rangeEnd, LocalDate date) {
+    public static OverallReport createPending(User user, LocalDate date, InterestCode interestCode) {
         return create(
                 user,
                 null,
+                interestCode,
                 null,
                 null,
                 null,
