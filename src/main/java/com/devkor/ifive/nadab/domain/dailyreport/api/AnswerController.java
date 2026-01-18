@@ -7,7 +7,6 @@ import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CalendarRecent
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.MonthlyCalendarResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.SearchAnswerEntryResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.AnswerQueryService;
-import com.devkor.ifive.nadab.domain.search.application.SearchHistoryCommandService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
@@ -33,7 +32,6 @@ import java.time.LocalDate;
 public class AnswerController {
 
     private final AnswerQueryService answerQueryService;
-    private final SearchHistoryCommandService searchHistoryCommandService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -71,9 +69,9 @@ public class AnswerController {
                     - GET /api/v1/answers?keyword=행복&emotionCode=JOY&cursor=2025-12-06
 
                     ### 참고사항
-                    - 검색어는 자동으로 저장됩니다.
                     - keyword와 emotionCode는 동시에 사용 가능합니다.
                     - emotionCode만 사용 시 keyword는 생략 가능합니다.
+                    - 검색어 저장은 POST /api/v1/search/histories 엔드포인트를 통해 별도로 수행할 수 있습니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -90,12 +88,7 @@ public class AnswerController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @ModelAttribute SearchAnswerEntryRequest request
     ) {
-        // 검색 실행
         SearchAnswerEntryResponse response = answerQueryService.searchAnswers(principal.getId(), request);
-
-        // 검색어 저장 (동기)
-        searchHistoryCommandService.saveOrRefreshSearchHistory(principal.getId(), request.keyword());
-
         return ApiResponseEntity.ok(response);
     }
 
