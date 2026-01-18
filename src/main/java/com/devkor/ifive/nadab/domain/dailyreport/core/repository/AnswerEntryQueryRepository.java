@@ -136,12 +136,12 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
     );
 
     /**
-     * 사용자의 첫 번째 답변 날짜 조회
+     * 사용자의 모든 답변 날짜 조회
      */
     @Query("""
-        SELECT MIN(ae.date)
+        SELECT ae.date
         FROM AnswerEntry ae
         WHERE ae.user.id = :userId
         """)
-    Optional<LocalDate> findFirstAnswerDateByUserId(@Param("userId") Long userId);
+    List<LocalDate> findAllAnswerDatesByUserId(@Param("userId") Long userId);
 }

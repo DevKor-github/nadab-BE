@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,42 +27,31 @@ public class HomeQueryService {
         // 1. 이번 주 범위 계산
         WeekRangeDto weekRange = WeekRangeCalculator.weekRangeOf(today);
 
-        // 2. 첫 답변 날짜 조회
-        LocalDate firstAnswerDate = answerEntryQueryRepository
-                .findFirstAnswerDateByUserId(userId)
-                .orElse(null);
+        // 2. 전체 답변 날짜 조회
+        List<LocalDate> allAnswerDates = answerEntryQueryRepository.findAllAnswerDatesByUserId(userId);
 
-        // 3. 첫 답변 날짜 ~ 오늘까지 전체 답변 날짜 조회
-        List<LocalDate> allAnswerDates;
-        if (firstAnswerDate == null) {
-            allAnswerDates = List.of();  // 신규 사용자
-        } else {
-            allAnswerDates = answerEntryQueryRepository
-                    .findAnswerDatesByUserIdAndDateBetween(userId, firstAnswerDate, today);
-        }
-
-        // 4. 주간 답변 필터링
+        // 3. 이번 주 답변 필터링
         List<LocalDate> weeklyAnsweredDates = allAnswerDates.stream()
                 .filter(date -> !date.isBefore(weekRange.weekStartDate())
                         && !date.isAfter(weekRange.weekEndDate()))
                 .sorted()
                 .toList();
 
-        // 5. Streak 계산
-        long currentStreak = calculateCurrentStreak(today, allAnswerDates);
+        // 4. Streak 계산
+        int currentStreak = calculateCurrentStreak(today, allAnswerDates);
 
-        // 6. 총 기록 일수 계산
-        long totalDaysSinceStart = calculateTotalDaysSinceStart(today, firstAnswerDate);
+        // 5. 총 기록 일수 (실제 답변한 날짜 수)
+        int totalAnsweredDays = allAnswerDates.size();
 
-        // 7. 응답 생성
+        // 6. 응답 생성
         return new HomeResponse(
                 weeklyAnsweredDates,
                 currentStreak,
-                totalDaysSinceStart
+                totalAnsweredDays
         );
     }
 
-    private long calculateCurrentStreak(LocalDate today, List<LocalDate> answerDates) {
+    private int calculateCurrentStreak(LocalDate today, List<LocalDate> answerDates) {
         if (answerDates == null || answerDates.isEmpty()) {
             return 0;
         }
@@ -73,8 +61,13 @@ public class HomeQueryService {
         // 시작 날짜 결정: 오늘 답변 있으면 오늘부터, 없으면 어제부터
         LocalDate checkDate = dateSet.contains(today) ? today : today.minusDays(1);
 
+        // 어제부터 시작하는데 어제 답변이 없으면 streak 0
+        if (!dateSet.contains(checkDate)) {
+            return 0;
+        }
+
         // 역순 연속 계산
-        long streak = 0;
+        int streak = 0;
 
         while (dateSet.contains(checkDate)) {
             streak++;
@@ -82,13 +75,5 @@ public class HomeQueryService {
         }
 
         return streak;
-    }
-
-    private long calculateTotalDaysSinceStart(LocalDate today, LocalDate firstAnswerDate) {
-        if (firstAnswerDate == null || firstAnswerDate.isAfter(today)) {
-            return 0;
-        }
-
-        return ChronoUnit.DAYS.between(firstAnswerDate, today) + 1;
     }
 }
