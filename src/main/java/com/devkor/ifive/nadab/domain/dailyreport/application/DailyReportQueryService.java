@@ -8,7 +8,6 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepo
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
-import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
@@ -36,26 +35,6 @@ public class DailyReportQueryService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
 
         DailyReport report = dailyReportRepository.findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
-
-        return new DailyReportResponse(
-                entry.getContent(),
-                report.getContent(),
-                report.getEmotion().getCode().toString()
-        );
-    }
-
-    public DailyReportResponse getDailyReportByAnswerId(Long userId, Long answerId) {
-        // 답변 조회 및 권한 확인
-        AnswerEntry entry = answerEntryRepository.findById(answerId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
-
-        if (!entry.getUser().getId().equals(userId)) {
-            throw new ForbiddenException(ErrorCode.ANSWER_ACCESS_FORBIDDEN);
-        }
-
-        // 리포트 조회
-        DailyReport report = dailyReportRepository.findByAnswerEntryIdAndCompleted(answerId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
 
         return new DailyReportResponse(

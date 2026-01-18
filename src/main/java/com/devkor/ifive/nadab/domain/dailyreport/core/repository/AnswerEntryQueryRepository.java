@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.repository;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.MonthlyCalendarDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
@@ -100,12 +101,31 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
             Pageable pageable
     );
 
+
     /**
-     * 특정 날짜 답변 조회
+     * 답변 ID로 상세 조회
      */
     @Query("""
-        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto(
-            ae.id, ae.question.interest.code, e.code, ae.question.questionText, ae.content, ae.date
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
+            ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code
+        )
+        from AnswerEntry ae
+        left join DailyReport dr on dr.answerEntry = ae and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+        left join dr.emotion e
+        where ae.id = :answerId
+          and ae.user.id = :userId
+        """)
+    Optional<AnswerDetailDto> findDetailByAnswerId(
+            @Param("userId") Long userId,
+            @Param("answerId") Long answerId
+    );
+
+    /**
+     * 날짜로 상세 조회
+     */
+    @Query("""
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
+            ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code
         )
         from AnswerEntry ae
         left join DailyReport dr on dr.answerEntry = ae and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
@@ -113,7 +133,7 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
         where ae.user.id = :userId
           and ae.date = :date
         """)
-    Optional<SearchAnswerEntryDto> findByUserAndDate(
+    Optional<AnswerDetailDto> findDetailByUserAndDate(
             @Param("userId") Long userId,
             @Param("date") LocalDate date
     );
