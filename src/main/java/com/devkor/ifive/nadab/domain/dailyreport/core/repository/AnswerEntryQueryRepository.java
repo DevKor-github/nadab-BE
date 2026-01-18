@@ -119,29 +119,12 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
     );
 
     /**
-     * 특정 기간 내 사용자가 답변한 날짜 목록 조회 (오름차순)
+     * 사용자의 모든 답변 날짜 조회
      */
     @Query("""
         SELECT ae.date
         FROM AnswerEntry ae
         WHERE ae.user.id = :userId
-        AND ae.date >= :startDate
-        AND ae.date <= :endDate
-        ORDER BY ae.date ASC
         """)
-    List<LocalDate> findAnswerDatesByUserIdAndDateBetween(
-            @Param("userId") Long userId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
-    );
-
-    /**
-     * 사용자의 첫 번째 답변 날짜 조회
-     */
-    @Query("""
-        SELECT MIN(ae.date)
-        FROM AnswerEntry ae
-        WHERE ae.user.id = :userId
-        """)
-    Optional<LocalDate> findFirstAnswerDateByUserId(@Param("userId") Long userId);
+    List<LocalDate> findAllAnswerDatesByUserId(@Param("userId") Long userId);
 }

@@ -10,9 +10,9 @@ public record HomeResponse(
         List<LocalDate> answeredDates,
 
         @Schema(description = "현재 연속 답변 일수 (오늘 답변 있으면 오늘까지, 없으면 어제까지)", example = "15")
-        long streakCount,
+        int streakCount,
 
-        @Schema(description = "첫 답변 이후 경과 일수 (N일째 기록 중)", example = "20")
-        long totalRecordDays
+        @Schema(description = "실제 답변한 날짜의 총 개수", example = "20")
+        int totalRecordDays
 ) {
 }
