@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.overallreport.core.entity;
+package com.devkor.ifive.nadab.domain.typereport.core.entity;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -13,9 +13,9 @@ import java.time.OffsetDateTime;
 
 @Getter
 @Entity
-@Table(name = "overall_reports")
+@Table(name = "type_reports")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OverallReport extends SoftDeletableEntity {
+public class TypeReport extends SoftDeletableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,12 +53,12 @@ public class OverallReport extends SoftDeletableEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
-    private OverallReportStatus status;
+    private TypeReportStatus status;
 
     @Column(name = "analyzed_at")
     private OffsetDateTime analyzedAt;
 
-    public static OverallReport create(
+    public static TypeReport create(
             User user,
             AnalysisType analysisType,
             InterestCode interestCode,
@@ -68,9 +68,9 @@ public class OverallReport extends SoftDeletableEntity {
             String persona2Title,
             String persona2Content,
             LocalDate date,
-            OverallReportStatus status
+            TypeReportStatus status
     ) {
-        OverallReport report = new OverallReport();
+        TypeReport report = new TypeReport();
         report.user = user;
         report.interestCode = interestCode;
         report.analysisType = analysisType;
@@ -84,7 +84,7 @@ public class OverallReport extends SoftDeletableEntity {
         return report;
     }
 
-    public static OverallReport createPending(User user, LocalDate date, InterestCode interestCode) {
+    public static TypeReport createPending(User user, LocalDate date, InterestCode interestCode) {
         return create(
                 user,
                 null,
@@ -95,7 +95,7 @@ public class OverallReport extends SoftDeletableEntity {
                 null,
                 null,
                 date,
-                OverallReportStatus.PENDING
+                TypeReportStatus.PENDING
         );
     }
 }

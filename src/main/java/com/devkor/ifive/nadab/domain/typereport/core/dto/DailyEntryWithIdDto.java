@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.overallreport.core.dto;
+package com.devkor.ifive.nadab.domain.typereport.core.dto;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionName;
 

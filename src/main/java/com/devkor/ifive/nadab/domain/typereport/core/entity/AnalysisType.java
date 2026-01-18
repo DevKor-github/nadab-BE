@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.overallreport.core.entity;
+package com.devkor.ifive.nadab.domain.typereport.core.entity;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.shared.entity.SoftDeletableEntity;

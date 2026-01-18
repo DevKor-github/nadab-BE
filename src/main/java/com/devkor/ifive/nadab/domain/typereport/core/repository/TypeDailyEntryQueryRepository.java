@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.overallreport.core.repository;
+package com.devkor.ifive.nadab.domain.typereport.core.repository;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface OverallDailyEntryQueryRepository extends Repository<DailyReport, Long> {
+public interface TypeDailyEntryQueryRepository extends Repository<DailyReport, Long> {
 
     @Query(value = """
         SELECT
