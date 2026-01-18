@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.search.api;
 
+import com.devkor.ifive.nadab.domain.search.api.dto.request.SaveSearchHistoryRequest;
 import com.devkor.ifive.nadab.domain.search.api.dto.response.SearchHistoryListResponse;
 import com.devkor.ifive.nadab.domain.search.application.SearchHistoryCommandService;
 import com.devkor.ifive.nadab.domain.search.application.SearchHistoryQueryService;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,6 +53,42 @@ public class SearchController {
         List<SearchHistory> histories = searchHistoryQueryService.getRecentSearches(principal.getId());
         SearchHistoryListResponse response = SearchHistoryListResponse.from(histories);
         return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/histories")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "검색어 저장",
+            description = """
+                    사용자가 검색어를 확정했을 때 검색어를 저장합니다.
+
+                    - 엔터를 치거나 검색 버튼을 누르거나 답변 검색 결과를 클릭했을 때 호출됩니다.
+                    - 이미 존재하는 검색어는 최신 순서로 갱신됩니다.
+                    - 빈 문자열이나 공백만 있는 경우 저장되지 않습니다.
+
+                    ### 에러 처리
+                    - DB 장애 등으로 내부 오류가 발생해서 실제 저장이 실패하더라도 204를 반환합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "저장 완료 (내부 오류 발생 시에도 204 반환)"
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "ErrorCode: VALIDATION_FAILED - 잘못된 요청 (키워드 누락 또는 길이 초과)",
+                            content = @Content
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> saveSearchHistory(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody SaveSearchHistoryRequest request
+    ) {
+        searchHistoryCommandService.saveOrRefreshSearchHistory(principal.getId(), request.keyword());
+        return ApiResponseEntity.noContent();
     }
 
     @DeleteMapping("/histories/{historyId}")

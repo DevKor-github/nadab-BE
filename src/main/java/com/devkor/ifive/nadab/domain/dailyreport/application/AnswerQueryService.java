@@ -2,11 +2,13 @@ package com.devkor.ifive.nadab.domain.dailyreport.application;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.GetMonthlyCalendarRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.SearchAnswerEntryRequest;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerDetailResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerEntrySummaryResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CalendarEntryResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CalendarRecentsResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.MonthlyCalendarResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.SearchAnswerEntryResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.MonthlyCalendarDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
@@ -123,11 +125,18 @@ public class AnswerQueryService {
         return CalendarRecentsResponse.from(items);
     }
 
-    public AnswerEntrySummaryResponse getAnswerByDate(Long userId, LocalDate date) {
-        SearchAnswerEntryDto dto = answerEntryQueryRepository.findByUserAndDate(userId, date)
+    public AnswerDetailResponse getAnswerDetailById(Long userId, Long answerId) {
+        AnswerDetailDto dto = answerEntryQueryRepository.findDetailByAnswerId(userId, answerId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
 
-        return AnswerEntrySummaryResponse.from(dto);
+        return AnswerDetailResponse.from(dto);
+    }
+
+    public AnswerDetailResponse getAnswerDetailByDate(Long userId, LocalDate date) {
+        AnswerDetailDto dto = answerEntryQueryRepository.findDetailByUserAndDate(userId, date)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
+
+        return AnswerDetailResponse.from(dto);
     }
 
     /**

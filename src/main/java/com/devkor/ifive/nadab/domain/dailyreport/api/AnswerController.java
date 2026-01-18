@@ -2,14 +2,11 @@ package com.devkor.ifive.nadab.domain.dailyreport.api;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.GetMonthlyCalendarRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.SearchAnswerEntryRequest;
-import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerEntrySummaryResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerDetailResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CalendarRecentsResponse;
-import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.MonthlyCalendarResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.SearchAnswerEntryResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.AnswerQueryService;
-import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportQueryService;
-import com.devkor.ifive.nadab.domain.search.application.SearchHistoryCommandService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
@@ -34,9 +31,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class AnswerController {
 
-    private final DailyReportQueryService dailyReportQueryService;
     private final AnswerQueryService answerQueryService;
-    private final SearchHistoryCommandService searchHistoryCommandService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -74,9 +69,9 @@ public class AnswerController {
                     - GET /api/v1/answers?keyword=행복&emotionCode=JOY&cursor=2025-12-06
 
                     ### 참고사항
-                    - 검색어는 자동으로 저장됩니다.
                     - keyword와 emotionCode는 동시에 사용 가능합니다.
                     - emotionCode만 사용 시 keyword는 생략 가능합니다.
+                    - 검색어 저장은 POST /api/v1/search/histories 엔드포인트를 통해 별도로 수행할 수 있습니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -93,12 +88,7 @@ public class AnswerController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @ModelAttribute SearchAnswerEntryRequest request
     ) {
-        // 검색 실행
         SearchAnswerEntryResponse response = answerQueryService.searchAnswers(principal.getId(), request);
-
-        // 검색어 저장 (동기)
-        searchHistoryCommandService.saveOrRefreshSearchHistory(principal.getId(), request.keyword());
-
         return ApiResponseEntity.ok(response);
     }
 
@@ -109,6 +99,9 @@ public class AnswerController {
             description = """
                     답변 ID로 해당 답변의 상세 정보와 리포트를 조회합니다.
 
+                    - 질문 내용 (questionText)
+                    - 질문 카테고리 (interestCode)
+                    - 답변 작성일 (answerDate)
                     - 답변 내용 (answer)
                     - 리포트 내용 (content)
                     - 감정 상태 (emotion)
@@ -119,8 +112,8 @@ public class AnswerController {
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "리포트 조회 성공",
-                            content = @Content(schema = @Schema(implementation = DailyReportResponse.class), mediaType = "application/json")
+                            description = "상세 조회 성공",
+                            content = @Content(schema = @Schema(implementation = AnswerDetailResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -128,27 +121,19 @@ public class AnswerController {
                             content = @Content
                     ),
                     @ApiResponse(
-                            responseCode = "403",
-                            description = """
-                                    - ErrorCode: ANSWER_ACCESS_FORBIDDEN - 본인의 답변이 아님
-                                    """,
-                            content = @Content
-                    ),
-                    @ApiResponse(
                             responseCode = "404",
                             description = """
-                                    - ErrorCode: ANSWER_NOT_FOUND - 답변을 찾을 수 없음
-                                    - ErrorCode: DAILY_REPORT_NOT_FOUND - 리포트가 생성되지 않았음
+                                    - ErrorCode: ANSWER_NOT_FOUND - 답변을 찾을 수 없음 (또는 본인의 답변이 아님)
                                     """,
                             content = @Content
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<DailyReportResponse>> getDailyReportByAnswerId(
+    public ResponseEntity<ApiResponseDto<AnswerDetailResponse>> getAnswerDetailById(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long answerId
     ) {
-        DailyReportResponse response = dailyReportQueryService.getDailyReportByAnswerId(principal.getId(), answerId);
+        AnswerDetailResponse response = answerQueryService.getAnswerDetailById(principal.getId(), answerId);
         return ApiResponseEntity.ok(response);
     }
 
@@ -216,11 +201,20 @@ public class AnswerController {
     @GetMapping("/calendar/{date}")
     @PreAuthorize("isAuthenticated()")
     @Operation(
-            summary = "특정 날짜 답변 조회",
+            summary = "특정 날짜 답변 상세 조회",
             description = """
-                    특정 날짜의 답변 미리보기를 조회합니다.
+                    특정 날짜의 답변 전체 정보를 조회합니다.
+
+                    응답 데이터:
+                    - 질문 내용 (questionText)
+                    - 질문 카테고리 (interestCode)
+                    - 답변 작성일 (answerDate)
+                    - 답변 내용 (answer)
+                    - 리포트 내용 (content)
+                    - 감정 상태 (emotion)
 
                     - 해당 날짜에 답변이 없으면 404 에러를 반환합니다.
+                    - COMPLETED 상태의 리포트만 조회 가능합니다.
                     - 날짜 형식: yyyy-MM-dd (예: 2026-01-30)
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -228,7 +222,7 @@ public class AnswerController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "조회 성공",
-                            content = @Content(schema = @Schema(implementation = AnswerEntrySummaryResponse.class))
+                            content = @Content(schema = @Schema(implementation = AnswerDetailResponse.class))
                     ),
                     @ApiResponse(responseCode = "400", description = "ErrorCode: VALIDATION_FAILED - 잘못된 날짜 형식", content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
@@ -239,11 +233,11 @@ public class AnswerController {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<AnswerEntrySummaryResponse>> getAnswerByDate(
+    public ResponseEntity<ApiResponseDto<AnswerDetailResponse>> getAnswerDetailByDate(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable LocalDate date
     ) {
-        AnswerEntrySummaryResponse response = answerQueryService.getAnswerByDate(
+        AnswerDetailResponse response = answerQueryService.getAnswerDetailByDate(
                 principal.getId(),
                 date
         );
