@@ -187,7 +187,12 @@ public enum ErrorCode {
 
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
-    NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)");
+    NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)"),
+
+    // ==================== FRIEND (친구) ====================
+    // 400 Bad Request
+    FRIENDSHIP_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 친구 요청입니다"),
+    FRIENDSHIP_USER_NOT_INVOLVED(HttpStatus.BAD_REQUEST, "해당 유저는 이 친구 관계에 포함되지 않습니다");
 
     private final HttpStatus httpStatus;
     private final String message;
