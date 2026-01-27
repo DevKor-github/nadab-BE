@@ -58,10 +58,10 @@ public class FeedQueryService {
                     return new FeedResponse(
                             dto.nickname(),
                             profileUrl,
-                            dto.interestCode().name(),
+                            dto.interestCode() != null ? dto.interestCode().name() : null,
                             dto.questionText(),
                             dto.answerContent(),
-                            dto.emotionCode().name()
+                            dto.emotionCode() != null ? dto.emotionCode().name() : null
                     );
                 })
                 .toList();

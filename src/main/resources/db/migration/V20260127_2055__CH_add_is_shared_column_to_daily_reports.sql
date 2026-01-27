@@ -3,5 +3,5 @@ ALTER TABLE daily_reports
 ADD COLUMN is_shared BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- 피드 조회 성능 최적화를 위한 인덱스
-CREATE INDEX idx_daily_reports_date_shared_sharing
+CREATE INDEX idx_daily_reports_date_sharing
 ON daily_reports(date, is_shared);
