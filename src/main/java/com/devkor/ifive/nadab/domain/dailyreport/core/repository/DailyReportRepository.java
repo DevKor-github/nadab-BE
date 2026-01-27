@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.repository;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface DailyReportRepository extends JpaRepository<DailyReport, Long> {
@@ -75,10 +77,43 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
     );
 
     @Query("""
-        SELECT dr
-        FROM DailyReport dr
-        WHERE dr.answerEntry.id = :answerId
-          AND dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
-        """)
-    Optional<DailyReport> findByAnswerEntryIdAndCompleted(@Param("answerId") Long answerId);
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto(
+            ae.user.nickname,
+            ae.user.profileImageKey,
+            ae.user.defaultProfileType,
+            ae.question.interest.code,
+            ae.question.questionText,
+            ae.content,
+            dr.emotion.code
+        )
+        from DailyReport dr
+        join AnswerEntry ae on dr.answerEntry = ae
+        where dr.date = :date
+          and dr.isShared = true
+          and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+          and ae.user.id in :friendIds
+          and ae.user.deletedAt is null
+        order by dr.createdAt desc
+    """)
+    List<FeedDto> findSharedFeedsByFriendIds(
+        @Param("date") LocalDate date,
+        @Param("friendIds") List<Long> friendIds
+    );
+
+    @Query("""
+        select dr
+        from DailyReport dr
+        join fetch dr.answerEntry ae
+        where ae.user.id = :userId
+          and dr.date = :date
+          and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+    """)
+    Optional<DailyReport> findByUserIdAndDate(
+        @Param("userId") Long userId,
+        @Param("date") LocalDate date
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE DailyReport dr SET dr.isShared = false WHERE dr.date < :today AND dr.isShared = true")
+    int resetAllShareStatus(@Param("today") LocalDate today);
 }
