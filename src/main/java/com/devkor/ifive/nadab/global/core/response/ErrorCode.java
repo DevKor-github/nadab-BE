@@ -193,7 +193,18 @@ public enum ErrorCode {
     // ==================== FRIEND (친구) ====================
     // 400 Bad Request
     FRIENDSHIP_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 친구 요청입니다"),
-    FRIENDSHIP_USER_NOT_INVOLVED(HttpStatus.BAD_REQUEST, "해당 유저는 이 친구 관계에 포함되지 않습니다");
+    FRIENDSHIP_USER_NOT_INVOLVED(HttpStatus.BAD_REQUEST, "해당 유저는 이 친구 관계에 포함되지 않습니다"),
+    FRIENDSHIP_CANNOT_SEND_TO_SELF(HttpStatus.BAD_REQUEST, "본인에게 친구 요청을 보낼 수 없습니다"),
+    FRIENDSHIP_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 친구이거나 친구 요청이 존재합니다"),
+    FRIEND_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "친구는 최대 20명까지 추가할 수 있어요"),
+    FRIEND_RECEIVER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "상대방의 친구 목록이 가득 찼습니다"),
+
+    // 403 Forbidden
+    FRIENDSHIP_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 친구 관계만 관리할 수 있습니다"),
+
+    // 404 Not Found
+    FRIENDSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 관계를 찾을 수 없습니다"),
+    FRIEND_SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다");
 
     private final HttpStatus httpStatus;
     private final String message;
