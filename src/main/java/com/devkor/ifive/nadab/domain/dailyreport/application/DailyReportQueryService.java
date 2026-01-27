@@ -40,7 +40,8 @@ public class DailyReportQueryService {
         return new DailyReportResponse(
                 entry.getContent(),
                 report.getContent(),
-                report.getEmotion().getCode().toString()
+                report.getEmotion().getCode().toString(),
+                report.getIsShared()
         );
     }
 }
