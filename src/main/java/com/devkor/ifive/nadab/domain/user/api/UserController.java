@@ -175,6 +175,7 @@ public class UserController {
                                     - ErrorCode: IMAGE_UNSUPPORTED_TYPE - 지원하지 않는 이미지 타입
                                     - ErrorCode: IMAGE_METADATA_INVALID - 파일 메타데이터를 읽을 수 없음
                                     - ErrorCode: NICKNAME_CHANGE_LIMIT_EXCEEDED - 닉네임 변경 제한 횟수 초과
+                                    - ErrorCode: NICKNAME_ALREADY_TAKEN - 이미 사용 중인 닉네임
                                     """,
                             content = @Content
                     ),
