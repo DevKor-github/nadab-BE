@@ -12,6 +12,9 @@ public record DailyReportResponse(
         String content,
 
         @Schema(description = "오늘의 리포트 감정 상태", example = "GROWTH")
-        String emotion
+        String emotion,
+
+        @Schema(description = "피드 공유 상태", example = "false")
+        Boolean isShared
 ) {
 }
