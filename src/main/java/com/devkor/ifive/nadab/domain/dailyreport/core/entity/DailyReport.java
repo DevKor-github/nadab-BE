@@ -45,6 +45,9 @@ public class DailyReport extends CreatableEntity {
     @Column(name = "date", nullable = false)
     private LocalDate date;
 
+    @Column(name = "is_shared", nullable = false)
+    private Boolean isShared = false;
+
     public static DailyReport create(AnswerEntry answerEntry, Emotion emotion, String content, LocalDate date,DailyReportStatus status) {
         DailyReport dr = new DailyReport();
         dr.answerEntry = answerEntry;
@@ -52,10 +55,19 @@ public class DailyReport extends CreatableEntity {
         dr.content = content;
         dr.date = date;
         dr.status = status;
+        dr.isShared = false;
         return dr;
     }
 
     public static DailyReport createPending(AnswerEntry answerEntry, LocalDate date) {
         return create(answerEntry, null, null, date,DailyReportStatus.PENDING);
+    }
+
+    public void startSharing() {
+        this.isShared = true;
+    }
+
+    public void stopSharing() {
+        this.isShared = false;
     }
 }
