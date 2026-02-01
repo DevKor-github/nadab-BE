@@ -31,7 +31,7 @@ public class MonthlyReportLlmClient {
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(OpenAiApi.ChatModel.GPT_5_MINI)
-                .reasoningEffort("low")
+                .reasoningEffort("medium")
                 .temperature(1.0)
                 .build();
 
