@@ -39,14 +39,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
         from User u
         left join Friendship f1 on f1.user1.id = :userId and f1.user2.id = u.id
         left join Friendship f2 on f2.user2.id = :userId and f2.user1.id = u.id
-        where u.nickname like :keyword escape '\\'
+        where lower(u.nickname) like lower(:keyword) escape '\\'
           and u.deletedAt is null
           and (:cursor is null or u.nickname > :cursor)
           and (:excludeUserIds is null or u.id not in :excludeUserIds)
         order by
           case
-            when u.nickname = :rawKeyword then 1
-            when u.nickname like :prefixKeyword escape '\\' then 2
+            when lower(u.nickname) = lower(:rawKeyword) then 1
+            when lower(u.nickname) like lower(:prefixKeyword) escape '\\' then 2
             else 3
           end asc,
           u.nickname asc

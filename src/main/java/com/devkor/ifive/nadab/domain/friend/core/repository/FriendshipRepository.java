@@ -54,7 +54,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
         where (f.user1.id = :userId or f.user2.id = :userId)
         and f.requester.id != :userId
         and f.status = 'PENDING'
-        and r.nickname like :keyword escape '\\'
+        and lower(r.nickname) like lower(:keyword) escape '\\'
         and f.user1.deletedAt is null and f.user2.deletedAt is null
         order by f.createdAt desc
         """)
