@@ -33,7 +33,8 @@ public class NaverOAuth2Client {
                 "?response_type=code" +
                 "&client_id=" + naverProperties.getClientId() +
                 "&redirect_uri=" + naverProperties.getRedirectUri() +
-                "&state=" + state;
+                "&state=" + state +
+                "&auth_type=reauthenticate";  // 매번 로그인 화면 표시 (재인증)
     }
 
     // Access Token 발급
