@@ -34,7 +34,8 @@ public class GoogleOAuth2Client {
                 "&redirect_uri=" + googleProperties.getRedirectUri() +
                 "&response_type=code" +
                 "&scope=openid%20email" +
-                "&state=" + state;
+                "&state=" + state +
+                "&prompt=select_account";  // 매번 계정 선택 화면 표시
     }
 
     // Access Token 발급
