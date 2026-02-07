@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("dev")
+@Profile({"dev","prod"})
 @Slf4j
 @RequiredArgsConstructor
 public class SecretMonthlyReportPromptLoader implements MonthlyReportPromptLoader {
