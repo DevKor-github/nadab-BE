@@ -1,0 +1,108 @@
+name: Deploy to Prod EC2
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy to EC2 (Prod)
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Install JDK 21 (Amazon Corretto)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: 🔧 Make Gradle Executable
+        run: chmod +x gradlew
+
+      - name: 🏗️ Build Project with Gradle
+        run: ./gradlew bootJar
+
+      - name: 📤 Upload JAR to EC2 via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          source: ./build/libs/*.jar
+          target: ~/nadab/
+          overwrite: true
+
+      - name: 🚀 Restart App on EC2 (Prod)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -euxo pipefail
+
+            cd ~/nadab
+            echo "🔎 현재 서버 디렉토리: $(pwd)"
+            
+            echo "📄 현재 파일 목록"
+            ls -al
+            
+            # 업로드된 최신 JAR 선택
+            JAR_PATH=$(ls -1t build/libs/*.jar | head -n1 || true)
+            [ -n "$JAR_PATH" ] || { echo "❌ JAR 파일이 존재하지 않습니다"; exit 1; }
+
+            JAR_NAME=$(basename "$JAR_PATH")
+            
+            echo "📌 배포할 JAR 선택됨: $JAR_PATH"
+
+            # 기존 prod 프로세스 종료
+            echo "🛑 기존 애플리케이션 종료 중..."
+            pkill -f "$JAR_NAME" || true
+
+            echo "🚀 새 버전 실행..."
+
+            # base64 프롬프트 디코딩
+            INSIGHT_PROMPT_B64="${{ secrets.INSIGHT_PROMPT_B64 }}"
+            INSIGHT_PROMPT="$(printf '%s' "$INSIGHT_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export INSIGHT_PROMPT
+
+            WEEKLY_PROMPT_B64="${{ secrets.WEEKLY_PROMPT_B64 }}"
+            WEEKLY_PROMPT="$(printf '%s' "$WEEKLY_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export WEEKLY_PROMPT
+
+            MONTHLY_PROMPT_B64="${{ secrets.MONTHLY_PROMPT_B64 }}"
+            MONTHLY_PROMPT="$(printf '%s' "$MONTHLY_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export MONTHLY_PROMPT
+
+            # ✅ prod 환경변수 주입 + 실행
+            DB_URL="${{ secrets.DB_URL }}" \
+            DB_USERNAME="${{ secrets.DB_USERNAME }}" \
+            DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            FRONTEND_SERVER_URL="${{ secrets.FRONTEND_SERVER_URL }}" \
+            SWAGGER_SERVER_URL="${{ secrets.SWAGGER_SERVER_URL }}" \
+            SWAGGER_ORIGIN_PUBLIC_IP="${{ secrets.SWAGGER_ORIGIN_PUBLIC_IP }}" \
+            SWAGGER_ORIGIN_DOMAIN="${{ secrets.SWAGGER_ORIGIN_DOMAIN }}" \
+            NAVER_CLIENT_ID="${{ secrets.NAVER_CLIENT_ID }}" \
+            NAVER_CLIENT_SECRET="${{ secrets.NAVER_CLIENT_SECRET }}" \
+            NAVER_REDIRECT_URI="${{ secrets.NAVER_REDIRECT_URI }}" \
+            GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
+            GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+            GOOGLE_REDIRECT_URI="${{ secrets.GOOGLE_REDIRECT_URI }}" \
+            IAM_ACCESS_KEY="${{ secrets.IAM_ACCESS_KEY }}" \
+            IAM_SECRET_KEY="${{ secrets.IAM_SECRET_KEY }}" \
+            BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
+            PROFILE_IMAGE_BASE_URL="${{ secrets.PROFILE_IMAGE_BASE_URL }}" \
+            MAIL_ADDRESS="${{ secrets.MAIL_ADDRESS }}" \
+            MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            nohup java -jar "$JAR_PATH" \
+              --spring.profiles.active=prod > app-prod.log 2>&1 &
+
+            echo "✅ 배포 완료!"
+            echo "📄 로그: ~/nadab-prod/app-prod.log"
