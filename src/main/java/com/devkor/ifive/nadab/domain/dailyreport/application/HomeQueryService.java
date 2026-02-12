@@ -2,6 +2,10 @@ package com.devkor.ifive.nadab.domain.dailyreport.application;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.HomeResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryQueryRepository;
+import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionRepository;
+import com.devkor.ifive.nadab.domain.user.core.entity.User;
+import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
@@ -12,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -20,6 +25,8 @@ import java.util.Set;
 public class HomeQueryService {
 
     private final AnswerEntryQueryRepository answerEntryQueryRepository;
+    private final UserDailyQuestionRepository userDailyQuestionRepository;
+    private final ProfileImageUrlBuilder profileImageUrlBuilder;
 
     public HomeResponse getHomeData(Long userId) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
@@ -43,11 +50,33 @@ public class HomeQueryService {
         // 5. 총 기록 일수 (실제 답변한 날짜 수)
         int totalAnsweredDays = allAnswerDates.size();
 
-        // 6. 응답 생성
+        // 6. 친구 프로필 정보 조회
+        List<String> answeredFriendProfiles = List.of();
+        int answeredFriendCount = 0;
+
+        Optional<UserDailyQuestion> myQuestionOpt = userDailyQuestionRepository
+                .findByUserIdAndDate(userId, today);
+
+        if (myQuestionOpt.isPresent()) {
+            Long questionId = myQuestionOpt.get().getDailyQuestion().getId();
+            List<User> allFriendsWhoAnswered = answerEntryQueryRepository
+                    .findFriendsWhoAnsweredQuestion(questionId, userId);
+
+            answeredFriendCount = allFriendsWhoAnswered.size();
+            answeredFriendProfiles = allFriendsWhoAnswered.stream()
+                    .limit(5)
+                    .map(profileImageUrlBuilder::buildUserProfileUrl)
+                    .filter(url -> url != null)
+                    .toList();
+        }
+
+        // 7. 응답 생성
         return new HomeResponse(
                 weeklyAnsweredDates,
                 currentStreak,
-                totalAnsweredDays
+                totalAnsweredDays,
+                answeredFriendProfiles,
+                answeredFriendCount
         );
     }
 

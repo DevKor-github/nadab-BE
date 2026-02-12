@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.dto.MonthlyCalendarDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
+import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -147,4 +148,31 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
         WHERE ae.user.id = :userId
         """)
     List<LocalDate> findAllAnswerDatesByUserId(@Param("userId") Long userId);
+
+    /**
+     * 특정 질문에 답변한 사용자 중 특정 사용자의 친구인 사람들 조회
+     */
+    @Query("""
+        select u
+        from AnswerEntry ae
+        join ae.user u
+        where ae.question.id = :questionId
+        and u.id != :userId
+        and u.deletedAt is null
+        and exists (
+            select 1 from Friendship f
+            where f.status = com.devkor.ifive.nadab.domain.friend.core.entity.FriendshipStatus.ACCEPTED
+            and (
+                (f.user1.id = :userId and f.user2.id = u.id)
+                or (f.user2.id = :userId and f.user1.id = u.id)
+            )
+            and f.user1.deletedAt is null
+            and f.user2.deletedAt is null
+        )
+        order by ae.createdAt desc
+        """)
+    List<User> findFriendsWhoAnsweredQuestion(
+            @Param("questionId") Long questionId,
+            @Param("userId") Long userId
+    );
 }

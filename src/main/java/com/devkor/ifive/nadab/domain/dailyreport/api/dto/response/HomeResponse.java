@@ -13,6 +13,13 @@ public record HomeResponse(
         int streakCount,
 
         @Schema(description = "실제 답변한 날짜의 총 개수", example = "20")
-        int totalRecordDays
+        int totalRecordDays,
+
+        @Schema(description = "나와 같은 오늘의 질문에 답변한 친구들의 프로필 사진 URL (답변 시간 최신순, 최대 5개)",
+                example = "[\"https://cdn.example.com/profiles/user1.png\", \"https://cdn.example.com/default/user2.png\"]")
+        List<String> answeredFriendProfiles,
+
+        @Schema(description = "나와 같은 오늘의 질문에 답변한 친구의 총 수", example = "8")
+        int answeredFriendCount
 ) {
 }
