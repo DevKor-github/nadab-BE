@@ -101,6 +101,8 @@ jobs:
             MAIL_ADDRESS="${{ secrets.MAIL_ADDRESS }}" \
             MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \
             OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
+            GOOGLE_GENAI_API_KEY="${{ secrets.GOOGLE_GENAI_API_KEY }}" \
             nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=dev > app.log 2>&1 &
             
