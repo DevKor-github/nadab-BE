@@ -24,6 +24,8 @@ import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
@@ -39,9 +41,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TestReportService {
 
-    private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
     private final DailyReportPromptLoader dailyReportPromptLoader;
+
+    private final LlmRouter llmRouter;
+
+    private final LlmProvider provider = LlmProvider.OPENAI;
 
     private final UserRepository userRepository;
     private final WeeklyReportRepository weeklyReportRepository;
@@ -64,6 +69,8 @@ public class TestReportService {
                 .temperature(0.3)
                 .maxTokens(512)
                 .build();
+
+        ChatClient chatClient = llmRouter.route(provider);
 
         // ChatClient를 통해 GPT API 호출
         String response = chatClient.prompt()
@@ -109,6 +116,8 @@ public class TestReportService {
                 )
                 .maxTokens(512)
                 .build();
+
+        ChatClient chatClient = llmRouter.route(provider);
 
         // ChatClient를 통해 GPT API 호출
         String response = chatClient.prompt()

@@ -6,9 +6,15 @@ import com.devkor.ifive.nadab.global.core.prompt.weekly.WeeklyReportPromptLoader
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
@@ -17,9 +23,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class WeeklyReportLlmClient {
 
-    private final ChatClient chatClient;
     private final WeeklyReportPromptLoader weeklyReportPromptLoader;
     private final ObjectMapper objectMapper;
+    private final LlmRouter llmRouter;
+
+    private static final LlmProvider provider = LlmProvider.GEMINI;
+    private static final LlmProvider REWRITE_PROVIDER = LlmProvider.CLAUDE;
+
+    private static final int MAX_DISCOVERED = 200;
+    private static final int MAX_IMPROVE = 100;
+    private static final int MIN_DISCOVERED = 160;
+    private static final int MIN_IMPROVE = 80;
 
     /**
      * @param weekStartDate 예: 2026-01-01
@@ -32,17 +46,15 @@ public class WeeklyReportLlmClient {
                 .replace("{weekEndDate}", weekEndDate)
                 .replace("{entries}", entries);
 
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(OpenAiApi.ChatModel.GPT_5_MINI)
-                .reasoningEffort("medium")
-                .temperature(1.0)
-                .build();
+        ChatClient client = llmRouter.route(provider);
 
-        String content = chatClient.prompt()
-                .user(prompt)
-                .options(options)
-                .call()
-                .content();
+        String content = switch (provider) {
+            case OPENAI -> callOpenAi(client, prompt);
+            case CLAUDE -> callClaude(client, prompt);
+            case GEMINI -> callGemini(client, prompt);
+        };
+
+        System.out.println("content = " + content);
 
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
@@ -59,10 +71,102 @@ public class WeeklyReportLlmClient {
                 throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
             }
 
-            return new AiWeeklyReportResultDto(discovered, good, improve);
+            AiWeeklyReportResultDto dto = this.enforceLength(new AiWeeklyReportResultDto(discovered, good, improve));
+            return dto;
 
         } catch (AiResponseParseException e) {
             throw e;
+        } catch (Exception e) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+    }
+
+    private String callOpenAi(ChatClient client, String prompt) {
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .model(OpenAiApi.ChatModel.GPT_5_MINI)
+                .reasoningEffort("medium")
+                .temperature(1.0)
+                .build();
+
+        return client.prompt()
+                .user(prompt)
+                .options(options)
+                .call()
+                .content();
+    }
+
+    private String callClaude(ChatClient client, String prompt) {
+        AnthropicChatOptions options = AnthropicChatOptions.builder()
+                .model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU)
+                .temperature(0.3)
+                .build();
+
+        return client.prompt()
+                .user(prompt)
+                .options(options)
+                .call()
+                .content();
+    }
+
+    private String callGemini(ChatClient client, String prompt) {
+        GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+                .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+                .responseMimeType("application/json")
+                .temperature(0.3)
+                .build();
+
+        return client.prompt()
+                .user(prompt)
+                .options(options)
+                .call()
+                .content();
+    }
+
+    private AiWeeklyReportResultDto enforceLength(AiWeeklyReportResultDto dto) {
+        String d = dto.discovered();
+        String g = dto.good();
+        String i = dto.improve();
+
+        boolean needD = d.length() > MAX_DISCOVERED;
+        boolean needI = i.length() > MAX_IMPROVE;
+
+        if (!needD && !needI) return dto;
+
+        ChatClient rewriteClient = llmRouter.route(REWRITE_PROVIDER);
+
+        if (needD) d = rewriteOne(rewriteClient, d, MAX_DISCOVERED, MIN_DISCOVERED);
+        if (needI) i = rewriteOne(rewriteClient, i, MAX_IMPROVE, MIN_IMPROVE);
+
+        return new AiWeeklyReportResultDto(d, g, i);
+    }
+
+    private String rewriteOne(ChatClient client, String text, int maxChars, int minChars) {
+        String prompt = """
+    아래 텍스트를 의미는 유지하되 최소 %d자 ~ 최대 %d자(공백 포함)로 줄여주세요.
+    - 해요체 유지
+    - 새 사실 추가 금지
+    - 문학적 비유/감정 과잉/훈수/응원 나열 금지
+    - 결과는 JSON 1개만 출력: {"text":"..."}
+    - 반드시 %d자를 넘기지 마세요.
+
+    [텍스트]
+    %s
+    """.formatted(minChars, maxChars, maxChars, text);
+
+        AnthropicChatOptions options = AnthropicChatOptions.builder()
+                .model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU)
+                .temperature(0.0)
+                .build();
+
+        String content = client.prompt().user(prompt).options(options).call().content();
+
+        System.out.println("content2 = " + content);
+
+        try {
+            var node = objectMapper.readTree(content);
+            String out = node.get("text").asText();
+            if (out == null || out.isBlank()) throw new RuntimeException();
+            return out;
         } catch (Exception e) {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
