@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component;
 @Setter
 @ConfigurationProperties(prefix = "oauth.google")
 public class GoogleProperties {
-    private String clientId;
+    private String clientId;           // 웹용 Client ID
+    private String androidClientId;    // Android용 Client ID
     private String clientSecret;
     private String redirectUri;
 }

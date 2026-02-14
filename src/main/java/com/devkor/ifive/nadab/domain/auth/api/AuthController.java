@@ -5,6 +5,8 @@ import com.devkor.ifive.nadab.domain.auth.api.dto.request.ChangePasswordRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.ResetPasswordRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.RestoreRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.NaverNativeLoginRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.GoogleNativeLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
@@ -13,6 +15,7 @@ import com.devkor.ifive.nadab.domain.auth.application.WithdrawalService;
 import com.devkor.ifive.nadab.domain.auth.application.BasicAuthService;
 import com.devkor.ifive.nadab.domain.auth.application.PasswordService;
 import com.devkor.ifive.nadab.domain.auth.application.SocialAuthService;
+import com.devkor.ifive.nadab.domain.auth.application.NativeAuthService;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
 import com.devkor.ifive.nadab.domain.auth.infra.cookie.CookieManager;
@@ -50,6 +53,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final SocialAuthService socialAuthService;
+    private final NativeAuthService nativeAuthService;
     private final BasicAuthService basicAuthService;
     private final TokenService tokenService;
     private final PasswordService passwordService;
@@ -265,6 +269,118 @@ public class AuthController {
 
         // Authorization Code로 토큰 발급 및 사용자 정보 조회
         TokenBundle tokenBundle = socialAuthService.executeOAuth2Login(oauth2Provider, request.code(), request.state());
+
+        // Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
+    }
+
+    @PostMapping("/naver/native-login")
+    @PermitAll
+    @Operation(
+            summary = "네이버 Native SDK 로그인",
+            description = """
+                    Android/iOS 앱에서 네이버 SDK로 받은 Access Token을 사용하여 로그인을 완료합니다.<br>
+                    Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
+                    기존 회원은 바로 로그인 처리되며, 신규 사용자는 자동으로 회원가입 후 로그인됩니다.<br>
+                    <br>
+                    신규 가입자(signupStatus: PROFILE_INCOMPLETE)는 온보딩 과정에서 약관 동의(POST /terms/consent) 후 닉네임을 입력해야 합니다.<br>
+                    <br>
+                    **signupStatus:**<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (신규 가입자, 약관 동의 + 닉네임 입력 필요)<br>
+                    - COMPLETED: 가입 완료 (모든 필수 정보 입력 완료)<br>
+                    - WITHDRAWN: 회원 탈퇴 (14일 내 복구 가능)
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "로그인 성공",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "ErrorCode: VALIDATION_FAILED - Access Token이 누락된 경우",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "ErrorCode: AUTH_OAUTH2_USERINFO_FAILED - 네이버로부터 사용자 정보 조회 실패 (유효하지 않은 토큰)",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> naverNativeLogin(
+            @RequestBody @Valid NaverNativeLoginRequest request,
+            HttpServletResponse response
+    ) {
+        // 네이버 Access Token으로 사용자 정보 조회 및 로그인
+        TokenBundle tokenBundle = nativeAuthService.executeNaverLogin(request.naverAccessToken());
+
+        // Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
+    }
+
+    @PostMapping("/google/native-login")
+    @PermitAll
+    @Operation(
+            summary = "구글 Native SDK 로그인",
+            description = """
+                    Android/iOS 앱에서 구글 SDK로 받은 ID Token을 사용하여 로그인을 완료합니다.<br>
+                    Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
+                    기존 회원은 바로 로그인 처리되며, 신규 사용자는 자동으로 회원가입 후 로그인됩니다.<br>
+                    <br>
+                    신규 가입자(signupStatus: PROFILE_INCOMPLETE)는 온보딩 과정에서 약관 동의(POST /terms/consent) 후 닉네임을 입력해야 합니다.<br>
+                    <br>
+                    **signupStatus:**<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (신규 가입자, 약관 동의 + 닉네임 입력 필요)<br>
+                    - COMPLETED: 가입 완료 (모든 필수 정보 입력 완료)<br>
+                    - WITHDRAWN: 회원 탈퇴 (14일 내 복구 가능)
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "로그인 성공",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "ErrorCode: VALIDATION_FAILED - ID Token이 누락된 경우",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = """
+                                    ID Token 검증 실패
+                                    - ErrorCode: AUTH_OAUTH2_USERINFO_FAILED - 구글 ID Token 검증 실패
+                                      (유효하지 않은 토큰, 만료된 토큰, 잘못된 audience, 인증되지 않은 이메일)
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> googleNativeLogin(
+            @RequestBody @Valid GoogleNativeLoginRequest request,
+            HttpServletResponse response
+    ) {
+        // 구글 ID Token 검증 및 로그인
+        TokenBundle tokenBundle = nativeAuthService.executeGoogleLogin(request.googleIdToken());
 
         // Refresh Token을 HttpOnly 쿠키에 저장
         cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
