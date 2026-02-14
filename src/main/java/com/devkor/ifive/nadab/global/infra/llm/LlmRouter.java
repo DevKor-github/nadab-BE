@@ -1,22 +1,27 @@
 package com.devkor.ifive.nadab.global.infra.llm;
 
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
+@Getter
 public class LlmRouter {
 
-    @Qualifier("openaiChatClient")
     private final ChatClient openai;
-
-    @Qualifier("claudeChatClient")
     private final ChatClient claude;
-
-    @Qualifier("geminiChatClient")
     private final ChatClient gemini;
+
+    public LlmRouter(
+            @Qualifier("openaiChatClient") ChatClient openai,
+            @Qualifier("claudeChatClient") ChatClient claude,
+            @Qualifier("geminiChatClient") ChatClient gemini
+    ) {
+        this.openai = openai;
+        this.claude = claude;
+        this.gemini = gemini;
+    }
 
     public ChatClient route(LlmProvider provider) {
         return switch (provider) {
