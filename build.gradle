@@ -71,6 +71,12 @@ dependencies {
     // testcontainers
     testImplementation 'org.testcontainers:postgresql'
     testImplementation "org.testcontainers:junit-jupiter"
+
+    // Anthropic (Claude)
+    implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
+
+    // Gemini
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
 }
 
 dependencyManagement {
