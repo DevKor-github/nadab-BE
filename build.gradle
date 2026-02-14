@@ -25,8 +25,8 @@ repositories {
 }
 
 ext {
-    set('springAiVersion', "1.0.2")
     set('testcontainersVersion', "2.0.3")
+    set('springAiVersion', "1.1.2")
 }
 
 dependencies {
@@ -71,6 +71,12 @@ dependencies {
     // testcontainers
     testImplementation 'org.testcontainers:postgresql'
     testImplementation "org.testcontainers:junit-jupiter"
+
+    // Anthropic (Claude)
+    implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
+
+    // Gemini
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
 }
 
 dependencyManagement {

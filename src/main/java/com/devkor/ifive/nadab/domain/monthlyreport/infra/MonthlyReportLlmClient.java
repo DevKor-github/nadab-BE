@@ -6,6 +6,8 @@ import com.devkor.ifive.nadab.global.core.prompt.monthly.MonthlyReportPromptLoad
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -17,9 +19,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MonthlyReportLlmClient {
 
-    private final ChatClient chatClient;
     private final MonthlyReportPromptLoader monthlyReportPromptLoader;
     private final ObjectMapper objectMapper;
+    private final LlmRouter llmRouter;
+
+    private final LlmProvider provider = LlmProvider.OPENAI;
 
     public AiMonthlyReportResultDto generate(
             String monthStartDate, String monthEndDate, String weeklySummaries, String representativeEntries) {
@@ -28,6 +32,8 @@ public class MonthlyReportLlmClient {
                 .replace("{monthEndDate}", monthEndDate)
                 .replace("{weeklySummaries}", weeklySummaries)
                 .replace("{representativeEntries}", representativeEntries);
+
+        ChatClient chatClient = llmRouter.route(provider);
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(OpenAiApi.ChatModel.GPT_5_MINI)

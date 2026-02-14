@@ -152,6 +152,7 @@ public enum ErrorCode {
 
     // 503 Service Unavailable
     AI_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 서비스로부터 응답을 받지 못했습니다"),
+    AI_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI Rewrite 서비스로부터 응답을 받지 못했습니다"),
 
     // ==================== EMOTION (감정) ====================
     // 404 Not Found
