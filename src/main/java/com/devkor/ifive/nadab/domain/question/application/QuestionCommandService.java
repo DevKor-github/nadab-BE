@@ -3,17 +3,14 @@ package com.devkor.ifive.nadab.domain.question.application;
 import com.devkor.ifive.nadab.domain.question.api.dto.response.DailyQuestionResponse;
 import com.devkor.ifive.nadab.domain.question.application.helper.DailyQuestionSelector;
 import com.devkor.ifive.nadab.domain.question.application.helper.QuestionLevelPolicy;
-import com.devkor.ifive.nadab.domain.question.application.helper.WeightedInterestPicker;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.domain.user.core.repository.InterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserInterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
-import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
@@ -24,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,11 +30,9 @@ public class QuestionCommandService {
     private final UserRepository userRepository;
     private final UserDailyQuestionRepository userDailyQuestionRepository;
     private final UserInterestRepository userInterestRepository;
-    private final InterestRepository interestRepository;
     private final AnswerEntryRepository answerEntryRepository;
 
     private final QuestionLevelPolicy questionLevelPolicy;
-    private final WeightedInterestPicker weightedInterestPicker;
     private final DailyQuestionSelector dailyQuestionSelector;
 
     public DailyQuestionResponse getOrCreateTodayQuestion(Long userId) {
@@ -99,8 +93,7 @@ public class QuestionCommandService {
     /**
      * 리롤:
      * - reroll_used = false일 때만 허용
-     * - 관심사 가중치 랜덤: 내 interest 50%, 나머지 interest는 동등 분배
-     * - 선택된 interest 내에서 랜덤 질문 (단, 현재 질문 제외)
+     * - 유저의 interest 내에서 랜덤 질문 (단, 현재 질문 제외)
      * - 가입 2주 미만이면 level = 1만
      * - 이미 답변한 질문은 제외
      */
@@ -126,14 +119,11 @@ public class QuestionCommandService {
         Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_INTEREST_NOT_FOUND));
 
-        List<Long> allInterestIds = interestRepository.findAllIds();
-        Long selectedInterestId = weightedInterestPicker.pickForReroll(userInterestId, allInterestIds);
-
         Integer levelOnly = questionLevelPolicy.levelOnlyFor(user, OffsetDateTime.now());
 
         DailyQuestion newQ = dailyQuestionSelector.pickReroll(
                 user.getId(),
-                selectedInterestId,
+                userInterestId,
                 udq.getDailyQuestion().getId(),
                 levelOnly
         );
