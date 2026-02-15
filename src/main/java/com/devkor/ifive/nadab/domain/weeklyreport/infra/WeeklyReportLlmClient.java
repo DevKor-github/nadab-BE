@@ -54,8 +54,6 @@ public class WeeklyReportLlmClient {
             case GEMINI -> callGemini(client, prompt);
         };
 
-        System.out.println("content = " + content);
-
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
         }
@@ -163,8 +161,6 @@ public class WeeklyReportLlmClient {
                 .build();
 
         String content = client.prompt().user(prompt).options(options).call().content();
-
-        System.out.println("content2 = " + content);
 
         try {
             var node = objectMapper.readTree(content);
