@@ -143,8 +143,12 @@ public class WeeklyReportLlmClient {
     private String rewriteOne(ChatClient client, String text, int maxChars, int minChars) {
         String prompt = """
     아래 텍스트를 의미는 유지하되 최소 %d자 ~ 최대 %d자(공백 포함)로 줄여주세요.
-    - 해요체 유지
-    - 새 사실 추가 금지
+    
+    [필수 규칙]
+    - **출력 말투는 반드시 해요체로 통일하세요.**
+      - 입력이 반말/해체/명령형/거친 표현이어도, 정중한 해요체로 **말투를 교정**해서 출력하세요.
+      - 예: "했어", "해봐", "괜찮아" -> "했어요", "해보는 건 어때요?", "괜찮아요"
+    - 해요체 유지 (문장 끝: ~해요/~했어요/~이에요/~예요)
     - 문학적 비유/감정 과잉/훈수/응원 나열 금지
     - 결과는 JSON 1개만 출력: {"text":"..."}
     - 반드시 %d자를 넘기지 마세요.
