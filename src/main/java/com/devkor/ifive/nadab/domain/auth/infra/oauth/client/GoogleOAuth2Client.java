@@ -197,13 +197,13 @@ public class GoogleOAuth2Client {
             throw new OAuth2Exception(ErrorCode.AUTH_OAUTH2_USERINFO_FAILED);
         }
 
-        // audience 검증 (우리 앱의 Android Client ID인지)
-        if (!googleProperties.getAndroidClientId().equals(tokenInfo.getAud())) {
+        // audience 검증 (우리 앱의 Web Client ID인지)
+        if (!googleProperties.getClientId().equals(tokenInfo.getAud())) {
             log.warn("구글 ID Token 검증 실패: 유효하지 않은 audience - {}", tokenInfo.getAud());
             throw new OAuth2Exception(ErrorCode.AUTH_OAUTH2_USERINFO_FAILED);
         }
 
-        // azp (Authorized party) 검증 (azp가 있으면 우리 앱의 Client ID인지 확인)
+        // azp (Authorized party) 검증 (azp가 있으면 우리 앱의 Android Client ID인지 확인)
         if (tokenInfo.getAzp() != null && !googleProperties.getAndroidClientId().equals(tokenInfo.getAzp())) {
             log.warn("구글 ID Token 검증 실패: 유효하지 않은 authorized party - {}", tokenInfo.getAzp());
             throw new OAuth2Exception(ErrorCode.AUTH_OAUTH2_USERINFO_FAILED);

@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2UserInfo;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.client.GoogleOAuth2Client;
+import com.devkor.ifive.nadab.domain.auth.infra.oauth.client.KakaoOAuth2Client;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.client.NaverOAuth2Client;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.state.StateManager;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -27,6 +28,7 @@ public class SocialAuthService {
 
     private final NaverOAuth2Client naverOAuth2Client;
     private final GoogleOAuth2Client googleOAuth2Client;
+    private final KakaoOAuth2Client kakaoOAuth2Client;
     private final StateManager stateManager;
     private final SocialAccountService socialAccountService;
     private final TokenService tokenService;
@@ -40,6 +42,7 @@ public class SocialAuthService {
         return switch (provider) {
             case NAVER -> naverOAuth2Client.buildAuthorizationUrl(state);
             case GOOGLE -> googleOAuth2Client.buildAuthorizationUrl(state);
+            case KAKAO -> kakaoOAuth2Client.buildAuthorizationUrl(state);
         };
     }
 
@@ -56,12 +59,14 @@ public class SocialAuthService {
         String accessToken = switch (provider) {
             case NAVER -> naverOAuth2Client.fetchAccessToken(code, state);
             case GOOGLE -> googleOAuth2Client.fetchAccessToken(code);
+            case KAKAO -> kakaoOAuth2Client.fetchAccessToken(code);
         };
 
         // 3. 사용자 정보 조회
         OAuth2UserInfo userInfo = switch (provider) {
             case NAVER -> naverOAuth2Client.fetchUserInfo(accessToken);
             case GOOGLE -> googleOAuth2Client.fetchUserInfo(accessToken);
+            case KAKAO -> kakaoOAuth2Client.fetchUserInfo(accessToken);
         };
 
         // 4. 사용자 조회 또는 생성

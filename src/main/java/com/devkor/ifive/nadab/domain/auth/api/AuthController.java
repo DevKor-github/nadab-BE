@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.auth.api.dto.request.RestoreRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.NaverNativeLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.GoogleNativeLoginRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.KakaoNativeLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
@@ -77,12 +78,12 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "ErrorCode: AUTH_UNSUPPORTED_OAUTH2_PROVIDER - provider가 'naver' 또는 'google'이 아닌 경우",
+                            description = "ErrorCode: AUTH_UNSUPPORTED_OAUTH2_PROVIDER - provider가 'naver', 'google', 'kakao'가 아닌 경우",
                             content = @Content)
             }
     )
     public ResponseEntity<ApiResponseDto<AuthorizationUrlResponse>> getAuthorizationUrl(
-            @Parameter(description = "OAuth2 제공자 (naver, google)", example = "naver")
+            @Parameter(description = "OAuth2 제공자 (naver, google, kakao)", example = "naver")
             @PathVariable("provider") String provider
     ) {
         // Provider 검증 및 변환
@@ -236,7 +237,7 @@ public class AuthController {
                             responseCode = "400",
                             description = """
                                     잘못된 요청
-                                    - ErrorCode: AUTH_UNSUPPORTED_OAUTH2_PROVIDER - provider가 'naver' 또는 'google'이 아닌 경우
+                                    - ErrorCode: AUTH_UNSUPPORTED_OAUTH2_PROVIDER - provider가 'naver', 'google', 'kakao'가 아닌 경우
                                     - ErrorCode: VALIDATION_FAILED - code 또는 state 값이 누락된 경우
                                     """,
                             content = @Content
@@ -253,13 +254,19 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
                             content = @Content
                     )
             }
     )
     public ResponseEntity<ApiResponseDto<TokenResponse>> oauth2Login(
-            @Parameter(description = "OAuth2 제공자 (naver, google)", example = "naver")
+            @Parameter(description = "OAuth2 제공자 (naver, google, kakao)", example = "naver")
             @PathVariable("provider") String provider,
             @RequestBody @Valid SocialLoginRequest request,
             HttpServletResponse response
@@ -312,7 +319,13 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
                             content = @Content
                     )
             }
@@ -370,7 +383,13 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
                             content = @Content
                     )
             }
@@ -381,6 +400,66 @@ public class AuthController {
     ) {
         // 구글 ID Token 검증 및 로그인
         TokenBundle tokenBundle = nativeAuthService.executeGoogleLogin(request.googleIdToken());
+
+        // Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
+    }
+
+    @PostMapping("/kakao/native-login")
+    @PermitAll
+    @Operation(
+            summary = "카카오 Native SDK 로그인",
+            description = """
+                    Android/iOS 앱에서 카카오 SDK로 받은 Access Token을 사용하여 로그인을 완료합니다.<br>
+                    Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
+                    기존 회원은 바로 로그인 처리되며, 신규 사용자는 자동으로 회원가입 후 로그인됩니다.<br>
+                    <br>
+                    신규 가입자(signupStatus: PROFILE_INCOMPLETE)는 온보딩 과정에서 약관 동의(POST /terms/consent) 후 닉네임을 입력해야 합니다.<br>
+                    <br>
+                    **signupStatus:**<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (신규 가입자, 약관 동의 + 닉네임 입력 필요)<br>
+                    - COMPLETED: 가입 완료 (모든 필수 정보 입력 완료)<br>
+                    - WITHDRAWN: 회원 탈퇴 (14일 내 복구 가능)
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "로그인 성공",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "ErrorCode: VALIDATION_FAILED - Access Token이 누락된 경우",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "ErrorCode: AUTH_OAUTH2_USERINFO_FAILED - 카카오로부터 사용자 정보 조회 실패 (유효하지 않은 토큰)",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> kakaoNativeLogin(
+            @RequestBody @Valid KakaoNativeLoginRequest request,
+            HttpServletResponse response
+    ) {
+        // 카카오 Access Token으로 사용자 정보 조회 및 로그인
+        TokenBundle tokenBundle = nativeAuthService.executeKakaoLogin(request.kakaoAccessToken());
 
         // Refresh Token을 HttpOnly 쿠키에 저장
         cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
@@ -625,7 +704,7 @@ public class AuthController {
                     <br>
                     **소셜 로그인 계정의 경우:**<br>
                     - 별도 복구 API가 필요 없습니다.<br>
-                    - 소셜 로그인(POST /naver/login 또는 POST /google/login)을 시도하면 자동으로 복구됩니다.
+                    - 소셜 로그인(POST /{provider}/login)을 시도하면 자동으로 복구됩니다.
                     """,
             responses = {
                     @ApiResponse(
