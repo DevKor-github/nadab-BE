@@ -254,7 +254,13 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
                             content = @Content
                     )
             }
@@ -313,7 +319,13 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
                             content = @Content
                     )
             }
@@ -371,7 +383,13 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
                             content = @Content
                     )
             }
@@ -425,7 +443,13 @@ public class AuthController {
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD - 해당 이메일이 다른 방법으로 이미 가입된 경우",
+                            description = """
+                                    이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
                             content = @Content
                     )
             }

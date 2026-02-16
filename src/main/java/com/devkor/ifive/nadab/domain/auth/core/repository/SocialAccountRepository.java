@@ -15,6 +15,9 @@ public interface SocialAccountRepository extends JpaRepository<SocialAccount, Lo
             String providerUserId
     );
 
+    // 사용자로 소셜 계정 조회
+    Optional<SocialAccount> findByUser(User user);
+
     // 사용자로 소셜 계정 존재 여부 확인
     boolean existsByUser(User user);
 }

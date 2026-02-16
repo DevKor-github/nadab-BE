@@ -52,11 +52,27 @@ public class SocialAccountService {
     // User 조회 실패시 신규 소셜 로그인 사용자 생성
     private User saveNewSocialUser(String email, OAuth2Provider provider, String providerId) {
         // 이메일 중복 체크 및 탈퇴 계정 확인
-        userRepository.findByEmail(email).ifPresent(user -> {
-            if (user.getDeletedAt() != null) {
+        userRepository.findByEmail(email).ifPresent(existingUser -> {
+            if (existingUser.getDeletedAt() != null) {
                 throw new BadRequestException(ErrorCode.AUTH_WITHDRAWN_ACCOUNT_RESTORE_REQUIRED);
             }
-            throw new ConflictException(ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD);
+
+            // 기존 제공자 확인
+            SocialAccount existingSocialAccount = socialAccountRepository.findByUser(existingUser)
+                    .orElse(null);
+
+            if (existingSocialAccount != null) {
+                // 소셜 로그인 계정
+                ErrorCode errorCode = switch (existingSocialAccount.getProviderType()) {
+                    case GOOGLE -> ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE;
+                    case KAKAO -> ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO;
+                    case NAVER -> ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER;
+                };
+                throw new ConflictException(errorCode);
+            } else {
+                // 일반 계정
+                throw new ConflictException(ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC);
+            }
         });
 
         // User 생성 및 저장

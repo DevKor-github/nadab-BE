@@ -49,7 +49,10 @@ public enum ErrorCode {
     AUTH_DUMMY_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "더미 유저(ID: 11111)가 존재하지 않습니다"),
 
     // 409 Conflict
-    AUTH_EMAIL_ALREADY_REGISTERED_WITH_DIFFERENT_METHOD(HttpStatus.CONFLICT, "이미 가입된 이메일입니다. 다른 로그인 방식을 사용해주세요."),
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER(HttpStatus.CONFLICT, "이미 네이버 계정으로 가입된 이메일입니다. 네이버로 로그인해주세요."),
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE(HttpStatus.CONFLICT, "이미 구글 계정으로 가입된 이메일입니다. 구글로 로그인해주세요."),
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO(HttpStatus.CONFLICT, "이미 카카오 계정으로 가입된 이메일입니다. 카카오로 로그인해주세요."),
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC(HttpStatus.CONFLICT, "이미 일반 계정으로 가입된 이메일입니다. 이메일/비밀번호로 로그인해주세요."),
 
     // ==================== EMAIL (이메일 인증) ====================
     // 400 Bad Request
