@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.typereport.infra;
 
 import com.devkor.ifive.nadab.global.core.prompt.type.evidence.TypeEvidenceCardPromptLoader;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -43,7 +44,7 @@ public class TypeEvidenceCardLlmClient {
             throw e;
         } catch (Exception e) {
             // 파싱 실패 / LLM 이상 응답
-            throw new AiResponseParseException();
+            throw new AiResponseParseException(ErrorCode.AI_EVIDENCE_CARD_NO_RESPONSE);
         }
     }
 }

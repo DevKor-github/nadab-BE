@@ -32,9 +32,6 @@ public class EvidenceCardGenerationService {
 
         List<EvidenceCardDto> cards = mapAndValidate(withIds, raw);
 
-        // 검증 실패가 있으면: 여기서는 단순히 예외를 던지거나,
-        // 정책에 따라 "리페어 프롬프트 재호출"을 1회 넣을 수 있음.
-        // 지금은 실패하면 예외로 처리
         return cards;
     }
 

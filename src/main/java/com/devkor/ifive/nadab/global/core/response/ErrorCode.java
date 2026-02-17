@@ -156,6 +156,7 @@ public enum ErrorCode {
     // 503 Service Unavailable
     AI_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 서비스로부터 응답을 받지 못했습니다"),
     AI_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI Rewrite 서비스로부터 응답을 받지 못했습니다"),
+    AI_EVIDENCE_CARD_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 증거 카드 생성 서비스로부터 응답을 받지 못했습니다"),
 
     // ==================== EMOTION (감정) ====================
     // 404 Not Found
@@ -212,7 +213,15 @@ public enum ErrorCode {
 
     // 404 Not Found
     FRIENDSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 관계를 찾을 수 없습니다"),
-    FRIEND_SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다");
+    FRIEND_SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다"),
+
+    // ===================== EVIDENCE_CARD (증거 카드) =====================
+    // 400 Bad Request
+    EVIDENCE_CARD_JSON_MISSING_ID_OR_CARD(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'id' 또는 'card' 필드가 없습니다"),
+    EVIDENCE_CARD_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'id' 필드 값이 입력된 DailyEntry ID 목록에 없습니다"),
+    EVIDENCE_CARD_DUPLICATE_ID(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 중복된) 'id' 필드 값이 있습니다"),
+    EVIDENCE_CARD_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'card' 필드 값이 길이 제한(10~200자)을 만족하지 않습니다"),
+    EVIDENCE_CARD_ID_MISSING(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 입력된 DailyEntry ID 목록에 해당하는 'id' 필드 값이 없습니다");
 
     private final HttpStatus httpStatus;
     private final String message;
