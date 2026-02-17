@@ -233,6 +233,7 @@ public enum ErrorCode {
     EVIDENCE_CARD_ID_MISSING(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 입력된 DailyEntry ID 목록에 해당하는 'id' 필드 값이 없습니다"),
 
     // ===================== PATTERN_EXTRACT (패턴 추출) =====================
+    // 400 Bad Request
     PATTERN_JSON_MISSING_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'patterns' 필드가 없거나 배열이 아닙니다"),
     PATTERN_JSON_MISSING_LABEL_OR_NOTE(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'label' 또는 'note' 필드가 없거나 문자열이 아닙니다"),
     PATTERN_JSON_MISSING_EVIDENCE_IDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'evidence_ids' 필드가 없거나 배열이 아닙니다"),
@@ -249,8 +250,23 @@ public enum ErrorCode {
     PATTERN_EVIDENCE_ID_DUPLICATED_ACROSS_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 여러 패턴에 중복 사용되었습니다"),
 
     PATTERN_RESULT_EMPTY(HttpStatus.BAD_REQUEST, "패턴 추출을 위한 EvidenceCard 입력이 비어있습니다"),
-    PATTERN_JSON_MAPPING_FAILED(HttpStatus.BAD_REQUEST, "AI 응답 JSON을 매핑하는 과정에서 오류가 발생했습니다");
+    PATTERN_JSON_MAPPING_FAILED(HttpStatus.BAD_REQUEST, "AI 응답 JSON을 매핑하는 과정에서 오류가 발생했습니다"),
 
+    // ==================== TYPE_SELECT (유형 선택) ====================
+    // 400 Bad Request
+    TYPE_SELECT_INPUT_EMPTY(HttpStatus.BAD_REQUEST, "유형 선택을 위한 입력 데이터가 비어있습니다"),
+
+    TYPE_SELECT_JSON_MISSING_FIELDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 필수 필드(analysisTypeCode/confidence/because)가 없거나 형식이 올바르지 않습니다"),
+    TYPE_SELECT_JSON_BECAUSE_ITEM_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 because 항목 형식이 올바르지 않습니다"),
+    TYPE_SELECT_JSON_EVIDENCE_ID_NOT_TEXT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence_ids 배열 원소가 문자열이 아닙니다"),
+
+    TYPE_SELECT_CONFIDENCE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 confidence 값이 범위(0~100)를 만족하지 않습니다"),
+    TYPE_SELECT_BECAUSE_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 because 개수가 제한(2~3개)을 만족하지 않습니다"),
+    TYPE_SELECT_EVIDENCE_ID_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence_ids 개수가 제한(1~4개)을 만족하지 않습니다"),
+
+    TYPE_SELECT_CODE_NOT_IN_CANDIDATES(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 후보 analysis_types 6개 중 하나가 아닙니다"),
+    TYPE_SELECT_EVIDENCE_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence id가 입력된 EvidenceCard ID 목록에 없습니다"),
+    TYPE_SELECT_EVIDENCE_ID_DUPLICATED(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 중복 사용되었습니다");
 
     private final HttpStatus httpStatus;
     private final String message;
