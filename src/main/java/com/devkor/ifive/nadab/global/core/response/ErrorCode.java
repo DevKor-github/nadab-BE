@@ -157,6 +157,7 @@ public enum ErrorCode {
     AI_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 서비스로부터 응답을 받지 못했습니다"),
     AI_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI Rewrite 서비스로부터 응답을 받지 못했습니다"),
     AI_EVIDENCE_CARD_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 증거 카드 생성 서비스로부터 응답을 받지 못했습니다"),
+    AI_PATTERN_EXTRACT_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 패턴 추출 서비스로부터 응답을 받지 못했습니다"),
 
     // ==================== EMOTION (감정) ====================
     // 404 Not Found
@@ -225,7 +226,27 @@ public enum ErrorCode {
     EVIDENCE_CARD_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'id' 필드 값이 입력된 DailyEntry ID 목록에 없습니다"),
     EVIDENCE_CARD_DUPLICATE_ID(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 중복된) 'id' 필드 값이 있습니다"),
     EVIDENCE_CARD_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'card' 필드 값이 길이 제한(10~200자)을 만족하지 않습니다"),
-    EVIDENCE_CARD_ID_MISSING(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 입력된 DailyEntry ID 목록에 해당하는 'id' 필드 값이 없습니다");
+    EVIDENCE_CARD_ID_MISSING(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 입력된 DailyEntry ID 목록에 해당하는 'id' 필드 값이 없습니다"),
+
+    // ===================== PATTERN_EXTRACT (패턴 추출) =====================
+    PATTERN_JSON_MISSING_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'patterns' 필드가 없거나 배열이 아닙니다"),
+    PATTERN_JSON_MISSING_LABEL_OR_NOTE(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'label' 또는 'note' 필드가 없거나 문자열이 아닙니다"),
+    PATTERN_JSON_MISSING_EVIDENCE_IDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'evidence_ids' 필드가 없거나 배열이 아닙니다"),
+    PATTERN_JSON_EVIDENCE_ID_NOT_TEXT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'evidence_ids' 배열 원소가 문자열이 아닙니다"),
+
+    PATTERN_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 patterns 개수가 제한(3~6개)을 만족하지 않습니다"),
+    PATTERN_LABEL_BLANK(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'label' 값이 비어있습니다"),
+    PATTERN_LABEL_TOO_LONG(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'label' 값이 길이 제한(25자)을 초과합니다"),
+    PATTERN_NOTE_BLANK(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'note' 값이 비어있습니다"),
+    PATTERN_NOTE_TOO_LONG(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'note' 값이 길이 제한(60자)을 초과합니다"),
+
+    PATTERN_EVIDENCE_ID_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'evidence_ids' 개수가 제한(2~4개)을 만족하지 않습니다"),
+    PATTERN_EVIDENCE_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence id가 입력된 EvidenceCard ID 목록에 없습니다"),
+    PATTERN_EVIDENCE_ID_DUPLICATED_ACROSS_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 여러 패턴에 중복 사용되었습니다"),
+
+    PATTERN_RESULT_EMPTY(HttpStatus.BAD_REQUEST, "패턴 추출을 위한 EvidenceCard 입력이 비어있습니다"),
+    PATTERN_JSON_MAPPING_FAILED(HttpStatus.BAD_REQUEST, "AI 응답 JSON을 매핑하는 과정에서 오류가 발생했습니다");
+
 
     private final HttpStatus httpStatus;
     private final String message;

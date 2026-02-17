@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.typereport.application;
+package com.devkor.ifive.nadab.domain.typereport.core.service;
 
 import com.devkor.ifive.nadab.domain.typereport.application.helper.EvidenceEntriesAssembler;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.DailyEntryWithIdDto;
