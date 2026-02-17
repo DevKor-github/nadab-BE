@@ -158,6 +158,7 @@ public enum ErrorCode {
     AI_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI Rewrite 서비스로부터 응답을 받지 못했습니다"),
     AI_EVIDENCE_CARD_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 증거 카드 생성 서비스로부터 응답을 받지 못했습니다"),
     AI_PATTERN_EXTRACT_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 패턴 추출 서비스로부터 응답을 받지 못했습니다"),
+    AI_TYPE_SELECT_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 유형 선택 서비스로부터 응답을 받지 못했습니다"),
 
     // ==================== EMOTION (감정) ====================
     // 404 Not Found
@@ -210,7 +211,6 @@ public enum ErrorCode {
     PROMPT_TYPE_REPAIR_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 Repair 프롬프트 파일이 존재하지 않습니다"),
     PROMPT_TYPE_REPAIR_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 Repair 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_TYPE_REPAIR_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "REPAIR_TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
-
 
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
@@ -275,7 +275,21 @@ public enum ErrorCode {
 
     TYPE_SELECT_CODE_NOT_IN_CANDIDATES(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 후보 analysis_types 6개 중 하나가 아닙니다"),
     TYPE_SELECT_EVIDENCE_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence id가 입력된 EvidenceCard ID 목록에 없습니다"),
-    TYPE_SELECT_EVIDENCE_ID_DUPLICATED(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 중복 사용되었습니다");
+    TYPE_SELECT_EVIDENCE_ID_DUPLICATED(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 중복 사용되었습니다"),
+
+    // ===================== TYPE_REPORT (유형 리포트) =====================
+    TYPE_REPORT_GENERATE_INPUT_EMPTY(HttpStatus.BAD_REQUEST, "유형 리포트 생성을 위한 입력 데이터가 비어있습니다"),
+
+    TYPE_REPORT_JSON_MISSING_FIELDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 필수 필드(analysisTypeCode/typeAnalysis/personas)가 없거나 형식이 올바르지 않습니다"),
+    TYPE_REPORT_PERSONAS_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 형식이 올바르지 않습니다"),
+    TYPE_REPORT_PERSONA_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 개수가 2개가 아닙니다"),
+
+    TYPE_REPORT_TYPE_ANALYSIS_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 typeAnalysis 길이가 제한(230~270자)을 만족하지 않습니다"),
+    TYPE_REPORT_PERSONA_TITLE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona title 길이가 제한(1~15자)을 만족하지 않습니다"),
+    TYPE_REPORT_PERSONA_CONTENT_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona content 길이가 제한(180~220자)을 만족하지 않습니다"),
+
+    TYPE_REPORT_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 선택된 analysisTypeCode와 일치하지 않습니다");
+
 
     private final HttpStatus httpStatus;
     private final String message;

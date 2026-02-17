@@ -48,7 +48,7 @@ public class TypeSelectLlmClient {
                 .content();
 
         if (content == null || content.trim().isEmpty()) {
-            throw new AiServiceUnavailableException(ErrorCode.AI_PATTERN_EXTRACT_NO_RESPONSE);
+            throw new AiServiceUnavailableException(ErrorCode.AI_TYPE_SELECT_NO_RESPONSE);
         }
 
         try {
