@@ -194,6 +194,10 @@ public enum ErrorCode {
     PROMPT_EVIDENCE_CARD_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 Evidence Card 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_EVIDENCE_CARD_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "EVIDENCE_CARD_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
 
+    PROMPT_PATTERN_EXTRACT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "패턴 추출 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_PATTERN_EXTRACT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 패턴 추출 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_PATTERN_EXTRACT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "PATTERN_EXTRACT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
     NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)"),

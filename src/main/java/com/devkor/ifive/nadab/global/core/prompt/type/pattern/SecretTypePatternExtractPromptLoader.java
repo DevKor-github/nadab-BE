@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.global.core.prompt.type.evidence;
+package com.devkor.ifive.nadab.global.core.prompt.type.pattern;
 
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
@@ -12,16 +12,16 @@ import org.springframework.stereotype.Component;
 @Profile({"dev","prod"})
 @Slf4j
 @RequiredArgsConstructor
-public class SecretTypeEvidenceCardPromptLoader implements TypeEvidenceCardPromptLoader {
+public class SecretTypePatternExtractPromptLoader implements TypePatternExtractPromptLoader {
 
-    @Value("${EVIDENCE_CARD_PROMPT}")
+    @Value("${PATTERN_EXTRACT_PROMPT}")
     private String rawPrompt;
 
     @Override
     public String loadPrompt() {
         if (rawPrompt == null || rawPrompt.isBlank()) {
-            log.error("환경 변수 EVIDENCE_CARD_PROMPT가 비어있습니다.");
-            throw new BadRequestException(ErrorCode.PROMPT_EVIDENCE_CARD_ENV_VAR_NOT_SET);
+            log.error("환경 변수 PATTERN_EXTRACT_PROMPT가 비어있습니다.");
+            throw new BadRequestException(ErrorCode.PROMPT_PATTERN_EXTRACT_ENV_VAR_NOT_SET);
         }
 
         return rawPrompt;
