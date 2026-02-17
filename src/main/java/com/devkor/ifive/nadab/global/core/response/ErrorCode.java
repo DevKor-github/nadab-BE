@@ -199,6 +199,10 @@ public enum ErrorCode {
     PROMPT_PATTERN_EXTRACT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 패턴 추출 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_PATTERN_EXTRACT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "PATTERN_EXTRACT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
 
+    PROMPT_TYPE_SELECT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 선택 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_SELECT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 선택 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_SELECT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "TYPE_SELECT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
     NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)"),
@@ -225,7 +229,7 @@ public enum ErrorCode {
     EVIDENCE_CARD_JSON_MISSING_ID_OR_CARD(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'id' 또는 'card' 필드가 없습니다"),
     EVIDENCE_CARD_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'id' 필드 값이 입력된 DailyEntry ID 목록에 없습니다"),
     EVIDENCE_CARD_DUPLICATE_ID(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 중복된) 'id' 필드 값이 있습니다"),
-    EVIDENCE_CARD_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'card' 필드 값이 길이 제한(10~200자)을 만족하지 않습니다"),
+    EVIDENCE_CARD_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'card' 필드 값이 길이 제한(120~180자)을 만족하지 않습니다"),
     EVIDENCE_CARD_ID_MISSING(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 입력된 DailyEntry ID 목록에 해당하는 'id' 필드 값이 없습니다"),
 
     // ===================== PATTERN_EXTRACT (패턴 추출) =====================
