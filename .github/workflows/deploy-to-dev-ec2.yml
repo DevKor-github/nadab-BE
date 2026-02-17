@@ -91,6 +91,14 @@ jobs:
             TYPE_SELECT_PROMPT="$(printf '%s' "$TYPE_SELECT_PROMPT_B64" | base64 -d | tr -d '\r')"
             export TYPE_SELECT_PROMPT
             
+            TYPE_PROMPT_B64="${{ secrets.TYPE_PROMPT_B64 }}"
+            TYPE_PROMPT="$(printf '%s' "$TYPE_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export TYPE_PROMPT
+            
+            REPAIR_TYPE_PROMPT_B64="${{ secrets.REPAIR_TYPE_PROMPT_B64 }}"
+            REPAIR_TYPE_PROMPT="$(printf '%s' "$REPAIR_TYPE_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export REPAIR_TYPE_PROMPT
+            
             DB_URL="${{ secrets.DB_URL }}" \
             DB_USERNAME="${{ secrets.DB_USERNAME }}" \
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \

@@ -203,6 +203,15 @@ public enum ErrorCode {
     PROMPT_TYPE_SELECT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 선택 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_TYPE_SELECT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "TYPE_SELECT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
 
+    PROMPT_TYPE_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_TYPE_REPAIR_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 Repair 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_REPAIR_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 Repair 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_REPAIR_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "REPAIR_TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
     NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)"),
