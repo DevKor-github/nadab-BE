@@ -26,12 +26,14 @@ public class TypeReportService {
     /**
      * 비동기 시작 API: 즉시 reportId 반환
      */
-    public TypeReportStartResponse startTypeReport(Long userId, InterestCode interestCode) {
+    public TypeReportStartResponse startTypeReport(Long userId, String interestCode) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
+        InterestCode code = InterestCode.fromString(interestCode);
+
         // 유형 리포트 작성 자격 확인 (해당 유형 30회 이상 완료)
-        long completedCount = dailyReportRepository.countByUserIdAndInterestCodeAndStatus(userId, interestCode, DailyReportStatus.COMPLETED);
+        long completedCount = dailyReportRepository.countByUserIdAndInterestCodeAndStatus(userId, code, DailyReportStatus.COMPLETED);
         boolean eligible = completedCount >= 30;
 
         if (!eligible) {
@@ -40,7 +42,7 @@ public class TypeReportService {
         }
 
         // (Tx) Report(PENDING) + reserve consume + log(PENDING)
-        TypeReserveResultDto reserve = typeReportTxService.reserveTypeAndPublish(user, interestCode);
+        TypeReserveResultDto reserve = typeReportTxService.reserveTypeAndPublish(user, code);
 
         return new TypeReportStartResponse(reserve.reportId(), "PENDING", reserve.balanceAfter());
     }

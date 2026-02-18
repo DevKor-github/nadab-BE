@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EvidenceCardGenerationService {
 
-    private static final int MIN_LEN = 120;
-    private static final int MAX_LEN = 180;
+    private static final int MIN_LEN = 50;
+    private static final int MAX_LEN = 400;
 
     private final TypeEvidenceCardLlmClient llmClient;
 
@@ -31,6 +31,8 @@ public class EvidenceCardGenerationService {
         List<Map<String, String>> raw = llmClient.generateRawCardsJsonArray(entriesText);
 
         List<EvidenceCardDto> cards = mapAndValidate(withIds, raw);
+
+        System.out.println("cards = " + cards);
 
         return cards;
     }

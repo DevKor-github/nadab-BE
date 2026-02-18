@@ -51,6 +51,9 @@ public class TypeSelectionService {
 
         TypeSelectionResultDto dto = toDto(raw);
         validate(dto, candidateCodes, validEvidenceIds);
+
+        System.out.println("raw = " + raw);
+
         return dto;
     }
 

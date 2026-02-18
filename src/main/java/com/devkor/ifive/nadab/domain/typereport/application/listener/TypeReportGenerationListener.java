@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.typereport.application.listener;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionName;
 import com.devkor.ifive.nadab.domain.typereport.application.TypeReportTxService;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.*;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
@@ -14,6 +15,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -65,9 +67,7 @@ public class TypeReportGenerationListener {
         // 1) 최근 N개 DailyEntryDto 조회
         List<DailyEntryDto> recentEntries;
         try {
-            recentEntries = typeDailyEntryQueryRepository.findRecentDailyEntriesByInterest(
-                    event.userId(), interestCode.name(), RECENT_N
-            );
+            recentEntries = typeDailyEntryQueryRepository.findRecentDailyEntriesByInterest(event.userId(), interestCode, PageRequest.of(0, RECENT_N));
         } catch (Exception e) {
             log.error("[TYPE_REPORT][QUERY_FAILED] userId={}, reportId={}, interest={}",
                     event.userId(), event.reportId(), interestCode, e);
@@ -166,5 +166,17 @@ public class TypeReportGenerationListener {
                     event.userId(), event.reportId(), event.crystalLogId(), e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
         }
+    }
+
+    private EmotionName toEmotionName(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+
+        // 1) code가 enum 상수명과 같은 경우
+        try {
+            return EmotionName.valueOf(raw);
+        } catch (Exception ignored) {
+        }
+
+        return null;
     }
 }

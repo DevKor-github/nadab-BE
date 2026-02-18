@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.exception.report.MonthlyReportNotEligibleException;
+import com.devkor.ifive.nadab.global.exception.report.TypeReportNotEligibleException;
 import com.devkor.ifive.nadab.global.exception.report.WeeklyReportNotEligibleException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -131,6 +132,12 @@ public class ExceptionController {
     @ExceptionHandler(MonthlyReportNotEligibleException.class)
     public ResponseEntity<ApiErrorResponseDto<CompletedCountResponse>> handleMonthlyReportNotEligibleException(MonthlyReportNotEligibleException ex) {
         log.warn("MonthlyReportNotEligibleException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(ex.getErrorCode(), ex.getCompletedCountResponse());
+    }
+
+    @ExceptionHandler(TypeReportNotEligibleException.class)
+    public ResponseEntity<ApiErrorResponseDto<CompletedCountResponse>> handleTypeReportNotEligibleException(TypeReportNotEligibleException ex) {
+        log.warn("TypeReportNotEligibleException: {}", ex.getMessage(), ex);
         return ApiResponseEntity.error(ex.getErrorCode(), ex.getCompletedCountResponse());
     }
 

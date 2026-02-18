@@ -37,7 +37,7 @@ public class TypeEvidenceCardLlmClient {
                 .user(prompt)
                 .options(OpenAiChatOptions.builder()
                         .model(OpenAiApi.ChatModel.GPT_4_O_MINI)
-                        .temperature(0.2)
+                        .temperature(0.0)
                         .build())
                 .call()
                 .content();

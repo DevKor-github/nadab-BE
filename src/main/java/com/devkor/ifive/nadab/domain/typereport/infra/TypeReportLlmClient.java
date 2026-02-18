@@ -12,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.google.genai.GoogleGenAiChatModel;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,7 +24,7 @@ public class TypeReportLlmClient {
     private final ObjectMapper objectMapper;
     private final LlmRouter llmRouter;
 
-    private final LlmProvider provider = LlmProvider.GEMINI;
+    private final LlmProvider provider = LlmProvider.OPENAI;
     private static final LlmProvider REWRITE_PROVIDER = LlmProvider.CLAUDE;
 
     public JsonNode generateRaw(String selectedType, String patterns, String evidenceCards) {
@@ -39,10 +39,10 @@ public class TypeReportLlmClient {
 
         ChatClient client = llmRouter.route(provider);
 
-        GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-                .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
-                .responseMimeType("application/json")
-                .temperature(0.3)
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .model(OpenAiApi.ChatModel.GPT_5_MINI)
+                .reasoningEffort("medium")
+                .temperature(1.0)
                 .build();
 
         String content = client.prompt()

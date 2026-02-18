@@ -31,7 +31,6 @@ public class TypeReportContentGenerationService {
     private static final int PERSONA_CONTENT_MAX = 220;
 
     private final TypeReportLlmClient llmClient;
-    private final ObjectMapper objectMapper;
 
     public TypeReportContentDto generate(
             AnalysisTypeCandidateDto selectedType,
