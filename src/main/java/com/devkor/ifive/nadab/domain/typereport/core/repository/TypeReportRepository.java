@@ -20,4 +20,41 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
             @Param("id") Long id,
             @Param("status") TypeReportStatus status
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE TypeReport tr
+       SET tr.status = :status,
+           tr.analysisType = (SELECT at FROM AnalysisType at WHERE at.id = :analysisTypeId),
+           tr.typeAnalysis = :typeAnalysis,
+           tr.persona1Title = :persona1Title,
+           tr.persona1Content = :persona1Content,
+           tr.persona2Title = :persona2Title,
+           tr.persona2Content = :persona2Content,
+           tr.analyzedAt = CURRENT_TIMESTAMP
+     WHERE tr.id = :reportId
+""")
+    int markCompleted(
+            @Param("reportId") Long reportId,
+            @Param("status") TypeReportStatus status,
+            @Param("analysisTypeId") Long analysisTypeId,
+            @Param("typeAnalysis") String typeAnalysis,
+            @Param("persona1Title") String persona1Title,
+            @Param("persona1Content") String persona1Content,
+            @Param("persona2Title") String persona2Title,
+            @Param("persona2Content") String persona2Content
+    );
+
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE TypeReport tr
+       SET tr.status = :status,
+           tr.analyzedAt = CURRENT_TIMESTAMP
+     WHERE tr.id = :reportId
+""")
+    int markFailed(
+            @Param("reportId") Long reportId,
+            @Param("status") TypeReportStatus status
+    );
 }
