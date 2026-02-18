@@ -288,7 +288,18 @@ public enum ErrorCode {
     TYPE_REPORT_PERSONA_TITLE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona title 길이가 제한(1~15자)을 만족하지 않습니다"),
     TYPE_REPORT_PERSONA_CONTENT_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona content 길이가 제한(180~220자)을 만족하지 않습니다"),
 
-    TYPE_REPORT_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 선택된 analysisTypeCode와 일치하지 않습니다");
+    TYPE_REPORT_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 선택된 analysisTypeCode와 일치하지 않습니다"),
+
+    // 400 Bad Request
+    TYPE_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "유형 리포트 작성 자격이 없습니다. (해당 유형 30회 이상 완료 필요)"),
+
+    // 404 Not Found
+    TYPE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "유형 리포트를 찾을 수 없습니다"),
+    TYPE_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 유형 리포트가 아직 생성 완료되지 않았습니다"),
+
+    // 409 Conflict
+    TYPE_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 유형 리포트가 존재합니다"),
+    TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다");
 
 
     private final HttpStatus httpStatus;
