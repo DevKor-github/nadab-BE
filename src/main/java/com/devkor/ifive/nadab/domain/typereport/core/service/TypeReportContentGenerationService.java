@@ -9,7 +9,6 @@ import com.devkor.ifive.nadab.domain.typereport.infra.TypeReportLlmClient;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +19,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TypeReportContentGenerationService {
 
-    private static final int TYPE_ANALYSIS_MIN = 230;
-    private static final int TYPE_ANALYSIS_MAX = 270;
+    private static final int TYPE_ANALYSIS_MIN = 100;
+    private static final int TYPE_ANALYSIS_MAX = 350;
 
     private static final int PERSONA_COUNT = 2;
     private static final int PERSONA_TITLE_MIN = 1;
-    private static final int PERSONA_TITLE_MAX = 15;
+    private static final int PERSONA_TITLE_MAX = 20;
 
-    private static final int PERSONA_CONTENT_MIN = 180;
-    private static final int PERSONA_CONTENT_MAX = 220;
+    private static final int PERSONA_CONTENT_MIN = 100;
+    private static final int PERSONA_CONTENT_MAX = 300;
 
     private final TypeReportLlmClient llmClient;
 
@@ -50,6 +49,8 @@ public class TypeReportContentGenerationService {
         String evidenceCardsText = TypeReportInputAssembler.assembleEvidenceCards(representative);
 
         JsonNode raw = llmClient.generateRaw(selectedTypeText, patternsText, evidenceCardsText);
+
+        System.out.println("raw = " + raw);
 
         // 1차 파싱/검증
         try {

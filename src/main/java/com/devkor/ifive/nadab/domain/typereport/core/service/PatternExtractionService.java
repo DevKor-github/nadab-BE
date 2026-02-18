@@ -21,8 +21,8 @@ public class PatternExtractionService {
     private static final int PATTERN_MAX = 6;
     private static final int EVID_MIN = 2;
     private static final int EVID_MAX = 4;
-    private static final int LABEL_MAX_LEN = 25;
-    private static final int NOTE_MAX_LEN = 60;
+    private static final int LABEL_MAX_LEN = 40;
+    private static final int NOTE_MAX_LEN = 90;
 
     private final TypePatternExtractLlmClient llmClient;
 

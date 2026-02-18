@@ -22,7 +22,7 @@ public class TypeSelectionService {
     private static final int BECAUSE_MAX = 3;
     private static final int EVID_MIN = 1;
     private static final int EVID_MAX = 4;
-    private static final int PATTERN_MAX_LEN = 20;
+    private static final int PATTERN_MAX_LEN = 40;
 
     private final TypeSelectLlmClient llmClient;
 

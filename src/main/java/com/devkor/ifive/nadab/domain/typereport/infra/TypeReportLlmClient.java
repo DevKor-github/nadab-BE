@@ -9,9 +9,9 @@ import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.anthropic.AnthropicChatOptions;
-import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class TypeReportLlmClient {
     private final LlmRouter llmRouter;
 
     private final LlmProvider provider = LlmProvider.OPENAI;
-    private static final LlmProvider REWRITE_PROVIDER = LlmProvider.CLAUDE;
+    private static final LlmProvider REWRITE_PROVIDER = LlmProvider.GEMINI;
 
     public JsonNode generateRaw(String selectedType, String patterns, String evidenceCards) {
         if (blank(selectedType) || blank(patterns) || blank(evidenceCards)) {
@@ -75,8 +75,9 @@ public class TypeReportLlmClient {
 
         ChatClient client = llmRouter.route(REWRITE_PROVIDER);
 
-        AnthropicChatOptions options = AnthropicChatOptions.builder()
-                .model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU)
+        GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+                .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+                .responseMimeType("application/json")
                 .temperature(0.3)
                 .build();
 

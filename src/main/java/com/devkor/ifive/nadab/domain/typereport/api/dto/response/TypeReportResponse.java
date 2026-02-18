@@ -1,7 +1,8 @@
 package com.devkor.ifive.nadab.domain.typereport.api.dto.response;
 
 public record TypeReportResponse(
-        String AnalysisTypeName,
+        String status,
+        String analysisTypeName,
         String hashTag1,
         String hashTag2,
         String hashTag3,

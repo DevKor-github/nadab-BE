@@ -36,9 +36,8 @@ public class TypeSelectLlmClient {
         ChatClient client = llmRouter.route(provider);
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(OpenAiApi.ChatModel.GPT_5_MINI)
-                .reasoningEffort("medium")
-                .temperature(1.0)
+                .model(OpenAiApi.ChatModel.GPT_4_O_MINI)
+                .temperature(0.0)
                 .build();
 
         String content = client.prompt()

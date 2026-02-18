@@ -8,6 +8,10 @@ import com.devkor.ifive.nadab.domain.test.api.dto.request.TestDailyReportRequest
 import com.devkor.ifive.nadab.domain.test.api.dto.response.TestDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.test.core.repository.TestCrystalLogRepository;
+import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
+import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus;
+import com.devkor.ifive.nadab.domain.typereport.core.repository.TypeReportRepository;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
@@ -51,11 +55,13 @@ public class TestReportService {
     private final UserRepository userRepository;
     private final WeeklyReportRepository weeklyReportRepository;
     private final MonthlyReportRepository monthlyReportRepository;
+    private final TypeReportRepository typeReportRepository;
     private final TestCrystalLogRepository testCrystalLogRepository;
     private final UserWalletRepository userWalletRepository;
 
     private static final long WEEKLY_REPORT_COST = 20L;
     private static final long MONTHLY_REPORT_COST = 40L;
+    private static final long TYPE_REPORT_COST = 100L;
 
     @Transactional
     public TestDailyReportResponse generateTestDailyReport(TestDailyReportRequest request) {
@@ -233,5 +239,47 @@ public class TestReportService {
         testCrystalLogRepository.markRefunded(purchaseLog.getId());
 
         monthlyReportRepository.delete(report);
+    }
+
+    @Transactional
+    public void deleteTypeReport(Long userId, String interestCode) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        InterestCode code = InterestCode.fromString(interestCode);
+
+        TypeReport report = typeReportRepository.findByUserIdAndInterestCodeAndDeletedAtIsNull(user.getId(), code)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.TYPE_REPORT_NOT_FOUND));
+
+        if (report.getStatus() != TypeReportStatus.COMPLETED) {
+            throw new BadRequestException(ErrorCode.TYPE_REPORT_NOT_COMPLETED);
+        }
+
+        CrystalLog purchaseLog = testCrystalLogRepository
+                .findByUserIdAndRefTypeAndRefIdAndReasonAndStatus(
+                        userId,
+                        "TYPE_REPORT: " + code.name(),
+                        report.getId(),
+                        CrystalLogReason.REPORT_GENERATE_TYPE,
+                        CrystalLogStatus.CONFIRMED
+                )
+                .orElseThrow(() -> new BadRequestException(ErrorCode.CRYSTAL_LOG_NOT_FOUND));
+
+        int updated = userWalletRepository.refund(user.getId(), TYPE_REPORT_COST);
+        if (updated == 0) {
+            throw new NotFoundException(ErrorCode.WALLET_NOT_FOUND);
+        }
+
+        UserWallet wallet = userWalletRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
+        long balanceAfter = wallet.getCrystalBalance();
+
+        CrystalLog refundLog = CrystalLog.createConfirmed(user, TYPE_REPORT_COST, balanceAfter,
+                CrystalLogReason.TEST_DELETE_REPORT_REFUND_TYPE, "TYPE_REPORT_REFUND", report.getId());
+        testCrystalLogRepository.save(refundLog);
+
+        testCrystalLogRepository.markRefunded(purchaseLog.getId());
+
+        typeReportRepository.delete(report);
     }
 }

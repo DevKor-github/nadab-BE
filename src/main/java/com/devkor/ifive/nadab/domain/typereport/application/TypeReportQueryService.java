@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.typereport.application;
 import com.devkor.ifive.nadab.domain.typereport.api.dto.response.MyTypeReportResponse;
 import com.devkor.ifive.nadab.domain.typereport.api.dto.response.TypeReportResponse;
 import com.devkor.ifive.nadab.domain.typereport.application.mapper.TypeReportMapper;
+import com.devkor.ifive.nadab.domain.typereport.core.entity.AnalysisType;
 import com.devkor.ifive.nadab.domain.typereport.core.repository.TypeReportRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -30,18 +31,18 @@ public class TypeReportQueryService {
 
         InterestCode code = InterestCode.fromString(interestCode);
 
-        TypeReportResponse reportResponse =
-                typeReportRepository.findByUserIdAndInterestCodeAndDeletedAtIsNull(
-                                user.getId(),
-                                code
-                        )
-                        .map(
-                                report -> TypeReportMapper.toResponse(
-                                        report,
-                                        report.getAnalysisType(),
-                                        imageUrlBuilder.buildAnalysisTypeImageUrl(report.getAnalysisType().getCode()))
-                                )
-                        .orElse(null);
+        TypeReportResponse reportResponse = typeReportRepository.findByUserIdAndInterestCodeAndDeletedAtIsNull(user.getId(), code)
+                .map(report -> {
+                    AnalysisType analysisType = report.getAnalysisType();
+
+                    // AnalysisType이 있으면 이미지 URL 생성, 없으면 null 처리
+                    String typeImageUrl = (analysisType != null)
+                            ? imageUrlBuilder.buildAnalysisTypeImageUrl(analysisType.getCode())
+                            : null;
+
+                    return TypeReportMapper.toResponse(report, analysisType, typeImageUrl);
+                })
+                .orElse(null);
 
         return new MyTypeReportResponse(reportResponse);
     }
