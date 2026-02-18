@@ -25,7 +25,12 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
     @Query("""
     UPDATE TypeReport tr
        SET tr.status = :status,
-           tr.analysisType = (SELECT at FROM AnalysisType at WHERE at.id = :analysisTypeId),
+           tr.analysisType = (
+               SELECT at
+                 FROM AnalysisType at
+                WHERE at.code = :analysisTypeCode
+                  AND at.deletedAt IS NULL
+           ),
            tr.typeAnalysis = :typeAnalysis,
            tr.persona1Title = :persona1Title,
            tr.persona1Content = :persona1Content,
@@ -33,11 +38,17 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
            tr.persona2Content = :persona2Content,
            tr.analyzedAt = CURRENT_TIMESTAMP
      WHERE tr.id = :reportId
+       AND EXISTS (
+           SELECT 1
+             FROM AnalysisType at2
+            WHERE at2.code = :analysisTypeCode
+              AND at2.deletedAt IS NULL
+       )
 """)
     int markCompleted(
             @Param("reportId") Long reportId,
             @Param("status") TypeReportStatus status,
-            @Param("analysisTypeId") Long analysisTypeId,
+            @Param("analysisTypeCode") String analysisTypeCode,
             @Param("typeAnalysis") String typeAnalysis,
             @Param("persona1Title") String persona1Title,
             @Param("persona1Content") String persona1Content,

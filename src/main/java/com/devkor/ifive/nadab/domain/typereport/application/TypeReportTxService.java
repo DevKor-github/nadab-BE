@@ -80,23 +80,27 @@ public class TypeReportTxService {
     public void confirmType(
             Long reportId,
             Long logId,
-            Long analysisTypeId,
+            String analysisTypeCode,
             String typeAnalysis,
             String persona1Title,
             String persona1Content,
             String persona2Title,
             String persona2Content
     ) {
-        typeReportRepository.markCompleted(
+        int updated = typeReportRepository.markCompleted(
                 reportId,
                 TypeReportStatus.COMPLETED,
-                analysisTypeId,
+                analysisTypeCode,
                 typeAnalysis,
                 persona1Title,
                 persona1Content,
                 persona2Title,
                 persona2Content
         );
+
+        if (updated == 0) {
+            throw new NotFoundException(ErrorCode.ANALYSIS_TYPE_NOT_FOUND);
+        }
 
         crystalLogRepository.markConfirmed(logId);
     }
