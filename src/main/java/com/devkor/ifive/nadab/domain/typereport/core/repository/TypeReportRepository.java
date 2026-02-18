@@ -14,6 +14,8 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
 
     Optional<TypeReport> findByUserIdAndInterestCode(Long userId, InterestCode interestCode);
 
+    Optional<TypeReport> findByUserIdAndInterestCodeAndDeletedAtIsNull(Long userId, InterestCode interestCode);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE TypeReport t SET t.status = :status WHERE t.id = :id")
     int updateStatus(
