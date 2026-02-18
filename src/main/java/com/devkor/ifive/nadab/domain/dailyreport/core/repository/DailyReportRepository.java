@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -68,6 +69,22 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
                 monthEndDate
         );
     }
+
+    @Query("""
+        select count(dr)
+          from DailyReport dr
+          join dr.answerEntry ae
+          join ae.question q
+          join q.interest i
+         where ae.user.id = :userId
+           and i.code = :interestCode
+           and dr.status = :status
+    """)
+    long countByUserIdAndInterestCodeAndStatus(
+            @Param("userId") Long userId,
+            @Param("interestCode") InterestCode interestCode,
+            @Param("status") DailyReportStatus status
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE DailyReport w SET w.status = :status WHERE w.id = :id")
