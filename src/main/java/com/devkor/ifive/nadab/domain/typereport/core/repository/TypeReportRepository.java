@@ -8,13 +8,22 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
 
-    Optional<TypeReport> findByUserIdAndInterestCode(Long userId, InterestCode interestCode);
-
     Optional<TypeReport> findByUserIdAndInterestCodeAndDeletedAtIsNull(Long userId, InterestCode interestCode);
+
+    // 통합 조회 (fetch join으로 analysisType까지 한번에)
+    @Query("""
+        select tr
+          from TypeReport tr
+          left join fetch tr.analysisType at
+         where tr.user.id = :userId
+           and tr.deletedAt is null
+    """)
+    List<TypeReport> findAllActiveWithAnalysisType(@Param("userId") Long userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE TypeReport t SET t.status = :status WHERE t.id = :id")

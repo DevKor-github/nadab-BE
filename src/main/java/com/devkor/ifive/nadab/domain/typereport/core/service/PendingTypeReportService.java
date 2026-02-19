@@ -21,7 +21,7 @@ public class PendingTypeReportService {
 
     @Transactional
     public TypeReport getOrCreatePendingTypeReport(User user, InterestCode interestCode) {
-        TypeReport report = typeReportRepository.findByUserIdAndInterestCode(user.getId(), interestCode)
+        TypeReport report = typeReportRepository.findByUserIdAndInterestCodeAndDeletedAtIsNull(user.getId(), interestCode)
                 .orElseGet(() -> typeReportRepository.save(
                         TypeReport.createPending(user, LocalDate.now(), interestCode)
                 ));

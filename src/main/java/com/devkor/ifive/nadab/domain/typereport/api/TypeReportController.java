@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.typereport.api;
 
+import com.devkor.ifive.nadab.domain.typereport.api.dto.response.MyAllTypeReportsResponse;
 import com.devkor.ifive.nadab.domain.typereport.api.dto.response.MyTypeReportResponse;
 import com.devkor.ifive.nadab.domain.typereport.api.dto.response.TypeReportStartResponse;
 import com.devkor.ifive.nadab.domain.typereport.application.TypeReportQueryService;
@@ -140,6 +141,53 @@ public class TypeReportController {
             @PathVariable String interestCode
     ) {
         MyTypeReportResponse response = typeReportQueryService.getMyTypeReport(principal.getId(), interestCode);
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "나의 유형 리포트 통합 조회",
+            description = """
+                    사용자의 유형 리포트를 통합 조회합니다. </br>
+                    
+                    관심 주제(```InterestCode```)별 유형 리포트를 한 번에 반환합니다. </br>
+                    ```reports``` 필드는 "```interestCode``` -> ```TypeReportResponse```" Map입니다. </br>
+                    Key는 ```InterestCode``` 문자열(PREFERENCE, EMOTION, ROUTINE, RELATIONSHIP, LOVE, VALUES)입니다. </br>
+                    Value는 단일 조회 응답의 ```TypeReportResponse```와 동일한 스키마를 사용합니다. 리포트가 없는 관심 주제는 null로 반환됩니다. </br>
+                    스웨거의 성공 응답 예시(Example Value)를 참고해주세요. </br>
+                    
+                    **<각 ```report```의 state>** </br>
+                    생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
+                    생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
+                    생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
+                    생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "나의 유형 리포트 통합 조회 성공",
+                            content = @Content(schema = @Schema(implementation = MyAllTypeReportsResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<MyAllTypeReportsResponse>> getMyAllTypeReports(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        MyAllTypeReportsResponse response = typeReportQueryService.getMyAllTypeReports(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 }
