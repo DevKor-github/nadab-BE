@@ -4,5 +4,6 @@ public record TypeReserveResultDto(
         Long reportId,
         Long crystalLogId,
         Long userId,
-        long balanceAfter
+        long balanceAfter,
+        Long previousCompletedReportId
 ) {}

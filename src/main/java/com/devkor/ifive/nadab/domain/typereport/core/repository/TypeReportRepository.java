@@ -15,6 +15,31 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
 
     Optional<TypeReport> findByUserIdAndInterestCodeAndDeletedAtIsNull(Long userId, InterestCode interestCode);
 
+    // 활성 COMPLETED 리포트의 id 찾기
+    @Query("""
+        select tr.id
+          from TypeReport tr
+         where tr.user.id = :userId
+           and tr.interestCode = :interestCode
+           and tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
+           and tr.deletedAt is null
+    """)
+    Optional<Long> findActiveCompletedId(@Param("userId") Long userId,
+                                         @Param("interestCode") InterestCode interestCode);
+
+    boolean existsByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(Long userId,
+                                                                     InterestCode interestCode,
+                                                                     TypeReportStatus status);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        update TypeReport tr
+           set tr.deletedAt = CURRENT_TIMESTAMP
+         where tr.id = :id
+           and tr.deletedAt is null
+    """)
+    int softDeleteById(@Param("id") Long id);
+
     // 통합 조회 (fetch join으로 analysisType까지 한번에)
     @Query("""
         select tr

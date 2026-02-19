@@ -38,7 +38,11 @@ public class TypeReportTxService {
 
     public TypeReserveResultDto reserveType(User user, InterestCode interestCode) {
 
-        TypeReport report = pendingTypeReportService.getOrCreatePendingTypeReport(user, interestCode);
+        PendingTypeReportService.PendingTypeReportResult pending =
+                pendingTypeReportService.createPendingForRegeneration(user, interestCode);
+
+        TypeReport report = pending.report();
+        Long prevCompletedId = pending.previousCompletedReportId();
 
         int updated = userWalletRepository.tryConsume(user.getId(), TYPE_REPORT_COST);
         if (updated == 0) {
@@ -60,7 +64,7 @@ public class TypeReportTxService {
                 )
         );
 
-        return new TypeReserveResultDto(report.getId(), log.getId(), user.getId(), balanceAfter);
+        return new TypeReserveResultDto(report.getId(), log.getId(), user.getId(), balanceAfter, prevCompletedId);
     }
 
     public TypeReserveResultDto reserveTypeAndPublish(User user, InterestCode interestCode) {
@@ -71,7 +75,8 @@ public class TypeReportTxService {
         eventPublisher.publishEvent(new TypeReportGenerationRequestedEventDto(
                 reserve.reportId(),
                 user.getId(),
-                reserve.crystalLogId()
+                reserve.crystalLogId(),
+                reserve.previousCompletedReportId()
         ));
 
         return reserve;
@@ -80,6 +85,7 @@ public class TypeReportTxService {
     public void confirmType(
             Long reportId,
             Long logId,
+            Long previousCompletedReportId,
             String analysisTypeCode,
             String typeAnalysis,
             String persona1Title,
@@ -87,6 +93,12 @@ public class TypeReportTxService {
             String persona2Title,
             String persona2Content
     ) {
+
+        // 새 리포트가 완성된 뒤에만 이전 completed 리포트 soft-delete
+        if (previousCompletedReportId != null) {
+            typeReportRepository.softDeleteById(previousCompletedReportId);
+        }
+        // 그 다음 새 리포트 COMPLETED로 업데이트 (analysisTypeCode 유효성 검사 포함)
         int updated = typeReportRepository.markCompleted(
                 reportId,
                 TypeReportStatus.COMPLETED,

@@ -154,6 +154,7 @@ public class TypeReportGenerationListener {
             typeReportTxService.confirmType(
                     event.reportId(),
                     event.crystalLogId(),
+                    event.previousCompletedReportId(),
                     content.analysisTypeCode(),
                     content.typeAnalysis(),
                     content.personas().get(0).title(),

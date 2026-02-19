@@ -20,24 +20,28 @@ public class PendingTypeReportService {
     private final TypeReportRepository typeReportRepository;
 
     @Transactional
-    public TypeReport getOrCreatePendingTypeReport(User user, InterestCode interestCode) {
-        TypeReport report = typeReportRepository.findByUserIdAndInterestCodeAndDeletedAtIsNull(user.getId(), interestCode)
-                .orElseGet(() -> typeReportRepository.save(
-                        TypeReport.createPending(user, LocalDate.now(), interestCode)
-                ));
+    public PendingTypeReportResult createPendingForRegeneration(User user, InterestCode interestCode) {
 
-        if (report.getStatus() == TypeReportStatus.COMPLETED) {
-            throw new ConflictException(ErrorCode.TYPE_REPORT_ALREADY_COMPLETED);
-        }
+        // 1) 현재 활성 COMPLETED id 기억 (없을 수도 있음)
+        Long prevCompletedId = typeReportRepository.findActiveCompletedId(user.getId(), interestCode)
+                .orElse(null);
 
-        if (report.getStatus() == TypeReportStatus.IN_PROGRESS) {
+        // 2) 동시에 2개 돌리는 건 막기 (중복 생성 방지)
+        boolean inProgress = typeReportRepository.existsByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(
+                user.getId(), interestCode, TypeReportStatus.IN_PROGRESS
+        );
+        if (inProgress) {
             throw new ConflictException(ErrorCode.TYPE_REPORT_IN_PROGRESS);
         }
 
-        if (report.getStatus() == TypeReportStatus.FAILED) {
-            typeReportRepository.updateStatus(report.getId(), TypeReportStatus.PENDING);
-        }
+        // 3) 새 PENDING 생성
+        TypeReport newReport = typeReportRepository.save(
+                TypeReport.createPending(user, LocalDate.now(), interestCode)
+        );
 
-        return report;
+        return new PendingTypeReportResult(newReport, prevCompletedId);
     }
+
+    public record PendingTypeReportResult(TypeReport report, Long previousCompletedReportId) {}
+
 }
