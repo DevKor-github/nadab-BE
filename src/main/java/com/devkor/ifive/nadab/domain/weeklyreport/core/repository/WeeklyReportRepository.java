@@ -25,6 +25,13 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
             WeeklyReportStatus status
     );
 
+    // 특정 시점(snapshotDate) 이전에 완료된(COMPLETED) 주간 리포트 조회
+    List<WeeklyReport> findAllByUserIdAndStatusAndWeekEndDateLessThanEqualOrderByWeekStartDateAsc(
+            Long userId,
+            WeeklyReportStatus status,
+            LocalDate snapshotDate
+    );
+
     /**
      * PENDING -> COMPLETED 확정
      * - 분석 결과(discovered/good/improve) 저장

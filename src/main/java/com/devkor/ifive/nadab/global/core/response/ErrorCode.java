@@ -156,6 +156,9 @@ public enum ErrorCode {
     // 503 Service Unavailable
     AI_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 서비스로부터 응답을 받지 못했습니다"),
     AI_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI Rewrite 서비스로부터 응답을 받지 못했습니다"),
+    AI_EVIDENCE_CARD_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 증거 카드 생성 서비스로부터 응답을 받지 못했습니다"),
+    AI_PATTERN_EXTRACT_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 패턴 추출 서비스로부터 응답을 받지 못했습니다"),
+    AI_TYPE_SELECT_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 유형 선택 서비스로부터 응답을 받지 못했습니다"),
 
     // ==================== EMOTION (감정) ====================
     // 404 Not Found
@@ -189,6 +192,26 @@ public enum ErrorCode {
     PROMPT_MONTHLY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 월간 리포트 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_MONTHLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "MONTHLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
 
+    PROMPT_EVIDENCE_CARD_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "Evidence Card 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_EVIDENCE_CARD_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 Evidence Card 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_EVIDENCE_CARD_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "EVIDENCE_CARD_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_PATTERN_EXTRACT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "패턴 추출 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_PATTERN_EXTRACT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 패턴 추출 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_PATTERN_EXTRACT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "PATTERN_EXTRACT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_TYPE_SELECT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 선택 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_SELECT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 선택 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_SELECT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "TYPE_SELECT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_TYPE_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_TYPE_REPAIR_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 Repair 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_REPAIR_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 Repair 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_REPAIR_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "REPAIR_TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
     NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)"),
@@ -208,7 +231,76 @@ public enum ErrorCode {
 
     // 404 Not Found
     FRIENDSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 관계를 찾을 수 없습니다"),
-    FRIEND_SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다");
+    FRIEND_SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다"),
+
+    // ===================== EVIDENCE_CARD (증거 카드) =====================
+    // 400 Bad Request
+    EVIDENCE_CARD_JSON_MISSING_ID_OR_CARD(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'id' 또는 'card' 필드가 없습니다"),
+    EVIDENCE_CARD_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'id' 필드 값이 입력된 DailyEntry ID 목록에 없습니다"),
+    EVIDENCE_CARD_DUPLICATE_ID(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 중복된) 'id' 필드 값이 있습니다"),
+    EVIDENCE_CARD_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'card' 필드 값이 길이 제한(120~180자)을 만족하지 않습니다"),
+    EVIDENCE_CARD_ID_MISSING(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 입력된 DailyEntry ID 목록에 해당하는 'id' 필드 값이 없습니다"),
+
+    // ===================== PATTERN_EXTRACT (패턴 추출) =====================
+    // 400 Bad Request
+    PATTERN_JSON_MISSING_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'patterns' 필드가 없거나 배열이 아닙니다"),
+    PATTERN_JSON_MISSING_LABEL_OR_NOTE(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'label' 또는 'note' 필드가 없거나 문자열이 아닙니다"),
+    PATTERN_JSON_MISSING_EVIDENCE_IDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'evidence_ids' 필드가 없거나 배열이 아닙니다"),
+    PATTERN_JSON_EVIDENCE_ID_NOT_TEXT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'evidence_ids' 배열 원소가 문자열이 아닙니다"),
+
+    PATTERN_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 patterns 개수가 제한(3~6개)을 만족하지 않습니다"),
+    PATTERN_LABEL_BLANK(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'label' 값이 비어있습니다"),
+    PATTERN_LABEL_TOO_LONG(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'label' 값이 길이 제한(25자)을 초과합니다"),
+    PATTERN_NOTE_BLANK(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'note' 값이 비어있습니다"),
+    PATTERN_NOTE_TOO_LONG(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'note' 값이 길이 제한(60자)을 초과합니다"),
+
+    PATTERN_EVIDENCE_ID_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'evidence_ids' 개수가 제한(2~4개)을 만족하지 않습니다"),
+    PATTERN_EVIDENCE_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence id가 입력된 EvidenceCard ID 목록에 없습니다"),
+    PATTERN_EVIDENCE_ID_DUPLICATED_ACROSS_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 여러 패턴에 중복 사용되었습니다"),
+
+    PATTERN_RESULT_EMPTY(HttpStatus.BAD_REQUEST, "패턴 추출을 위한 EvidenceCard 입력이 비어있습니다"),
+    PATTERN_JSON_MAPPING_FAILED(HttpStatus.BAD_REQUEST, "AI 응답 JSON을 매핑하는 과정에서 오류가 발생했습니다"),
+
+    // ==================== TYPE_SELECT (유형 선택) ====================
+    // 400 Bad Request
+    TYPE_SELECT_INPUT_EMPTY(HttpStatus.BAD_REQUEST, "유형 선택을 위한 입력 데이터가 비어있습니다"),
+
+    TYPE_SELECT_JSON_MISSING_FIELDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 필수 필드(analysisTypeCode/confidence/because)가 없거나 형식이 올바르지 않습니다"),
+    TYPE_SELECT_JSON_BECAUSE_ITEM_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 because 항목 형식이 올바르지 않습니다"),
+    TYPE_SELECT_JSON_EVIDENCE_ID_NOT_TEXT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence_ids 배열 원소가 문자열이 아닙니다"),
+
+    TYPE_SELECT_CONFIDENCE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 confidence 값이 범위(0~100)를 만족하지 않습니다"),
+    TYPE_SELECT_BECAUSE_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 because 개수가 제한(2~3개)을 만족하지 않습니다"),
+    TYPE_SELECT_EVIDENCE_ID_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence_ids 개수가 제한(1~4개)을 만족하지 않습니다"),
+
+    TYPE_SELECT_CODE_NOT_IN_CANDIDATES(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 후보 analysis_types 6개 중 하나가 아닙니다"),
+    TYPE_SELECT_EVIDENCE_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence id가 입력된 EvidenceCard ID 목록에 없습니다"),
+    TYPE_SELECT_EVIDENCE_ID_DUPLICATED(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 중복 사용되었습니다"),
+
+    // ===================== TYPE_REPORT (유형 리포트) =====================
+    // 400 Bad Request
+    TYPE_REPORT_GENERATE_INPUT_EMPTY(HttpStatus.BAD_REQUEST, "유형 리포트 생성을 위한 입력 데이터가 비어있습니다"),
+
+    TYPE_REPORT_JSON_MISSING_FIELDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 필수 필드(analysisTypeCode/typeAnalysis/personas)가 없거나 형식이 올바르지 않습니다"),
+    TYPE_REPORT_PERSONAS_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 형식이 올바르지 않습니다"),
+    TYPE_REPORT_PERSONA_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 개수가 2개가 아닙니다"),
+
+    TYPE_REPORT_TYPE_ANALYSIS_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 typeAnalysis 길이가 제한(230~270자)을 만족하지 않습니다"),
+    TYPE_REPORT_PERSONA_TITLE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona title 길이가 제한(1~15자)을 만족하지 않습니다"),
+    TYPE_REPORT_PERSONA_CONTENT_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona content 길이가 제한(180~220자)을 만족하지 않습니다"),
+
+    TYPE_REPORT_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 선택된 analysisTypeCode와 일치하지 않습니다"),
+
+    TYPE_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "유형 리포트 작성 자격이 없습니다. (해당 유형 30회 이상 완료 필요)"),
+
+    // 404 Not Found
+    TYPE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "유형 리포트를 찾을 수 없습니다"),
+    TYPE_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 유형 리포트가 아직 생성 완료되지 않았습니다"),
+    ANALYSIS_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "분석 유형을 찾을 수 없습니다"),
+
+    // 409 Conflict
+    TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다");
+
 
     private final HttpStatus httpStatus;
     private final String message;

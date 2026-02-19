@@ -36,4 +36,11 @@ public class ProfileImageUrlBuilder {
 
         return null;
     }
+
+    public String buildAnalysisTypeImageUrl(String analysisTypeCode) {
+        if (analysisTypeCode == null) {
+            return null;
+        }
+        return baseUrl + "/resources/analysis_type/" + analysisTypeCode + ".png";
+    }
 }
