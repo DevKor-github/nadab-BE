@@ -35,6 +35,7 @@ public class TypeReportTxService {
     private final ApplicationEventPublisher eventPublisher;
 
     private static final long TYPE_REPORT_COST = 100L;
+    private static final long FREE_COST = 0L;
 
     public TypeReserveResultDto reserveType(User user, InterestCode interestCode) {
 
@@ -44,21 +45,33 @@ public class TypeReportTxService {
         TypeReport report = pending.report();
         Long prevCompletedId = pending.previousCompletedReportId();
 
-        int updated = userWalletRepository.tryConsume(user.getId(), TYPE_REPORT_COST);
-        if (updated == 0) {
-            throw new NotEnoughCrystalException(ErrorCode.WALLET_INSUFFICIENT_BALANCE);
+        // interest별 최초 1회 무료 판정 (과거 COMPLETED 이력 기준, deletedAt 무관)
+        boolean hasEverCompleted = typeReportRepository.existsByUserIdAndInterestCodeAndStatus(
+                user.getId(), interestCode, TypeReportStatus.COMPLETED
+        );
+        boolean isFirstFree = !hasEverCompleted;
+        long cost = isFirstFree ? FREE_COST : TYPE_REPORT_COST;
+
+        // 유료일 때만 차감
+        if (cost > 0) {
+            int updated = userWalletRepository.tryConsume(user.getId(), cost);
+            if (updated == 0) {
+                throw new NotEnoughCrystalException(ErrorCode.WALLET_INSUFFICIENT_BALANCE);
+            }
         }
 
         UserWallet wallet = userWalletRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
         long balanceAfter = wallet.getCrystalBalance();
 
+        // 0원이어도 로그 남김(PENDING)
         CrystalLog log = crystalLogRepository.save(
                 CrystalLog.createPending(
                         user,
-                        -TYPE_REPORT_COST,
+                        -cost,
                         balanceAfter,
-                        CrystalLogReason.REPORT_GENERATE_TYPE,
+                        isFirstFree ? CrystalLogReason.REPORT_GENERATE_TYPE_FREE_FIRST
+                                : CrystalLogReason.REPORT_GENERATE_TYPE,
                         "TYPE_REPORT: " + interestCode.name(),
                         report.getId()
                 )
@@ -120,9 +133,16 @@ public class TypeReportTxService {
     public void failAndRefundType(Long userId, Long reportId, Long logId) {
         typeReportRepository.markFailed(reportId, TypeReportStatus.FAILED);
 
-        int updated = userWalletRepository.refund(userId, TYPE_REPORT_COST);
-        if (updated == 0) {
-            throw new NotFoundException(ErrorCode.WALLET_NOT_FOUND);
+        CrystalLog log = crystalLogRepository.findById(logId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.CRYSTAL_LOG_NOT_FOUND));
+
+        // 유료였다면(delta<0) 환불
+        if (log.getDelta() < 0) {
+            long refundAmount = -log.getDelta(); // ex) -100 -> 100
+            int updated = userWalletRepository.refund(userId, refundAmount);
+            if (updated == 0) {
+                throw new NotFoundException(ErrorCode.WALLET_NOT_FOUND);
+            }
         }
 
         crystalLogRepository.markRefunded(logId);

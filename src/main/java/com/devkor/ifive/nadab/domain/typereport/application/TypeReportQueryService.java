@@ -19,10 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -68,10 +65,16 @@ public class TypeReportQueryService {
         int completedCount = (completedCountLong > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) completedCountLong;
         boolean canGenerate = completedCount >= REQUIRED_COUNT;
 
+        boolean hasEverCompleted = typeReportRepository.existsByUserIdAndInterestCodeAndStatus(
+                user.getId(), code, TypeReportStatus.COMPLETED
+        );
+        boolean isFirstFree = !hasEverCompleted;
+
         TypeReportEligibilityResponse eligibility = new TypeReportEligibilityResponse(
                 completedCount,
                 REQUIRED_COUNT,
-                canGenerate
+                canGenerate,
+                isFirstFree
         );
 
         TypeReportDetailResponse detail = new TypeReportDetailResponse(
@@ -102,14 +105,22 @@ public class TypeReportQueryService {
         // 3) eligibility counts(interest별 completed count)
         Map<InterestCode, Integer> completedCounts = buildDailyCompletedCountMap(user.getId());
 
-        // 3) 항상 6개 key 내려주기
+        // 4) "무료 1회" 판정용: COMPLETED 이력 있는 interestCode 집합
+        //     이 집합에 없으면 isFirstFree=true
+        List<InterestCode> completedInterestList = typeReportRepository.findDistinctInterestCodesByUserIdAndStatus(
+                user.getId(), TypeReportStatus.COMPLETED
+        );
+        Set<InterestCode> hasEverCompletedSet = EnumSet.noneOf(InterestCode.class);
+        hasEverCompletedSet.addAll(completedInterestList);
+
+        // 5) 항상 6개 key 내려주기
         Map<String, TypeReportDetailResponse> result = new LinkedHashMap<>();
-        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.PREFERENCE);
-        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.EMOTION);
-        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.ROUTINE);
-        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.RELATIONSHIP);
-        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.LOVE);
-        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.VALUES);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, hasEverCompletedSet, InterestCode.PREFERENCE);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, hasEverCompletedSet,InterestCode.EMOTION);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, hasEverCompletedSet,InterestCode.ROUTINE);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, hasEverCompletedSet,InterestCode.RELATIONSHIP);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, hasEverCompletedSet,InterestCode.LOVE);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, hasEverCompletedSet,InterestCode.VALUES);
 
         return new MyAllTypeReportsResponse(result);
     }
@@ -119,6 +130,7 @@ public class TypeReportQueryService {
             Map<InterestCode, TypeReport> completedByInterest,
             Map<InterestCode, TypeReport> latestByInterest,
             Map<InterestCode, Integer> completedCounts,
+            Set<InterestCode> hasEverCompletedSet,
             InterestCode code
     ) {
         // current
@@ -140,10 +152,14 @@ public class TypeReportQueryService {
         int dailyCompletedCount = completedCounts.getOrDefault(code, 0);
         boolean canGenerate = dailyCompletedCount >= REQUIRED_COUNT;
 
+        // 무료 1회 여부: 과거 COMPLETED 이력 없으면 true
+        boolean isFirstFree = !hasEverCompletedSet.contains(code);
+
         TypeReportEligibilityResponse eligibility = new TypeReportEligibilityResponse(
                 dailyCompletedCount,
                 REQUIRED_COUNT,
-                canGenerate
+                canGenerate,
+                isFirstFree
         );
 
         out.put(code.name(), new TypeReportDetailResponse(current, generation, eligibility));

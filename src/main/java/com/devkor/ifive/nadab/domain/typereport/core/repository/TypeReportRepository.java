@@ -32,6 +32,8 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
     Optional<Long> findActiveCompletedId(@Param("userId") Long userId,
                                          @Param("interestCode") InterestCode interestCode);
 
+    boolean existsByUserIdAndInterestCodeAndStatus(Long userId, InterestCode interestCode, TypeReportStatus status);
+
     boolean existsByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(Long userId,
                                                                      InterestCode interestCode,
                                                                      TypeReportStatus status);
@@ -73,6 +75,18 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
        )
 """)
     List<TypeReport> findLatestAttemptsByUser(@Param("userId") Long userId);
+
+    // "삭제 여부 무관" COMPLETED 이력 존재하는 interestCode 집합 반환
+    @Query("""
+        select distinct tr.interestCode
+          from TypeReport tr
+         where tr.user.id = :userId
+           and tr.status = :status
+    """)
+    List<InterestCode> findDistinctInterestCodesByUserIdAndStatus(
+            @Param("userId") Long userId,
+            @Param("status") TypeReportStatus status
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE TypeReport t SET t.status = :status WHERE t.id = :id")
