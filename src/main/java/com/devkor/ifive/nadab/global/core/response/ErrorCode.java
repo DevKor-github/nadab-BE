@@ -299,7 +299,6 @@ public enum ErrorCode {
     ANALYSIS_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "분석 유형을 찾을 수 없습니다"),
 
     // 409 Conflict
-    TYPE_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 유형 리포트가 존재합니다"),
     TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다");
 
 

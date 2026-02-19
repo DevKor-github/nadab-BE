@@ -78,7 +78,6 @@ public class TypeReportController {
                     @ApiResponse(
                             responseCode = "409",
                             description = """
-                                    - ErrorCode: TYPE_REPORT_ALREADY_COMPLETED - 이미 작성된 유형 리포트가 존재함
                                     - ErrorCode: TYPE_REPORT_IN_PROGRESS - 현재 유형 리포트를 생성 중임
                                     """,
                             content = @Content
@@ -98,23 +97,40 @@ public class TypeReportController {
     @Operation(
             summary = "나의 유형 리포트 단일 조회",
             description = """
-                    유형 하나에 대한 사용자의 단일 유형 리포트를 조회합니다. </br>
-                    이때 ```report``` 필드가 ```null```인 경우 해당 유형 리포트가 존재하지 않음을 의미합니다. </br>
-                    **<```report```의 state>** </br>
-                    생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
-                    생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
-                    생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
-                    생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
-                    
-                    선택 가능한 관심 주제 코드는 다음과 같습니다.
-                    
-                    - **PREFERENCE** : 취향
-                    - **EMOTION** : 감정
-                    - **ROUTINE** : 루틴
-                    - **RELATIONSHIP** : 인간관계
-                    - **LOVE** : 사랑
-                    - **VALUES** : 가치관
-                    """,
+        특정 관심 주제(interestCode) 1개에 대한 사용자의 유형 리포트 상태를 조회합니다. </br></br>
+
+        응답의 ```report```는 다음 3개 영역으로 구성됩니다. </br>
+        - ```current```: 현재 조회 가능한(사용자가 볼 수 있는) 유형 리포트 본문 </br>
+        - ```generation```: 새 리포트 생성 작업의 상태(진행 중/실패 여부 및 작업 reportId) </br>
+        - ```eligibility```: 생성 자격(완료한 일간 리포트 개수, 필요 개수, 생성 가능 여부, 첫 생성 무료 여부) </br></br>
+
+        **1) ```current```** </br>
+        - 이미 생성 완료된 리포트가 있으면 ```current```에 상세 내용이 채워집니다. </br>
+        - 아직 생성된 리포트가 없으면 ```current = null``` 입니다. </br>
+        - ```current.status```는 “현재 조회 가능한 리포트 자체의 상태”를 의미합니다(예: COMPLETED). </br></br>
+
+        **2) ```generation```** </br>
+        - “새 유형 리포트 생성 작업”의 상태를 의미합니다. </br>
+        - ```status``` 값: </br>
+          - ```NONE```: 생성 작업이 없음(대기/진행/실패 상태가 아님) </br>
+          - ```IN_PROGRESS```: 생성 작업 진행 중 </br>
+          - ```FAILED```: 생성 작업 실패(환불/처리 등 후속 로직이 완료된 상태) </br>
+        - ```reportId```는 ```IN_PROGRESS``` 또는 ```FAILED```인 생성 작업의 대상 reportId이며, 없으면 null입니다. </br></br>
+
+        **3) ```eligibility```** </br>
+        - ```dailyCompletedCount```: 해당 interest의 완료된 일간 리포트 개수 </br>
+        - ```requiredCount```: 유형 리포트 생성을 위해 필요한 최소 완료 개수 (현재 30) </br>
+        - ```canGenerate```: 현재 시점에 생성 조건을 충족했는지 여부 </br>
+        - ```isFirstFree```: 해당 interest의 “첫 유형 리포트 생성 무료” 대상 여부 </br></br>
+
+        선택 가능한 관심 주제 코드는 다음과 같습니다. </br>
+        - **PREFERENCE** : 취향 </br>
+        - **EMOTION** : 감정 </br>
+        - **ROUTINE** : 루틴 </br>
+        - **RELATIONSHIP** : 인간관계 </br>
+        - **LOVE** : 사랑 </br>
+        - **VALUES** : 가치관 </br>
+        """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
@@ -149,20 +165,33 @@ public class TypeReportController {
     @Operation(
             summary = "나의 유형 리포트 통합 조회",
             description = """
-                    사용자의 유형 리포트를 통합 조회합니다. </br>
-                    
-                    관심 주제(```InterestCode```)별 유형 리포트를 한 번에 반환합니다. </br>
-                    ```reports``` 필드는 "```interestCode``` -> ```TypeReportResponse```" Map입니다. </br>
-                    Key는 ```InterestCode``` 문자열(PREFERENCE, EMOTION, ROUTINE, RELATIONSHIP, LOVE, VALUES)입니다. </br>
-                    Value는 단일 조회 응답의 ```TypeReportResponse```와 동일한 스키마를 사용합니다. 리포트가 없는 관심 주제는 null로 반환됩니다. </br>
-                    스웨거의 성공 응답 예시(Example Value)를 참고해주세요. </br>
-                    
-                    **<각 ```report```의 state>** </br>
-                    생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
-                    생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
-                    생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
-                    생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
-                    """,
+        사용자의 유형 리포트를 관심 주제(```InterestCode```)별로 한 번에 조회합니다. </br></br>
+
+        응답의 ```reports```는 다음 형태의 Map 입니다. </br>
+        - Key: ```InterestCode``` 문자열 (PREFERENCE, EMOTION, ROUTINE, RELATIONSHIP, LOVE, VALUES) </br>
+        - Value: ```TypeReportDetailResponse``` </br></br>
+
+        Value(```TypeReportDetailResponse```)는 단일 조회 응답의 ```report```와 동일한 스키마이며, 다음 3개 영역으로 구성됩니다. </br>
+        - ```current```: 현재 조회 가능한 유형 리포트 본문(없으면 null) </br>
+        - ```generation```: 새 리포트 생성 작업 상태(진행 중/실패 여부 및 작업 reportId) </br>
+        - ```eligibility```: 생성 자격(완료 개수/필요 개수/생성 가능/첫 생성 무료 여부) </br></br>
+
+        **각 필드 의미** </br>
+        **1) ```current```** </br>
+        - 생성 완료된 리포트가 있으면 상세 내용이 채워집니다. </br>
+        - 아직 생성된 리포트가 없으면 ```current = null``` 입니다. </br></br>
+
+        **2) ```generation```** </br>
+        - “새 유형 리포트 생성 작업”의 상태를 의미합니다. </br>
+        - ```status``` 값: ```NONE``` / ```IN_PROGRESS``` / ```FAILED``` </br>
+        - ```reportId```는 생성 작업이 존재할 때의 reportId이며, 없으면 null입니다. </br></br>
+
+        **3) ```eligibility```** </br>
+        - ```dailyCompletedCount```: 해당 interest의 완료된 일간 리포트 개수 </br>
+        - ```requiredCount```: 생성에 필요한 최소 개수 (현재 30) </br>
+        - ```canGenerate```: 현재 생성 조건 충족 여부 </br>
+        - ```isFirstFree```: 해당 interest의 첫 생성 무료 대상 여부 </br></br>
+        """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
