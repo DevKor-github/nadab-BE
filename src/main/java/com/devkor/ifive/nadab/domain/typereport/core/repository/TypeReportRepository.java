@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
 
-    Optional<TypeReport> findByUserIdAndInterestCodeAndDeletedAtIsNull(Long userId, InterestCode interestCode);
+    Optional<TypeReport> findByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(Long userId, InterestCode interestCode, TypeReportStatus status);
 
     // 활성 COMPLETED 리포트의 id 찾기
     @Query("""
@@ -46,6 +46,7 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
           from TypeReport tr
           left join fetch tr.analysisType at
          where tr.user.id = :userId
+           and tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
            and tr.deletedAt is null
     """)
     List<TypeReport> findAllActiveWithAnalysisType(@Param("userId") Long userId);

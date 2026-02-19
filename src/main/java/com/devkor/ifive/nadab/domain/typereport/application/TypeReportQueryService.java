@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.typereport.api.dto.response.TypeReportRespo
 import com.devkor.ifive.nadab.domain.typereport.application.mapper.TypeReportMapper;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.AnalysisType;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
+import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus;
 import com.devkor.ifive.nadab.domain.typereport.core.repository.TypeReportRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -38,7 +39,7 @@ public class TypeReportQueryService {
 
         InterestCode code = InterestCode.fromString(interestCode);
 
-        TypeReportResponse reportResponse = typeReportRepository.findByUserIdAndInterestCodeAndDeletedAtIsNull(user.getId(), code)
+        TypeReportResponse reportResponse = typeReportRepository.findByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(user.getId(), code, TypeReportStatus.COMPLETED)
                 .map(report -> {
                     AnalysisType analysisType = report.getAnalysisType();
 

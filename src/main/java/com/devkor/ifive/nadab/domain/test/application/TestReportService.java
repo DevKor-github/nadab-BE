@@ -248,7 +248,7 @@ public class TestReportService {
 
         InterestCode code = InterestCode.fromString(interestCode);
 
-        TypeReport report = typeReportRepository.findByUserIdAndInterestCodeAndDeletedAtIsNull(user.getId(), code)
+        TypeReport report = typeReportRepository.findByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(user.getId(), code, TypeReportStatus.COMPLETED)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.TYPE_REPORT_NOT_FOUND));
 
         if (report.getStatus() != TypeReportStatus.COMPLETED) {
