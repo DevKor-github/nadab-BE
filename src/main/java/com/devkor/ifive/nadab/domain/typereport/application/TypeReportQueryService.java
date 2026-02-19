@@ -1,8 +1,8 @@
 package com.devkor.ifive.nadab.domain.typereport.application;
 
-import com.devkor.ifive.nadab.domain.typereport.api.dto.response.MyAllTypeReportsResponse;
-import com.devkor.ifive.nadab.domain.typereport.api.dto.response.MyTypeReportResponse;
-import com.devkor.ifive.nadab.domain.typereport.api.dto.response.TypeReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
+import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
+import com.devkor.ifive.nadab.domain.typereport.api.dto.response.*;
 import com.devkor.ifive.nadab.domain.typereport.application.mapper.TypeReportMapper;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.AnalysisType;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
@@ -30,8 +30,11 @@ public class TypeReportQueryService {
 
     private final UserRepository userRepository;
     private final TypeReportRepository typeReportRepository;
+    private final DailyReportRepository dailyReportRepository;
 
     private final ProfileImageUrlBuilder imageUrlBuilder;
+
+    private static final int REQUIRED_COUNT = 30;
 
     public MyTypeReportResponse getMyTypeReport(Long userId, String interestCode) {
         User user = userRepository.findById(userId)
@@ -39,7 +42,8 @@ public class TypeReportQueryService {
 
         InterestCode code = InterestCode.fromString(interestCode);
 
-        TypeReportResponse reportResponse = typeReportRepository.findByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(user.getId(), code, TypeReportStatus.COMPLETED)
+        // 1) current: COMPLETED 리포트(없으면 null)
+        TypeReportResponse current = typeReportRepository.findByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(user.getId(), code, TypeReportStatus.COMPLETED)
                 .map(report -> {
                     AnalysisType analysisType = report.getAnalysisType();
 
@@ -52,14 +56,38 @@ public class TypeReportQueryService {
                 })
                 .orElse(null);
 
-        return new MyTypeReportResponse(reportResponse);
+        // 2) isGeneratingNew: IN_PROGRESS 여부
+        boolean isGeneratingNew = typeReportRepository.existsByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(
+                user.getId(), code, TypeReportStatus.IN_PROGRESS
+        );
+
+        // 3) eligibility
+        long completedCountLong = dailyReportRepository.countByUserIdAndInterestCodeAndStatus(
+                user.getId(), code, DailyReportStatus.COMPLETED
+        );
+        int completedCount = (completedCountLong > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) completedCountLong;
+        boolean canGenerate = completedCount >= REQUIRED_COUNT;
+
+        TypeReportEligibilityResponse eligibility = new TypeReportEligibilityResponse(
+                completedCount,
+                REQUIRED_COUNT,
+                canGenerate
+        );
+
+        TypeReportDetailResponse detail = new TypeReportDetailResponse(
+                current,
+                isGeneratingNew,
+                eligibility
+        );
+
+        return new MyTypeReportResponse(detail);
     }
 
     public MyAllTypeReportsResponse getMyAllTypeReports(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
-        List<TypeReport> reports = typeReportRepository.findAllActiveWithAnalysisType(user.getId());
+        List<TypeReport> reports = typeReportRepository.findAllActiveWithAnalysisType(user.getId(), TypeReportStatus.COMPLETED);
 
         Map<InterestCode, TypeReport> byInterest = new EnumMap<>(InterestCode.class);
         for (TypeReport r : reports) {

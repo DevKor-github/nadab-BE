@@ -42,14 +42,17 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
 
     // 통합 조회 (fetch join으로 analysisType까지 한번에)
     @Query("""
-        select tr
-          from TypeReport tr
-          left join fetch tr.analysisType at
-         where tr.user.id = :userId
-           and tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
-           and tr.deletedAt is null
-    """)
-    List<TypeReport> findAllActiveWithAnalysisType(@Param("userId") Long userId);
+    select tr
+      from TypeReport tr
+      left join fetch tr.analysisType at
+     where tr.user.id = :userId
+       and tr.status = :status
+       and tr.deletedAt is null
+""")
+    List<TypeReport> findAllActiveWithAnalysisType(
+            @Param("userId") Long userId,
+            @Param("status") TypeReportStatus status
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE TypeReport t SET t.status = :status WHERE t.id = :id")

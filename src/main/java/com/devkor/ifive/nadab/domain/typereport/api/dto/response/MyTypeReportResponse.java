@@ -6,6 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record MyTypeReportResponse(
 
         @Schema(description = "유형 리포트", nullable = true)
-        TypeReportResponse report
+        TypeReportDetailResponse report
 ) {
 }
