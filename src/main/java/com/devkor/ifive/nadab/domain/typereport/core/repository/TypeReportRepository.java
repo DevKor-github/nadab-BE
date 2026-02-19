@@ -15,6 +15,11 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
 
     Optional<TypeReport> findByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(Long userId, InterestCode interestCode, TypeReportStatus status);
 
+    Optional<TypeReport> findTopByUserIdAndInterestCodeAndDeletedAtIsNullOrderByCreatedAtDesc(
+            Long userId, InterestCode interestCode
+    );
+
+
     // 활성 COMPLETED 리포트의 id 찾기
     @Query("""
         select tr.id
@@ -53,6 +58,21 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
             @Param("userId") Long userId,
             @Param("status") TypeReportStatus status
     );
+
+    @Query("""
+    select tr
+      from TypeReport tr
+     where tr.user.id = :userId
+       and tr.deletedAt is null
+       and tr.createdAt = (
+           select max(tr2.createdAt)
+             from TypeReport tr2
+            where tr2.user.id = :userId
+              and tr2.interestCode = tr.interestCode
+              and tr2.deletedAt is null
+       )
+""")
+    List<TypeReport> findLatestAttemptsByUser(@Param("userId") Long userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE TypeReport t SET t.status = :status WHERE t.id = :id")

@@ -50,8 +50,6 @@ public class TypeReportContentGenerationService {
 
         JsonNode raw = llmClient.generateRaw(selectedTypeText, patternsText, evidenceCardsText);
 
-        System.out.println("raw = " + raw);
-
         // 1차 파싱/검증
         try {
             TypeReportContentDto dto = toDto(raw);

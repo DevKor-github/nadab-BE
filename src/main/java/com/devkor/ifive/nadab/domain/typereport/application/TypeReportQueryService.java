@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,6 +36,7 @@ public class TypeReportQueryService {
     private final ProfileImageUrlBuilder imageUrlBuilder;
 
     private static final int REQUIRED_COUNT = 30;
+    private static final long FAILED_VISIBLE_MINUTES = 10;
 
     public MyTypeReportResponse getMyTypeReport(Long userId, String interestCode) {
         User user = userRepository.findById(userId)
@@ -56,10 +58,8 @@ public class TypeReportQueryService {
                 })
                 .orElse(null);
 
-        // 2) isGeneratingNew: IN_PROGRESS 여부
-        boolean isGeneratingNew = typeReportRepository.existsByUserIdAndInterestCodeAndStatusAndDeletedAtIsNull(
-                user.getId(), code, TypeReportStatus.IN_PROGRESS
-        );
+        // 2) generation: IN_PROGRESS 우선, 없으면 최근 FAILED
+        TypeReportGenerationResponse generation = resolveGeneration(user.getId(), code);
 
         // 3) eligibility
         long completedCountLong = dailyReportRepository.countByUserIdAndInterestCodeAndStatus(
@@ -76,7 +76,7 @@ public class TypeReportQueryService {
 
         TypeReportDetailResponse detail = new TypeReportDetailResponse(
                 current,
-                isGeneratingNew,
+                generation,
                 eligibility
         );
 
@@ -87,37 +87,126 @@ public class TypeReportQueryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
-        List<TypeReport> reports = typeReportRepository.findAllActiveWithAnalysisType(user.getId(), TypeReportStatus.COMPLETED);
+        // 1) current: COMPLETED (interest별 0~1개)
+        List<TypeReport> completed = typeReportRepository.findAllActiveWithAnalysisType(
+                user.getId(), TypeReportStatus.COMPLETED
+        );
+        Map<InterestCode, TypeReport> completedByInterest = new EnumMap<>(InterestCode.class);
+        for (TypeReport r : completed) completedByInterest.put(r.getInterestCode(), r);
 
-        Map<InterestCode, TypeReport> byInterest = new EnumMap<>(InterestCode.class);
-        for (TypeReport r : reports) {
-            byInterest.put(r.getInterestCode(), r);
-        }
+        // 2) latest attempt: interest별 최신 1건 (status가 COMPLETED/FAILED/IN_PROGRESS 뭐든 상관없이 최신)
+        List<TypeReport> latestAttempts = typeReportRepository.findLatestAttemptsByUser(user.getId());
+        Map<InterestCode, TypeReport> latestByInterest = new EnumMap<>(InterestCode.class);
+        for (TypeReport r : latestAttempts) latestByInterest.put(r.getInterestCode(), r);
 
-        // 항상 6개 key를 내려주고, 없으면 null
-        Map<String, TypeReportResponse> result = new LinkedHashMap<>();
-        put(result, byInterest, InterestCode.PREFERENCE);
-        put(result, byInterest, InterestCode.EMOTION);
-        put(result, byInterest, InterestCode.ROUTINE);
-        put(result, byInterest, InterestCode.RELATIONSHIP);
-        put(result, byInterest, InterestCode.LOVE);
-        put(result, byInterest, InterestCode.VALUES);
+        // 3) eligibility counts(interest별 completed count)
+        Map<InterestCode, Integer> completedCounts = buildDailyCompletedCountMap(user.getId());
+
+        // 3) 항상 6개 key 내려주기
+        Map<String, TypeReportDetailResponse> result = new LinkedHashMap<>();
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.PREFERENCE);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.EMOTION);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.ROUTINE);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.RELATIONSHIP);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.LOVE);
+        putDetail(result, completedByInterest, latestByInterest, completedCounts, InterestCode.VALUES);
 
         return new MyAllTypeReportsResponse(result);
     }
 
-    private void put(Map<String, TypeReportResponse> out, Map<InterestCode, TypeReport> byInterest, InterestCode code) {
-        TypeReport report = byInterest.get(code);
-        if (report == null) {
-            out.put(code.name(), null);
-            return;
+    private void putDetail(
+            Map<String, TypeReportDetailResponse> out,
+            Map<InterestCode, TypeReport> completedByInterest,
+            Map<InterestCode, TypeReport> latestByInterest,
+            Map<InterestCode, Integer> completedCounts,
+            InterestCode code
+    ) {
+        // current
+        TypeReport completed = completedByInterest.get(code);
+        TypeReportResponse current = null;
+
+        if (completed != null) {
+            AnalysisType analysisType = completed.getAnalysisType();
+            String typeImageUrl = (analysisType != null)
+                    ? imageUrlBuilder.buildAnalysisTypeImageUrl(analysisType.getCode())
+                    : null;
+            current = TypeReportMapper.toResponse(completed, analysisType, typeImageUrl);
         }
 
-        AnalysisType analysisType = report.getAnalysisType();
-        String typeImageUrl = (analysisType != null)
-                ? imageUrlBuilder.buildAnalysisTypeImageUrl(analysisType.getCode())
-                : null;
+        // generation: latest attempt 기준
+        TypeReportGenerationResponse generation = resolveGenerationFromLatest(latestByInterest.get(code));
 
-        out.put(code.name(), TypeReportMapper.toResponse(report, analysisType, typeImageUrl));
+        // eligibility
+        int dailyCompletedCount = completedCounts.getOrDefault(code, 0);
+        boolean canGenerate = dailyCompletedCount >= REQUIRED_COUNT;
+
+        TypeReportEligibilityResponse eligibility = new TypeReportEligibilityResponse(
+                dailyCompletedCount,
+                REQUIRED_COUNT,
+                canGenerate
+        );
+
+        out.put(code.name(), new TypeReportDetailResponse(current, generation, eligibility));
+    }
+
+    private Map<InterestCode, Integer> buildDailyCompletedCountMap(Long userId) {
+        Map<InterestCode, Integer> map = new EnumMap<>(InterestCode.class);
+
+        // 기본 0 세팅(6개 항상)
+        for (InterestCode ic : InterestCode.values()) {
+            map.put(ic, 0);
+        }
+
+        dailyReportRepository.countCompletedByInterest(userId, DailyReportStatus.COMPLETED)
+                .forEach(row -> {
+                    long c = row.completedCount();
+                    int safe = (c > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) c;
+                    map.put(row.interestCode(), safe);
+                });
+
+        return map;
+    }
+
+    private TypeReportGenerationResponse resolveGenerationFromLatest(TypeReport latest) {
+        if (latest == null) {
+            return new TypeReportGenerationResponse(TypeReportGenerationStatus.NONE, null);
+        }
+
+        if (latest.getStatus() == TypeReportStatus.IN_PROGRESS) {
+            return new TypeReportGenerationResponse(TypeReportGenerationStatus.IN_PROGRESS, latest.getId());
+        }
+
+        if (latest.getStatus() == TypeReportStatus.FAILED && isRecentlyFailed(latest)) {
+            return new TypeReportGenerationResponse(TypeReportGenerationStatus.FAILED, latest.getId());
+        }
+
+        // latest가 COMPLETED거나, FAILED인데 오래됐으면 NONE
+        return new TypeReportGenerationResponse(TypeReportGenerationStatus.NONE, null);
+    }
+
+    private TypeReportGenerationResponse resolveGeneration(Long userId, InterestCode code) {
+        return typeReportRepository
+                .findTopByUserIdAndInterestCodeAndDeletedAtIsNullOrderByCreatedAtDesc(userId, code)
+                .map(latest -> {
+                    if (latest.getStatus() == TypeReportStatus.IN_PROGRESS) {
+                        return new TypeReportGenerationResponse(TypeReportGenerationStatus.IN_PROGRESS, latest.getId());
+                    }
+                    if (latest.getStatus() == TypeReportStatus.FAILED && isRecentlyFailed(latest)) {
+                        return new TypeReportGenerationResponse(TypeReportGenerationStatus.FAILED, latest.getId());
+                    }
+                    // latest가 COMPLETED면, 생성 상태는 NONE
+                    return new TypeReportGenerationResponse(TypeReportGenerationStatus.NONE, null);
+                })
+                .orElse(new TypeReportGenerationResponse(TypeReportGenerationStatus.NONE, null));
+    }
+
+
+    private boolean isRecentlyFailed(TypeReport report) {
+
+        OffsetDateTime updatedAt = report.getUpdatedAt();
+        if (updatedAt == null) return true; // 시각 없으면 일단 노출
+
+        OffsetDateTime threshold = OffsetDateTime.now().minusMinutes(FAILED_VISIBLE_MINUTES);
+        return updatedAt.isAfter(threshold);
     }
 }

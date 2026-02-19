@@ -32,8 +32,6 @@ public class EvidenceCardGenerationService {
 
         List<EvidenceCardDto> cards = mapAndValidate(withIds, raw);
 
-        System.out.println("cards = " + cards);
-
         return cards;
     }
 

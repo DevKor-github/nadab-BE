@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.repository;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.InterestCompletedCountDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
@@ -128,5 +129,23 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
     Optional<DailyReport> findByUserIdAndDate(
         @Param("userId") Long userId,
         @Param("date") LocalDate date
+    );
+
+    @Query("""
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.InterestCompletedCountDto(
+            i.code,
+            count(dr)
+        )
+          from DailyReport dr
+          join dr.answerEntry ae
+          join ae.question q
+          join q.interest i
+         where ae.user.id = :userId
+           and dr.status = :status
+         group by i.code
+    """)
+    List<InterestCompletedCountDto> countCompletedByInterest(
+            @Param("userId") Long userId,
+            @Param("status") DailyReportStatus status
     );
 }

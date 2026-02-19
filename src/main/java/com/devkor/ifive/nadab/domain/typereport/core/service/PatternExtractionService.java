@@ -42,8 +42,6 @@ public class PatternExtractionService {
         PatternExtractionResultDto dto = toDto(raw);
         validate(dto, validIds);
 
-        System.out.println("raw = " + raw);
-
         return dto;
     }
 
