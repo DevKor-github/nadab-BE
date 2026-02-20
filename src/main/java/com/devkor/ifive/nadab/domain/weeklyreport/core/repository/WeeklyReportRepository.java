@@ -34,7 +34,7 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
 
     /**
      * PENDING -> COMPLETED 확정
-     * - 분석 결과(discovered/good/improve) 저장
+     * - 분석 결과(discovered/improve) 저장
      * - analyzedAt 기록
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -42,7 +42,6 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
         UPDATE WeeklyReport wr
            SET wr.status = :status,
                wr.discovered = :discovered,
-               wr.good = :good,
                wr.improve = :improve,
                wr.analyzedAt = CURRENT_TIMESTAMP
          WHERE wr.id = :reportId
@@ -51,7 +50,6 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
             @Param("reportId") Long reportId,
             @Param("status") WeeklyReportStatus status,
             @Param("discovered") String discovered,
-            @Param("good") String good,
             @Param("improve") String improve
     );
 

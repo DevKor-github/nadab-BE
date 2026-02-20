@@ -63,7 +63,6 @@ public class WeeklyReportGenerationListener {
                     event.reportId(),
                     event.crystalLogId(),
                     cut(dto.discovered()),
-                    cut(dto.good()),
                     cut(dto.improve())
             );
         } catch (Exception e) {

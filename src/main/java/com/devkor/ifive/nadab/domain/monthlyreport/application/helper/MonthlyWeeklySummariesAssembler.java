@@ -19,7 +19,6 @@ public final class MonthlyWeeklySummariesAssembler {
      * 예)
      * - W1(2026-01-01 ~ 2026-01-07)
      *   discovered: ...
-     *   good: ...
      *   improve: ...
      */
     public static String assemble(List<MonthlyWeeklySummaryInputDto> inputs) {
@@ -40,7 +39,6 @@ public final class MonthlyWeeklySummariesAssembler {
                     .append(" ~ ").append(valueOrNa(w.weekEndDate() == null ? null : w.weekEndDate().toString()))
                     .append(")\n")
                     .append("  discovered: ").append(valueOrNa(w.discovered())).append("\n")
-                    .append("  good: ").append(valueOrNa(w.good())).append("\n")
                     .append("  improve: ").append(valueOrNa(w.improve())).append("\n\n");
             idx++;
         }

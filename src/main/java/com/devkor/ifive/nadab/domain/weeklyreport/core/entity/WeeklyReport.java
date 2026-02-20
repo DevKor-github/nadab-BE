@@ -41,9 +41,6 @@ public class WeeklyReport extends CreatableEntity {
     @Column(name = "discovered", length = 250)
     private String discovered;
 
-    @Column(name = "good", length = 250)
-    private String good;
-
     @Column(name = "improve", length = 250)
     private String improve;
 
@@ -58,14 +55,13 @@ public class WeeklyReport extends CreatableEntity {
     private LocalDate date;
 
     public static WeeklyReport create(User user, LocalDate weekStartDate, LocalDate weekEndDate,
-                                      String discovered, String good, String improve,
+                                      String discovered, String improve,
                                       LocalDate date, WeeklyReportStatus status) {
         WeeklyReport wr = new WeeklyReport();
         wr.user = user;
         wr.weekStartDate = weekStartDate;
         wr.weekEndDate = weekEndDate;
         wr.discovered = discovered;
-        wr.good = good;
         wr.improve = improve;
         wr.date = date;
         wr.status = status;
@@ -73,7 +69,7 @@ public class WeeklyReport extends CreatableEntity {
     }
 
     public static WeeklyReport createPending(User user, LocalDate weekStartDate, LocalDate weekEndDate, LocalDate date) {
-        return create(user, weekStartDate, weekEndDate, null, null, null, date, WeeklyReportStatus.PENDING);
+        return create(user, weekStartDate, weekEndDate, null, null, date, WeeklyReportStatus.PENDING);
     }
 }
 

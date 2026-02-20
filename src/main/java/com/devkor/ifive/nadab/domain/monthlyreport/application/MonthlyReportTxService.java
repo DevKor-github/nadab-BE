@@ -86,9 +86,9 @@ public class MonthlyReportTxService {
         return reserve;
     }
 
-    public void confirmMonthly(Long reportId, Long logId, String discovered, String good, String improve) {
+    public void confirmMonthly(Long reportId, Long logId, String discovered, String improve) {
         // report를 COMPLETED로
-        monthlyReportRepository.markCompleted(reportId, MonthlyReportStatus.COMPLETED, discovered, good, improve);
+        monthlyReportRepository.markCompleted(reportId, MonthlyReportStatus.COMPLETED, discovered, improve);
 
         // log를 CONFIRMED로
         crystalLogRepository.markConfirmed(logId);

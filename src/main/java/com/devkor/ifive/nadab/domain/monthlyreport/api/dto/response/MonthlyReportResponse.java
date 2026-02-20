@@ -11,9 +11,6 @@ public record MonthlyReportResponse(
         @Schema(description = "이런 면도 발견되었어요")
         String discovered,
 
-        @Schema(description = "이런 점이 좋았어요")
-        String good,
-
         @Schema(description = "다음엔 이렇게 보완해볼까요?")
         String improve,
 

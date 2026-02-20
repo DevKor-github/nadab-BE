@@ -11,7 +11,6 @@ public final class MonthlyReportMapper {
         return new MonthlyReportResponse(
                 range.monthStartDate().getMonthValue(),
                 report.getDiscovered(),
-                report.getGood(),
                 report.getImprove(),
                 report.getStatus().name()
         );
