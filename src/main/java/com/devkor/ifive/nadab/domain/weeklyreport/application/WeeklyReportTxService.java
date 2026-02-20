@@ -85,9 +85,9 @@ public class WeeklyReportTxService {
         return reserve;
     }
 
-    public void confirmWeekly(Long reportId, Long logId, String discovered, String good, String improve) {
+    public void confirmWeekly(Long reportId, Long logId, String discovered, String improve) {
         // report를 COMPLETED로
-        weeklyReportRepository.markCompleted(reportId, WeeklyReportStatus.COMPLETED, discovered, good, improve);
+        weeklyReportRepository.markCompleted(reportId, WeeklyReportStatus.COMPLETED, discovered, improve);
 
         // log를 CONFIRMED로
         crystalLogRepository.markConfirmed(logId);

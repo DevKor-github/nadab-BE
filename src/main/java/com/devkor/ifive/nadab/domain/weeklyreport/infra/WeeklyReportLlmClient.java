@@ -62,14 +62,13 @@ public class WeeklyReportLlmClient {
             LlmWeeklyResultDto result = objectMapper.readValue(content, LlmWeeklyResultDto.class);
 
             String discovered = result.discovered();
-            String good = result.good();
             String improve = result.improve();
 
-            if (isBlank(discovered) || isBlank(good) || isBlank(improve)) {
+            if (isBlank(discovered) || isBlank(improve)) {
                 throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
             }
 
-            AiWeeklyReportResultDto dto = this.enforceLength(new AiWeeklyReportResultDto(discovered, good, improve));
+            AiWeeklyReportResultDto dto = this.enforceLength(new AiWeeklyReportResultDto(discovered, improve));
             return dto;
 
         } catch (AiResponseParseException e) {
@@ -122,7 +121,6 @@ public class WeeklyReportLlmClient {
 
     private AiWeeklyReportResultDto enforceLength(AiWeeklyReportResultDto dto) {
         String d = dto.discovered();
-        String g = dto.good();
         String i = dto.improve();
 
         boolean needD = d.length() > MAX_DISCOVERED;
@@ -135,7 +133,7 @@ public class WeeklyReportLlmClient {
         if (needD) d = rewriteOne(rewriteClient, d, MAX_DISCOVERED, MIN_DISCOVERED);
         if (needI) i = rewriteOne(rewriteClient, i, MAX_IMPROVE, MIN_IMPROVE);
 
-        return new AiWeeklyReportResultDto(d, g, i);
+        return new AiWeeklyReportResultDto(d, i);
     }
 
     private String rewriteOne(ChatClient client, String text, int maxChars, int minChars) {

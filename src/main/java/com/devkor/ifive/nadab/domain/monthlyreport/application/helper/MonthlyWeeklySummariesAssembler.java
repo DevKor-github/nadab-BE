@@ -40,7 +40,6 @@ public final class MonthlyWeeklySummariesAssembler {
                     .append(" ~ ").append(valueOrNa(w.weekEndDate() == null ? null : w.weekEndDate().toString()))
                     .append(")\n")
                     .append("  discovered: ").append(valueOrNa(w.discovered())).append("\n")
-                    .append("  good: ").append(valueOrNa(w.good())).append("\n")
                     .append("  improve: ").append(valueOrNa(w.improve())).append("\n\n");
             idx++;
         }

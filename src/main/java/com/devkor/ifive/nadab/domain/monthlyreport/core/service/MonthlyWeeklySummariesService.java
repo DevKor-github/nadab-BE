@@ -33,7 +33,6 @@ public class MonthlyWeeklySummariesService {
                         wr.getWeekStartDate(),
                         wr.getWeekEndDate(),
                         wr.getDiscovered(),
-                        wr.getGood(),
                         wr.getImprove()
                 ))
                 .toList();

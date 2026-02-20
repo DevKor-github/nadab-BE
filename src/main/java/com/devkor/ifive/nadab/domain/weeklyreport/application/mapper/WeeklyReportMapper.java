@@ -13,7 +13,6 @@ public final class WeeklyReportMapper {
                 range.weekStartDate().getMonthValue(),
                 WeekRangeCalculator.getWeekOfMonth(range),
                 report.getDiscovered(),
-                report.getGood(),
                 report.getImprove(),
                 report.getStatus().name()
         );

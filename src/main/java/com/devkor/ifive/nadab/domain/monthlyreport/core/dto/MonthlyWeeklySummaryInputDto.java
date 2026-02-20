@@ -6,7 +6,6 @@ public record MonthlyWeeklySummaryInputDto(
         LocalDate weekStartDate,
         LocalDate weekEndDate,
         String discovered,
-        String good,
         String improve
 ) {
 }
