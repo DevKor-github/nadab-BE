@@ -38,9 +38,6 @@ public class MonthlyReport {
     @Column(name = "discovered", length = 250)
     private String discovered;
 
-    @Column(name = "good", length = 250)
-    private String good;
-
     @Column(name = "improve", length = 250)
     private String improve;
 
@@ -55,14 +52,13 @@ public class MonthlyReport {
     private OffsetDateTime analyzedAt;
 
     public static MonthlyReport create(User user, LocalDate monthStartDate, LocalDate monthEndDate,
-                                      String discovered, String good, String improve,
+                                      String discovered, String improve,
                                       LocalDate date, MonthlyReportStatus status) {
         MonthlyReport mr = new MonthlyReport();
         mr.user = user;
         mr.monthStartDate = monthStartDate;
         mr.monthEndDate = monthEndDate;
         mr.discovered = discovered;
-        mr.good = good;
         mr.improve = improve;
         mr.date = date;
         mr.status = status;
@@ -70,6 +66,6 @@ public class MonthlyReport {
     }
 
     public static MonthlyReport createPending(User user, LocalDate monthStartDate, LocalDate monthEndDate, LocalDate date) {
-        return create(user, monthStartDate, monthEndDate, null, null, null, date, MonthlyReportStatus.PENDING);
+        return create(user, monthStartDate, monthEndDate, null, null, date, MonthlyReportStatus.PENDING);
     }
 }

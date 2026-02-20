@@ -21,15 +21,9 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
             MonthlyReportStatus status
     );
 
-    List<MonthlyReport> findAllByUserIdAndStatusAndMonthEndDateLessThanEqualOrderByMonthStartDateAsc(
-            Long userId,
-            MonthlyReportStatus status,
-            LocalDate snapshotDate
-    );
-
     /**
      * PENDING -> COMPLETED 확정
-     * - 분석 결과(discovered/good/improve) 저장
+     * - 분석 결과(discovered/improve) 저장
      * - analyzedAt 기록
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -37,7 +31,6 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
     UPDATE MonthlyReport mr
        SET mr.status = :status,
            mr.discovered = :discovered,
-           mr.good = :good,
            mr.improve = :improve,
            mr.analyzedAt = CURRENT_TIMESTAMP
      WHERE mr.id = :reportId
@@ -46,7 +39,6 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
             @Param("reportId") Long reportId,
             @Param("status") MonthlyReportStatus status,
             @Param("discovered") String discovered,
-            @Param("good") String good,
             @Param("improve") String improve
     );
 
