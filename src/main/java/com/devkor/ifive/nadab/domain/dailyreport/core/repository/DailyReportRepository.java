@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
+import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -37,7 +38,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
     """)
     int markFailed(@Param("reportId") Long reportId);
 
-    Optional<DailyReport> findByAnswerEntryAndCreatedAtBetween(AnswerEntry answerEntry, OffsetDateTime start, OffsetDateTime end);
+    Optional<DailyReport> findByAnswerEntryAndDate(AnswerEntry answerEntry, LocalDate date);
 
     /**
      * 특정 유저의 주간 범위 내 COMPLETED 일간 리포트 개수를 반환합니다.

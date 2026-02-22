@@ -5,7 +5,6 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepo
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
-import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -24,19 +23,16 @@ public class AnswerEntryService {
     @Transactional
     public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText, boolean isDayPassed) {
 
-        TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
-
-        LocalDate today =
+        LocalDate targetDate =
                 isDayPassed ? TodayDateTimeProvider.getTodayDate().minusDays(1) : TodayDateTimeProvider.getTodayDate();
 
-        return answerEntryRepository.
-                findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
+        return answerEntryRepository.findByUserAndDate(user, targetDate)
                 .orElseGet(() -> {
                     try {
-                        return answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, today));
+                        return answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, targetDate));
                     } catch (DataIntegrityViolationException e) {
                         // 동시 요청에서 이미 누가 만들었을 수 있음 -> 재조회로 멱등 처리
-                        return answerEntryRepository.findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
+                        return answerEntryRepository.findByUserAndDate(user, targetDate)
                                 .orElseThrow(() -> e);
                     }
                 });

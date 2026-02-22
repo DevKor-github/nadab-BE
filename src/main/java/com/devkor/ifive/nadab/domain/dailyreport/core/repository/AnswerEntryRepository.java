@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
@@ -22,7 +23,7 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
             @Param("questionId") Long questionId
     );
 
-    Optional<AnswerEntry> findByUserAndCreatedAtBetween(User user, OffsetDateTime start, OffsetDateTime end);
+    Optional<AnswerEntry> findByUserAndDate(User user, LocalDate date);
 
     boolean existsByUserAndCreatedAtBetween(User user, OffsetDateTime start, OffsetDateTime end);
 }
