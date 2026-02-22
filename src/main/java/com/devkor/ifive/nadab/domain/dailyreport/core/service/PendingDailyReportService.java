@@ -7,7 +7,6 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepo
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
-import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -24,20 +23,19 @@ public class PendingDailyReportService {
 
 
     @Transactional
-    public DailyReport getOrCreatePendingDailyReport(AnswerEntry entry) {
+    public DailyReport getOrCreatePendingDailyReport(AnswerEntry entry, boolean isDayPassed) {
 
-        TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
-
-        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        LocalDate targetDate =
+                isDayPassed ? TodayDateTimeProvider.getTodayDate().minusDays(1) : TodayDateTimeProvider.getTodayDate();
 
         DailyReport report = dailyReportRepository.
-                findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
+                findByAnswerEntryAndDate(entry, targetDate)
                 .orElseGet(() -> {
                     try {
-                        return dailyReportRepository.save(DailyReport.createPending(entry, today));
+                        return dailyReportRepository.save(DailyReport.createPending(entry, targetDate));
                     } catch (DataIntegrityViolationException e) {
                         // 동시 요청에서 이미 누가 만들었을 수 있음 -> 재조회로 멱등 처리
-                        return dailyReportRepository.findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())
+                        return dailyReportRepository.findByAnswerEntryAndDate(entry, targetDate)
                                 .orElseThrow(() -> e);
                     }
                 });

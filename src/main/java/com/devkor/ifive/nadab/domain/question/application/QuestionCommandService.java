@@ -14,7 +14,6 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
-import com.devkor.ifive.nadab.global.shared.util.dto.TodayDateTimeRangeDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -100,8 +99,6 @@ public class QuestionCommandService {
     public DailyQuestionResponse rerollTodayQuestion(Long userId) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
 
-        TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
-
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_QUESTION_NOT_FOUND));
 
@@ -111,7 +108,7 @@ public class QuestionCommandService {
 
         User user = udq.getUser();
 
-        boolean alreadyAnswered = answerEntryRepository.existsByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow());
+        boolean alreadyAnswered = answerEntryRepository.existsByUserAndDate(user, today);
         if (alreadyAnswered) {
             throw new ConflictException(ErrorCode.QUESTION_ALREADY_ANSWERED);
         }

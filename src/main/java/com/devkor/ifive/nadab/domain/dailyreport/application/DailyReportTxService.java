@@ -42,13 +42,13 @@ public class DailyReportTxService {
 
     private static final long DAILY_REPORT_REWARD = 10L;
 
-    protected PrepareDailyResultDto prepareDaily(User user, DailyQuestion dq, String answerText) {
+    protected PrepareDailyResultDto prepareDaily(User user, DailyQuestion dq, String answerText, boolean isDayPassed) {
 
         //  AnswerEntry 생성 또는 조회 (별도의 트랜잭션)
-        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(user, dq, answerText);
+        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(user, dq, answerText, isDayPassed);
 
         // DailyReport PENDING 생성 또는 조회 (별도의 트랜잭션)
-        DailyReport report = pendingDailyReportService.getOrCreatePendingDailyReport(entry);
+        DailyReport report = pendingDailyReportService.getOrCreatePendingDailyReport(entry, isDayPassed);
 
         return new PrepareDailyResultDto(entry, report.getId(), user.getId());
     }
