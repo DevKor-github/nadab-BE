@@ -24,11 +24,12 @@ public class PendingDailyReportService {
 
 
     @Transactional
-    public DailyReport getOrCreatePendingDailyReport(AnswerEntry entry) {
+    public DailyReport getOrCreatePendingDailyReport(AnswerEntry entry, boolean isDayPassed) {
 
         TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
-        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        LocalDate today =
+                isDayPassed ? TodayDateTimeProvider.getTodayDate().minusDays(1) : TodayDateTimeProvider.getTodayDate();
 
         DailyReport report = dailyReportRepository.
                 findByAnswerEntryAndCreatedAtBetween(entry, range.startOfToday(), range.startOfTomorrow())

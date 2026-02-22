@@ -44,13 +44,20 @@ public class DailyReportService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NOT_FOUND));
 
         LocalDate today = TodayDateTimeProvider.getTodayDate();
+
+        // 1. 오늘 -> 어제 순서로 조회 (없으면 예외)
         UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
+                .or(() -> userDailyQuestionRepository.findByUserIdAndDate(userId, today.minusDays(1)))
                 .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_QUESTION_NOT_FOUND));
+
+        // 2. 결과 날짜를 비교하여 플래그 설정
+        boolean isDayPassed = !udq.getDate().isEqual(today);
+
         if (!udq.getDailyQuestion().getId().equals(request.questionId())) {
             throw new BadRequestException(ErrorCode.DAILY_QUESTION_MISMATCH);
         }
 
-        PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer());
+        PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer(), isDayPassed);
 
         AnswerEntry answerEntry = prep.entry();
 

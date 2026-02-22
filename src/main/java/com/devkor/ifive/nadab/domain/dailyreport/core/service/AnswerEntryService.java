@@ -22,11 +22,12 @@ public class AnswerEntryService {
 
 
     @Transactional
-    public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText) {
+    public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText, boolean isDayPassed) {
 
         TodayDateTimeRangeDto range = TodayDateTimeProvider.getRange();
 
-        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        LocalDate today =
+                isDayPassed ? TodayDateTimeProvider.getTodayDate().minusDays(1) : TodayDateTimeProvider.getTodayDate();
 
         return answerEntryRepository.
                 findByUserAndCreatedAtBetween(user, range.startOfToday(), range.startOfTomorrow())
