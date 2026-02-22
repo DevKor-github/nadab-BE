@@ -25,5 +25,5 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
 
     Optional<AnswerEntry> findByUserAndDate(User user, LocalDate date);
 
-    boolean existsByUserAndCreatedAtBetween(User user, OffsetDateTime start, OffsetDateTime end);
+    boolean existsByUserAndDate(User user, LocalDate date);
 }
