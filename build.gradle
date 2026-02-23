@@ -77,6 +77,9 @@ dependencies {
 
     // Gemini
     implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
+
+    // Hypersistence Utils
+    implementation "io.hypersistence:hypersistence-utils-hibernate-63:3.7.6"
 }
 
 dependencyManagement {
