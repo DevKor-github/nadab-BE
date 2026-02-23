@@ -15,6 +15,9 @@ import com.devkor.ifive.nadab.domain.weeklyreport.core.service.PendingWeeklyRepo
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,7 @@ public class WeeklyReportTxService {
     private final CrystalLogRepository crystalLogRepository;
 
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     private static final long WEEKLY_REPORT_COST = 20L;
 
@@ -85,9 +89,26 @@ public class WeeklyReportTxService {
         return reserve;
     }
 
-    public void confirmWeekly(Long reportId, Long logId, String discovered, String improve) {
+    public void confirmWeekly(Long reportId, Long logId, ReportContent content) {
+        ReportContent normalized = content.normalized();
+        String discovered = normalized.discovered().plainText();
+        String improve = normalized.improve().plainText();
+
         // report를 COMPLETED로
-        weeklyReportRepository.markCompleted(reportId, WeeklyReportStatus.COMPLETED, discovered, improve);
+        String contentJson;
+        try {
+            contentJson = objectMapper.writeValueAsString(normalized);
+        } catch (Exception e) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+
+        weeklyReportRepository.markCompleted(
+                reportId,
+                WeeklyReportStatus.COMPLETED.name(),
+                contentJson,
+                discovered,
+                improve
+        );
 
         // log를 CONFIRMED로
         crystalLogRepository.markConfirmed(logId);

@@ -33,16 +33,14 @@ public class WeeklyReportLlmClient {
     private static final LlmProvider provider = LlmProvider.GEMINI;
     private static final LlmProvider REWRITE_PROVIDER = LlmProvider.CLAUDE;
 
-    private static final int MAX_DISCOVERED = 200;
-    private static final int MAX_IMPROVE = 100;
-    private static final int MIN_DISCOVERED = 160;
-    private static final int MIN_IMPROVE = 80;
-    private static final int MIN_TOTAL = 240;
-    private static final int MAX_TOTAL = 300;
+    private static final int MAX_DISCOVERED = 220;
+    private static final int MAX_IMPROVE = 120;
+    private static final int MIN_DISCOVERED = 140;
+    private static final int MIN_IMPROVE = 60;
 
     private static final int MAX_HL_DISCOVERED = 2;
     private static final int MAX_HL_IMPROVE = 1;
-    private static final int MAX_HL_SEG_LEN = 24;
+    private static final int MAX_HL_SEG_LEN = 25;
 
     /**
      * @param weekStartDate 예: 2026-01-01
@@ -71,6 +69,8 @@ public class WeeklyReportLlmClient {
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
         }
+
+        System.out.println(content);
 
         try {
             LlmResultDto result;
@@ -163,13 +163,11 @@ public class WeeklyReportLlmClient {
 
         int dLen = dto.discovered().length();
         int iLen = dto.improve().length();
-        int total = dLen + iLen;
 
         boolean badD = dLen < MIN_DISCOVERED || dLen > MAX_DISCOVERED;
         boolean badI = iLen < MIN_IMPROVE || iLen > MAX_IMPROVE;
-        boolean badT = total < MIN_TOTAL || total > MAX_TOTAL;
 
-        if (!badD && !badI && !badT) return dto;
+        if (!badD && !badI) return dto;
 
         ChatClient rewriteClient = llmRouter.route(REWRITE_PROVIDER);
 
@@ -220,8 +218,9 @@ public class WeeklyReportLlmClient {
             %s
             """.formatted(min, max, maxHl, jsonInput);
 
-            AnthropicChatOptions options = AnthropicChatOptions.builder()
-                    .model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU)
+            GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+                    .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+                    .responseMimeType("application/json")
                     .temperature(0.0)
                     .build();
 
@@ -298,16 +297,12 @@ public class WeeklyReportLlmClient {
     private void validateLength(AiReportResultDto dto) {
         int dLen = dto.discovered().length();
         int iLen = dto.improve().length();
-        int total = dLen + iLen;
 
         if (dLen < MIN_DISCOVERED || dLen > MAX_DISCOVERED) {
             throw new AiResponseParseException(ErrorCode.WEEKLY_REPORT_DISCOVERED_LENGTH_INVALID);
         }
         if (iLen < MIN_IMPROVE || iLen > MAX_IMPROVE) {
             throw new AiResponseParseException(ErrorCode.WEEKLY_REPORT_IMPROVE_LENGTH_INVALID);
-        }
-        if (total < MIN_TOTAL || total > MAX_TOTAL) {
-            throw new AiResponseParseException(ErrorCode.WEEKLY_REPORT_TOTAL_LENGTH_INVALID);
         }
     }
 }

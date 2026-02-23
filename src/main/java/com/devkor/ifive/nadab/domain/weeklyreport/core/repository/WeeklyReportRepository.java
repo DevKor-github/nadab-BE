@@ -38,17 +38,19 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
      * - analyzedAt 기록
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-        UPDATE WeeklyReport wr
-           SET wr.status = :status,
-               wr.discovered = :discovered,
-               wr.improve = :improve,
-               wr.analyzedAt = CURRENT_TIMESTAMP
-         WHERE wr.id = :reportId
-    """)
+    @Query(value = """
+    UPDATE weekly_reports
+       SET status = :status,
+           content = cast(:content as jsonb),
+           discovered = :discovered,
+           improve = :improve,
+           analyzed_at = CURRENT_TIMESTAMP
+     WHERE id = :reportId
+""", nativeQuery = true)
     int markCompleted(
             @Param("reportId") Long reportId,
-            @Param("status") WeeklyReportStatus status,
+            @Param("status") String status,
+            @Param("content") String contentJson,
             @Param("discovered") String discovered,
             @Param("improve") String improve
     );

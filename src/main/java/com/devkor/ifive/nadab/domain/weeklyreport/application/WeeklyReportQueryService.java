@@ -61,6 +61,7 @@ public class WeeklyReportQueryService {
                 WeekRangeCalculator.getWeekOfMonth(range),
                 report.getDiscovered(),
                 report.getImprove(),
+                report.getContent(),
                 report.getStatus().name()
         );
     }

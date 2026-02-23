@@ -14,6 +14,7 @@ public final class WeeklyReportMapper {
                 WeekRangeCalculator.getWeekOfMonth(range),
                 report.getDiscovered(),
                 report.getImprove(),
+                report.getContent(),
                 report.getStatus().name()
         );
     }
