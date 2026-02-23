@@ -127,6 +127,7 @@ public enum ErrorCode {
     // ==================== WEEKLY_REPORT (주간 리포트) ====================
     // 400 Bad Request
     WEEKLY_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "주간 리포트 작성 자격이 없습니다. (지난 주 4회 이상 완료 필요)"),
+    WEEKLY_REPORT_INPUT_ENTRIES_EMPTY(HttpStatus.BAD_REQUEST, "주간 리포트 생성을 위한 입력 데이터가 비어있습니다"),
 
     // 404 Not Found
     WEEKLY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "주간 리포트를 찾을 수 없습니다"),
@@ -135,6 +136,22 @@ public enum ErrorCode {
     // 409 Conflict
     WEEKLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 주간 리포트가 존재합니다"),
     WEEKLY_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 주간 리포트를 생성 중입니다"),
+
+    // 502 Bad Gateway (AI 결과 스펙 위반/파싱 실패)
+    WEEKLY_REPORT_AI_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답 JSON을 매핑할 수 없습니다"),
+    WEEKLY_REPORT_AI_JSON_MISSING_FIELDS(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답 JSON에 필수 필드가 없거나 형식이 올바르지 않습니다"),
+    WEEKLY_REPORT_AI_SEGMENT_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 segment 형식이 올바르지 않습니다"),
+
+    WEEKLY_REPORT_HIGHLIGHT_WITHOUT_BOLD(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답에서 HIGHLIGHT는 BOLD와 함께여야 합니다"),
+    WEEKLY_REPORT_HIGHLIGHT_COUNT_EXCEEDED(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 하이라이트 개수가 제한을 초과했습니다"),
+    WEEKLY_REPORT_HIGHLIGHT_SEGMENT_TOO_LONG(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 하이라이트 구간이 너무 깁니다"),
+
+    WEEKLY_REPORT_DISCOVERED_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 discovered 길이가 제한을 만족하지 않습니다"),
+    WEEKLY_REPORT_IMPROVE_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 improve 길이가 제한을 만족하지 않습니다"),
+    WEEKLY_REPORT_TOTAL_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 총 길이가 제한을 만족하지 않습니다"),
+
+    WEEKLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "주간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),
+    WEEKLY_REPORT_REWRITE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 리라이트 응답 형식이 올바르지 않습니다"),
 
     // ==================== MONTHLY_REPORT (월간 리포트) ====================
     // 400 Bad Request
