@@ -1,19 +1,18 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.repository;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.InterestCompletedCountDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
-import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +38,25 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
     int markFailed(@Param("reportId") Long reportId);
 
     Optional<DailyReport> findByAnswerEntryAndDate(AnswerEntry answerEntry, LocalDate date);
+
+    /**
+     * 리포트 ID(DailyReport.id)로 답변 상세 조회
+     */
+    @Query("""
+    select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
+        ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code
+    )
+    from DailyReport dr
+    join dr.answerEntry ae
+    left join dr.emotion e
+    where dr.id = :reportId
+      and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+      and ae.user.id = :userId
+    """)
+    Optional<AnswerDetailDto> findDetailByReportId(
+            @Param("userId") Long userId,
+            @Param("reportId") Long reportId
+    );
 
     /**
      * 특정 유저의 주간 범위 내 COMPLETED 일간 리포트 개수를 반환합니다.

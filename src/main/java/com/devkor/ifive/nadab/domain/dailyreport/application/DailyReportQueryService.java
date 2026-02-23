@@ -1,6 +1,8 @@
 package com.devkor.ifive.nadab.domain.dailyreport.application;
 
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerDetailResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepository;
@@ -44,5 +46,16 @@ public class DailyReportQueryService {
                 report.getEmotion().getCode().toString(),
                 report.getIsShared()
         );
+    }
+
+    public AnswerDetailResponse getDailyReportById(Long userId, Long reportId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        AnswerDetailDto dto = dailyReportRepository.findDetailByReportId(user.getId(), reportId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
+
+        return AnswerDetailResponse.from(dto);
     }
 }

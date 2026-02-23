@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.api;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerDetailResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportQueryService;
@@ -147,6 +148,41 @@ public class DailyReportController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         DailyReportResponse response = dailyReportQueryService.getDailyReport(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping("{reportId}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "ID로 오늘의 리포트 조회 API",
+            description = "리포트 ID로 오늘의 리포트를 조회합니다. COMPLETED 상태의 리포트만 조회 가능합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "오늘의 리포트 조회 성공",
+                            content = @Content(schema = @Schema(implementation = AnswerDetailResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: ANSWER_NOT_FOUND - 작성된 답변 내역을 찾을 수 없음
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<AnswerDetailResponse>> getDailyReportById(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long reportId
+    ) {
+        AnswerDetailResponse response = dailyReportQueryService.getDailyReportById(principal.getId(), reportId);
         return ApiResponseEntity.ok(response);
     }
 }
