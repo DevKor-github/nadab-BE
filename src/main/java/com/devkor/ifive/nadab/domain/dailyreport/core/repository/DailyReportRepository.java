@@ -43,16 +43,23 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
      * 리포트 ID(DailyReport.id)로 답변 상세 조회
      */
     @Query("""
-    select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
-        ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code
-    )
-    from DailyReport dr
-    join dr.answerEntry ae
-    left join dr.emotion e
-    where dr.id = :reportId
-      and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
-      and ae.user.id = :userId
-    """)
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
+            q.questionText,
+            i.code,
+            ae.date,
+            ae.content,
+            dr.content,
+            e.code
+        )
+        from DailyReport dr
+        join dr.answerEntry ae
+        join ae.question q
+        left join q.interest i
+        left join dr.emotion e
+        where dr.id = :reportId
+        and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+        and ae.user.id = :userId
+""")
     Optional<AnswerDetailDto> findDetailByReportId(
             @Param("userId") Long userId,
             @Param("reportId") Long reportId
