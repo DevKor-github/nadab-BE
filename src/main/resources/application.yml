@@ -82,3 +82,7 @@ app:
     same-site: Lax
 
 api_prefix: /api/v1
+
+firebase:
+  admin:
+    key-base64: ${FIREBASE_ADMIN_KEY}
