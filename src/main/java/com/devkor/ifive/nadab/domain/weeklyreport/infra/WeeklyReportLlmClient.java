@@ -40,7 +40,7 @@ public class WeeklyReportLlmClient {
 
     private static final int MAX_HL_DISCOVERED = 2;
     private static final int MAX_HL_IMPROVE = 1;
-    private static final int MAX_HL_SEG_LEN = 25;
+    private static final int MAX_HL_SEG_LEN = 30;
 
     /**
      * @param weekStartDate 예: 2026-01-01
@@ -69,8 +69,6 @@ public class WeeklyReportLlmClient {
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
         }
-
-        System.out.println(content);
 
         try {
             LlmResultDto result;

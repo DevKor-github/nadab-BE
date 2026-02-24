@@ -165,6 +165,22 @@ public enum ErrorCode {
     MONTHLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 월간 리포트가 존재합니다"),
     MONTHLY_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 월간 리포트를 생성 중입니다"),
 
+    // 502 Bad Gateway - AI 응답(스키마/규칙) 문제
+    MONTHLY_REPORT_AI_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답 JSON을 매핑할 수 없습니다"),
+    MONTHLY_REPORT_AI_JSON_MISSING_FIELDS(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답 JSON에 필수 필드가 없거나 형식이 올바르지 않습니다"),
+    MONTHLY_REPORT_AI_SEGMENT_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 segment 형식이 올바르지 않습니다"),
+
+    MONTHLY_REPORT_HIGHLIGHT_WITHOUT_BOLD(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답에서 HIGHLIGHT는 BOLD와 함께여야 합니다"),
+    MONTHLY_REPORT_HIGHLIGHT_COUNT_EXCEEDED(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 하이라이트 개수가 제한을 초과했습니다"),
+    MONTHLY_REPORT_HIGHLIGHT_SEGMENT_TOO_LONG(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 하이라이트 구간이 너무 깁니다"),
+
+    MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 discovered 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_IMPROVE_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 improve 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_TOTAL_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 총 길이가 제한을 만족하지 않습니다"),
+
+    MONTHLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),
+    MONTHLY_REPORT_REWRITE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 형식이 올바르지 않습니다"),
+
     // ==================== AI (인공지능) ====================
     // 502 Bad Gateway
     AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "AI 응답 형식을 해석할 수 없습니다"),
