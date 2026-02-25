@@ -39,14 +39,14 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-    UPDATE weekly_reports
-       SET status = :status,
-           content = cast(:content as jsonb),
-           discovered = :discovered,
-           improve = :improve,
-           analyzed_at = CURRENT_TIMESTAMP
-     WHERE id = :reportId
-""", nativeQuery = true)
+        UPDATE weekly_reports
+        SET status = :status,
+            content = cast(:content as jsonb),
+            discovered = :discovered,
+            improve = :improve,
+            analyzed_at = CURRENT_TIMESTAMP
+        WHERE id = :reportId
+    """, nativeQuery = true)
     int markCompleted(
             @Param("reportId") Long reportId,
             @Param("status") String status,

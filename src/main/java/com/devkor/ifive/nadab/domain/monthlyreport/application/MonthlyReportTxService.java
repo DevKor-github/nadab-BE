@@ -16,6 +16,9 @@ import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,8 @@ public class MonthlyReportTxService {
     private final CrystalLogRepository crystalLogRepository;
 
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
+
 
     private static final long MONTHLY_REPORT_COST = 40L;
 
@@ -86,9 +91,19 @@ public class MonthlyReportTxService {
         return reserve;
     }
 
-    public void confirmMonthly(Long reportId, Long logId, String discovered, String improve) {
+    public void confirmMonthly(Long reportId, Long logId, ReportContent content) {
+        ReportContent normalized = content.normalized();
+        String discovered = normalized.discovered().plainText();
+        String improve = normalized.improve().plainText();
+
         // report를 COMPLETED로
-        monthlyReportRepository.markCompleted(reportId, MonthlyReportStatus.COMPLETED, discovered, improve);
+        String contentJson;
+        try {
+            contentJson = objectMapper.writeValueAsString(normalized);
+        } catch (Exception e) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+        monthlyReportRepository.markCompleted(reportId, MonthlyReportStatus.COMPLETED.name(), contentJson, discovered, improve);
 
         // log를 CONFIRMED로
         crystalLogRepository.markConfirmed(logId);
