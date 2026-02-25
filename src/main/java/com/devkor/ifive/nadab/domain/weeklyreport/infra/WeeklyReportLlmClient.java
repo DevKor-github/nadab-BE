@@ -31,11 +31,12 @@ public class WeeklyReportLlmClient {
     private final LlmRouter llmRouter;
 
     private static final LlmProvider provider = LlmProvider.GEMINI;
-    private static final LlmProvider REWRITE_PROVIDER = LlmProvider.CLAUDE;
+    private static final LlmProvider REWRITE_PROVIDER = LlmProvider.GEMINI;
 
     private static final int MAX_DISCOVERED = 220;
-    private static final int MAX_IMPROVE = 120;
     private static final int MIN_DISCOVERED = 140;
+
+    private static final int MAX_IMPROVE = 120;
     private static final int MIN_IMPROVE = 60;
 
     private static final int MAX_HL_DISCOVERED = 2;
@@ -214,7 +215,7 @@ public class WeeklyReportLlmClient {
 
             [입력 JSON]
             %s
-            """.formatted(min, max, maxHl, jsonInput);
+            """.formatted(min + 10, max - 10, maxHl, jsonInput);
 
             GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
                     .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
