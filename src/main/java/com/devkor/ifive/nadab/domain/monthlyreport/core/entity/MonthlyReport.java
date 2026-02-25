@@ -1,8 +1,12 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
+import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
+import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContentFactory;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -41,6 +45,10 @@ public class MonthlyReport {
     @Column(name = "improve", length = 250)
     private String improve;
 
+    @Type(JsonType.class)
+    @Column(name = "content", columnDefinition = "jsonb", nullable = false)
+    private ReportContent content;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
     private MonthlyReportStatus status;
@@ -52,20 +60,26 @@ public class MonthlyReport {
     private OffsetDateTime analyzedAt;
 
     public static MonthlyReport create(User user, LocalDate monthStartDate, LocalDate monthEndDate,
-                                      String discovered, String improve,
+                                       ReportContent content,
                                       LocalDate date, MonthlyReportStatus status) {
         MonthlyReport mr = new MonthlyReport();
         mr.user = user;
         mr.monthStartDate = monthStartDate;
         mr.monthEndDate = monthEndDate;
-        mr.discovered = discovered;
-        mr.improve = improve;
+
+        ReportContent normalized = (content == null) ? ReportContentFactory.empty() : content.normalized();
+        mr.content = normalized;
+
+        // plain 캐시
+        mr.discovered = normalized.discovered().plainText();
+        mr.improve = normalized.improve().plainText();
+
         mr.date = date;
         mr.status = status;
         return mr;
     }
 
     public static MonthlyReport createPending(User user, LocalDate monthStartDate, LocalDate monthEndDate, LocalDate date) {
-        return create(user, monthStartDate, monthEndDate, null, null, date, MonthlyReportStatus.PENDING);
+        return create(user, monthStartDate, monthEndDate, ReportContentFactory.empty(), date, MonthlyReportStatus.PENDING);
     }
 }

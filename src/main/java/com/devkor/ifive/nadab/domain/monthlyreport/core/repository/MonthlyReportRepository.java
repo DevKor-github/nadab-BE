@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Long> {
@@ -27,17 +26,19 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
      * - analyzedAt 기록
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-    UPDATE MonthlyReport mr
-       SET mr.status = :status,
-           mr.discovered = :discovered,
-           mr.improve = :improve,
-           mr.analyzedAt = CURRENT_TIMESTAMP
-     WHERE mr.id = :reportId
-""")
+    @Query(value = """
+        UPDATE monthly_reports
+        SET status = :status,
+            content = cast(:content as jsonb),
+            discovered = :discovered,
+            improve = :improve,
+            analyzed_at = CURRENT_TIMESTAMP
+        WHERE id = :reportId
+    """, nativeQuery = true)
     int markCompleted(
             @Param("reportId") Long reportId,
-            @Param("status") MonthlyReportStatus status,
+            @Param("status") String status,
+            @Param("content") String contentJson,
             @Param("discovered") String discovered,
             @Param("improve") String improve
     );

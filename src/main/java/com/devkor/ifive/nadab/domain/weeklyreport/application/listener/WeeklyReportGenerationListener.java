@@ -2,11 +2,11 @@ package com.devkor.ifive.nadab.domain.weeklyreport.application.listener;
 
 import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportTxService;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
-import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.AiWeeklyReportResultDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.infra.WeeklyReportLlmClient;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyQueryRepository;
+import com.devkor.ifive.nadab.global.shared.reportcontent.AiReportResultDto;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class WeeklyReportGenerationListener {
         List<DailyEntryDto> rows = weeklyQueryRepository.findWeeklyInputs(event.userId(), range.weekStartDate(), range.weekEndDate());
         String entries = WeeklyEntriesAssembler.assemble(rows);
 
-        AiWeeklyReportResultDto dto;
+        AiReportResultDto dto;
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
             dto = weeklyReportLlmClient.generate(range.weekStartDate().toString(), range.weekEndDate().toString(), entries);
@@ -62,8 +62,7 @@ public class WeeklyReportGenerationListener {
             weeklyReportTxService.confirmWeekly(
                     event.reportId(),
                     event.crystalLogId(),
-                    cut(dto.discovered()),
-                    cut(dto.improve())
+                    dto.content()
             );
         } catch (Exception e) {
             log.error("[WEEKLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",

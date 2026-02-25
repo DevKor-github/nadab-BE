@@ -96,6 +96,16 @@ public class MonthlyReportController {
                     생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
                     생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
                     생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
+                    
+                    **<텍스트 스타일(styled) 지원>** </br>
+                    월간 리포트 본문은 강조 표현을 위해 ```content``` 필드에 구조화된 형태로 함께 제공됩니다. </br>
+                    ```content```는 ```discovered```/```improve``` 각각에 대해 ```segments``` 배열을 가지며, </br>
+                    각 segment는 ```text```와 ```marks```를 포함합니다. </br>
+                    ```marks```에는 ```BOLD```, ```HIGHLIGHT```만 포함될 수 있습니다. </br>
+                    클라이언트는 ```segments```를 순서대로 이어 붙여 렌더링하고, ```marks```에 따라 볼드/하이라이트를 적용하면 됩니다. </br>
+                    기존 plain 텍스트(```discovered```, ```improve```)는 ```content```로부터 파생된 캐시 값이며, </br>
+                    styled 렌더링이 가능하다면 ```content``` 사용을 권장합니다.
+                    
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -135,6 +145,15 @@ public class MonthlyReportController {
                     생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
                     생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
                     생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
+                    
+                    **<텍스트 스타일(styled) 지원>** </br>
+                    월간 리포트 본문은 강조 표현을 위해 ```content``` 필드에 구조화된 형태로 함께 제공됩니다. </br>
+                    ```content```는 ```discovered```/```improve``` 각각에 대해 ```segments``` 배열을 가지며, </br>
+                    각 segment는 ```text```와 ```marks```를 포함합니다. </br>
+                    ```marks```에는 ```BOLD```, ```HIGHLIGHT```만 포함될 수 있습니다. </br>
+                    클라이언트는 ```segments```를 순서대로 이어 붙여 렌더링하고, ```marks```에 따라 볼드/하이라이트를 적용하면 됩니다. </br>
+                    기존 plain 텍스트(```discovered```, ```improve```)는 ```content```로부터 파생된 캐시 값이며, </br>
+                    styled 렌더링이 가능하다면 ```content``` 사용을 권장합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

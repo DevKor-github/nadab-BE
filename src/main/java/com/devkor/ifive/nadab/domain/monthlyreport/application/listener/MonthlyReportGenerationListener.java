@@ -2,13 +2,13 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application.listener;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxService;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClient;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
+import com.devkor.ifive.nadab.global.shared.reportcontent.AiReportResultDto;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +48,7 @@ public class MonthlyReportGenerationListener {
         // 2. 주간 리포트 선택
         String weeklySummaries = monthlyWeeklySummariesService.buildWeeklySummaries(event.userId(), range);
 
-        AiMonthlyReportResultDto dto;
+        AiReportResultDto dto;
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
             dto = monthlyReportLlmClient.generate(
@@ -71,8 +71,7 @@ public class MonthlyReportGenerationListener {
             monthlyReportTxService.confirmMonthly(
                     event.reportId(),
                     event.crystalLogId(),
-                    cut(dto.discovered()),
-                    cut(dto.improve())
+                    dto.content()
             );
         } catch (Exception e) {
             log.error("[MONTHLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",

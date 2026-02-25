@@ -63,6 +63,7 @@ public class MonthlyReportQueryService {
                 range.monthStartDate().getMonthValue(),
                 report.getDiscovered(),
                 report.getImprove(),
+                report.getContent(),
                 report.getStatus().name()
         );
     }

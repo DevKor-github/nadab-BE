@@ -12,6 +12,7 @@ public final class MonthlyReportMapper {
                 range.monthStartDate().getMonthValue(),
                 report.getDiscovered(),
                 report.getImprove(),
+                report.getContent(),
                 report.getStatus().name()
         );
     }

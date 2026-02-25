@@ -2,10 +2,14 @@ package com.devkor.ifive.nadab.domain.weeklyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.entity.CreatableEntity;
+import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
+import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContentFactory;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -44,6 +48,10 @@ public class WeeklyReport extends CreatableEntity {
     @Column(name = "improve", length = 250)
     private String improve;
 
+    @Type(JsonType.class)
+    @Column(name = "content", columnDefinition = "jsonb", nullable = false)
+    private ReportContent content;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
     private WeeklyReportStatus status;
@@ -55,21 +63,27 @@ public class WeeklyReport extends CreatableEntity {
     private LocalDate date;
 
     public static WeeklyReport create(User user, LocalDate weekStartDate, LocalDate weekEndDate,
-                                      String discovered, String improve,
+                                      ReportContent content,
                                       LocalDate date, WeeklyReportStatus status) {
         WeeklyReport wr = new WeeklyReport();
         wr.user = user;
         wr.weekStartDate = weekStartDate;
         wr.weekEndDate = weekEndDate;
-        wr.discovered = discovered;
-        wr.improve = improve;
+
+        ReportContent normalized = (content == null) ? ReportContentFactory.empty() : content.normalized();
+        wr.content = normalized;
+
+        // plain 캐시
+        wr.discovered = normalized.discovered().plainText();
+        wr.improve = normalized.improve().plainText();
+
         wr.date = date;
         wr.status = status;
         return wr;
     }
 
     public static WeeklyReport createPending(User user, LocalDate weekStartDate, LocalDate weekEndDate, LocalDate date) {
-        return create(user, weekStartDate, weekEndDate, null, null, date, WeeklyReportStatus.PENDING);
+        return create(user, weekStartDate, weekEndDate, ReportContentFactory.empty(), date, WeeklyReportStatus.PENDING);
     }
 }
 
