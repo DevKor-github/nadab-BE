@@ -153,6 +153,8 @@ public enum ErrorCode {
     WEEKLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "주간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),
     WEEKLY_REPORT_REWRITE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 리라이트 응답 형식이 올바르지 않습니다"),
 
+    WEEKLY_REPORT_SUMMARY_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 summary의 형식이 올바르지 않습니다"),
+
     // ==================== MONTHLY_REPORT (월간 리포트) ====================
     // 400 Bad Request
     MONTHLY_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "월간 리포트 작성 자격이 없습니다. (지난 달 15회 이상 완료 필요)"),
