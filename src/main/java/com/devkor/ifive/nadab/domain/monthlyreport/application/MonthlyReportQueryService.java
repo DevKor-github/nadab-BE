@@ -61,6 +61,7 @@ public class MonthlyReportQueryService {
 
         return new MonthlyReportResponse(
                 range.monthStartDate().getMonthValue(),
+                report.getSummary(),
                 report.getDiscovered(),
                 report.getImprove(),
                 report.getContent(),

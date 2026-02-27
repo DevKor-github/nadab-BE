@@ -169,7 +169,7 @@ public class MonthlyReportLlmClient {
         if (badD) d = rewriteStyled(rewriteClient, d, true);
         if (badI) i = rewriteStyled(rewriteClient, i, false);
 
-        ReportContent newContent = new ReportContent(d, i);
+        ReportContent newContent = new ReportContent(c.summary(), d, i);
         String newD = newContent.discovered().plainText();
         String newI = newContent.improve().plainText();
 
