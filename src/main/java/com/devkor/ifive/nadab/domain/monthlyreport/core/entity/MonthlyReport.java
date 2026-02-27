@@ -45,6 +45,9 @@ public class MonthlyReport {
     @Column(name = "improve", length = 250)
     private String improve;
 
+    @Column(name = "summary", nullable = false, length = 80)
+    private String summary;
+
     @Type(JsonType.class)
     @Column(name = "content", columnDefinition = "jsonb", nullable = false)
     private ReportContent content;
@@ -73,6 +76,7 @@ public class MonthlyReport {
         // plain 캐시
         mr.discovered = normalized.discovered().plainText();
         mr.improve = normalized.improve().plainText();
+        mr.summary = normalized.summary();
 
         mr.date = date;
         mr.status = status;
