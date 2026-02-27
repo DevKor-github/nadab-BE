@@ -42,6 +42,7 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
         UPDATE weekly_reports
         SET status = :status,
             content = cast(:content as jsonb),
+            summary = :summary,
             discovered = :discovered,
             improve = :improve,
             analyzed_at = CURRENT_TIMESTAMP
@@ -52,7 +53,8 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
             @Param("status") String status,
             @Param("content") String contentJson,
             @Param("discovered") String discovered,
-            @Param("improve") String improve
+            @Param("improve") String improve,
+            @Param("summary") String summary
     );
 
     /**
