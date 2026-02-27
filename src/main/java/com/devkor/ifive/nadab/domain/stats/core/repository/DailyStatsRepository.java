@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.stats.core.repository;
 
 import com.devkor.ifive.nadab.domain.stats.core.dto.DateCountDto;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -81,12 +82,16 @@ public class DailyStatsRepository {
      * - 보통 COMPLETED만 공유 의미가 있으니 status도 거는 걸 추천
      */
     public long countSharedDailyReportsNow() {
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+
         return em.createQuery("""
-                select count(dr.id)
-                from DailyReport dr
-                where dr.isShared = true
-                  and dr.status = 'COMPLETED'
-                """, Long.class)
+            select count(dr.id)
+            from DailyReport dr
+            where dr.date = :today
+              and dr.isShared = true
+              and dr.status = 'COMPLETED'
+            """, Long.class)
+                .setParameter("today", today)
                 .getSingleResult();
     }
 
