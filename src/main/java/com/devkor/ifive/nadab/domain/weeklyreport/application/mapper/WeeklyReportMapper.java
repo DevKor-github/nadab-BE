@@ -12,6 +12,7 @@ public final class WeeklyReportMapper {
         return new WeeklyReportResponse(
                 range.weekStartDate().getMonthValue(),
                 WeekRangeCalculator.getWeekOfMonth(range),
+                report.getSummary(),
                 report.getDiscovered(),
                 report.getImprove(),
                 report.getContent(),

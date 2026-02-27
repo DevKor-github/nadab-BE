@@ -12,6 +12,9 @@ public record WeeklyReportResponse(
         @Schema(description = "해당 달의 몇주차인지")
         int weekOfMonth,
 
+        @Schema(description = "리포트 요약")
+        String summary,
+
         @Schema(description = "이런 면도 발견되었어요")
         String discovered,
 
