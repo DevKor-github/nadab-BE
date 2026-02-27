@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Admin — Daily Stats</title>
+  <title>NADAB — Daily Stats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -232,10 +232,10 @@
 <div class="tabs">
   <a class="tab-link"
      th:classappend="${activeTab} == 'daily' ? ' active' : ''"
-     th:href="@{/admin/stats/daily}">일간</a>
+     th:href="@{/stats/daily}">일간</a>
   <a class="tab-link"
      th:classappend="${activeTab} == 'total' ? ' active' : ''"
-     th:href="@{/admin/stats/total}">전체</a>
+     th:href="@{/stats/total}">전체</a>
 </div>
 
 <!-- KPI -->

@@ -3,25 +3,416 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Admin - Total Stats</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-</head>
-<body class="bg-light">
-<div class="container-fluid py-3">
-  <ul class="nav nav-tabs mb-3">
-    <li class="nav-item">
-      <a class="nav-link"
-         th:classappend="${activeTab} == 'daily' ? 'active' : ''"
-         th:href="@{/admin/stats/daily}">일간</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link"
-         th:classappend="${activeTab} == 'total' ? 'active' : ''"
-         th:href="@{/admin/stats/total}">전체</a>
-    </li>
-  </ul>
+  <title>NADAB — Total Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:         #0d0f14;
+      --surface:    #161920;
+      --surface-2:  #1e2230;
+      --border:     #2a2f3e;
+      --accent:     #6c8fff;
+      --accent-2:   #ff7eb3;
+      --accent-3:   #4de8c2;
+      --text-1:     #e8eaf2;
+      --text-2:     #8b91a8;
+      --text-3:     #4f556a;
+      --radius:     14px;
+      --radius-sm:  8px;
+    }
 
-  <div class="alert alert-secondary">전체 통계는 다음 단계에서 추가</div>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      padding: 28px 24px;
+    }
+
+    /* ─── Header ─── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--text-2);
+      text-transform: uppercase;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .refreshed-at {
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: var(--text-3);
+    }
+    .refreshed-at span { color: var(--text-2); }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-2);
+      font-family: 'Syne', sans-serif;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .2s, color .2s, background .2s;
+    }
+    .btn-refresh:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(108,143,255,.08);
+    }
+    .btn-refresh svg { width: 14px; height: 14px; }
+
+    /* ─── Tabs ─── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      width: fit-content;
+      margin-bottom: 28px;
+    }
+
+    .tab-link {
+      text-decoration: none;
+      padding: 7px 22px;
+      border-radius: 999px;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text-2);
+      transition: background .2s, color .2s;
+    }
+    .tab-link:hover { color: var(--text-1); }
+    .tab-link.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ─── Layout grid ─── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title {
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .card-body {
+      padding: 22px;
+    }
+
+    /* ─── KPI number inside card ─── */
+    .stat-label {
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 2.8rem;
+      font-weight: 500;
+      line-height: 1;
+      color: var(--text-1);
+      margin-bottom: 24px;
+    }
+
+    .section-label {
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 14px;
+    }
+
+    /* ─── Interest card inner grid ─── */
+    .interest-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 700px) {
+      .interest-grid { grid-template-columns: 1fr; }
+    }
+
+    .interest-section-title {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 16px;
+    }
+
+    /* ─── Dot accent ─── */
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+    .dot-blue  { background: var(--accent); }
+    .dot-pink  { background: var(--accent-2); }
+    .dot-teal  { background: var(--accent-3); }
+
+    /* ─── Divider ─── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    /* ─── Fade-in ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card { animation: fadeUp .4s ease both; }
+    .card:nth-child(2) { animation-delay: .08s; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">NADAB · Stats</div>
+  <div class="header-right">
+    <div class="refreshed-at">
+      마지막 갱신 <span th:text="${vm.refreshedAt}">—</span>
+    </div>
+    <button class="btn-refresh" onclick="location.reload()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.5 8A5.5 5.5 0 1 1 9 2.6"/>
+        <polyline points="9 1 13.5 2.6 12 7"/>
+      </svg>
+      새로고침
+    </button>
+  </div>
 </div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'daily' ? ' active' : ''"
+     th:href="@{/stats/daily}">일간</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'total' ? ' active' : ''"
+     th:href="@{/stats/total}">전체</a>
+</div>
+
+<div class="main-grid">
+
+  <!-- 유저 통계 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="dot dot-blue"></span>유저 통계</div>
+    </div>
+    <div class="card-body">
+      <div class="stat-label">총 유저 수</div>
+      <div class="stat-value" th:text="${vm.totalUserCount}">0</div>
+
+      <div class="divider"></div>
+
+      <div class="section-label">소셜별 유저 수</div>
+      <canvas id="providerChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- 관심 주제 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="dot dot-pink"></span>관심 주제</div>
+    </div>
+    <div class="card-body">
+      <div class="interest-grid">
+        <div>
+          <div class="interest-section-title">주제별 선택 수</div>
+          <canvas id="interestPie" height="240"></canvas>
+        </div>
+        <div>
+          <div class="interest-section-title">주제별 일간 리포트 총 생성 수</div>
+          <canvas id="interestBar" height="240"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script th:inline="javascript">
+  const providerLabels = [[${vm.providerLabels}]];
+  const providerCounts = [[${vm.providerCounts}]].map(v => parseInt(v, 10));
+
+  const interestLabels           = [[${vm.interestLabels}]];
+  const interestSelectedCounts   = [[${vm.interestSelectedCounts}]].map(v => parseInt(v, 10));
+  const interestDailyReportCounts= [[${vm.interestDailyReportCounts}]].map(v => parseInt(v, 10));
+
+  Chart.defaults.color = '#8b91a8';
+  Chart.defaults.font.family = "'DM Mono', monospace";
+  Chart.defaults.font.size = 11;
+
+  const gridColor   = 'rgba(255,255,255,0.05)';
+  const borderColor = 'rgba(255,255,255,0.08)';
+  const intYAxis    = {
+    beginAtZero: true,
+    grid: { color: gridColor, borderColor },
+    ticks: { precision: 0, stepSize: 1 }
+  };
+
+  const PALETTE = [
+    'rgba(108,143,255,0.85)',
+    'rgba(255,126,179,0.85)',
+    'rgba(77,232,194,0.85)',
+    'rgba(255,196,77,0.85)',
+    'rgba(180,120,255,0.85)',
+    'rgba(77,195,255,0.85)',
+  ];
+
+  const tooltipDefaults = {
+    backgroundColor: '#1e2230',
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    padding: 12,
+    titleColor: '#e8eaf2',
+    bodyColor: '#8b91a8',
+    titleFont: { family: "'Syne', sans-serif", weight: '700', size: 12 },
+    bodyFont:  { family: "'DM Mono', monospace", size: 12 },
+  };
+
+  // Provider bar
+  new Chart(document.getElementById('providerChart'), {
+    type: 'bar',
+    data: {
+      labels: providerLabels,
+      datasets: [{
+        label: '유저 수',
+        data: providerCounts,
+        backgroundColor: PALETTE,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: tooltipDefaults,
+      },
+      scales: {
+        x: { grid: { color: gridColor, borderColor } },
+        y: intYAxis,
+      }
+    }
+  });
+
+  // Interest pie (doughnut for modern look)
+  new Chart(document.getElementById('interestPie'), {
+    type: 'doughnut',
+    data: {
+      labels: interestLabels,
+      datasets: [{
+        label: '선택 수',
+        data: interestSelectedCounts,
+        backgroundColor: PALETTE,
+        borderWidth: 2,
+        borderColor: '#161920',
+        hoverBorderColor: '#1e2230',
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '55%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            borderRadius: 3,
+            useBorderRadius: true,
+            padding: 14,
+            color: '#8b91a8',
+            font: { size: 11 },
+          }
+        },
+        tooltip: tooltipDefaults,
+      }
+    }
+  });
+
+  // Interest bar
+  new Chart(document.getElementById('interestBar'), {
+    type: 'bar',
+    data: {
+      labels: interestLabels,
+      datasets: [{
+        label: 'COMPLETED 리포트 수',
+        data: interestDailyReportCounts,
+        backgroundColor: PALETTE,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: tooltipDefaults,
+      },
+      scales: {
+        x: { grid: { color: gridColor, borderColor } },
+        y: intYAxis,
+      }
+    }
+  });
+</script>
+
 </body>
 </html>

@@ -49,7 +49,7 @@ public class DailyStatsRepository {
      */
     public List<DateCountDto> findAssignedQuestionCountsLast7Days(LocalDate startDate, LocalDate endDateInclusive) {
         return em.createQuery("""
-                select new com.devkor.ifive.nadab.domain.stats.core.dto.DateCountDto(udq.date, count(udq.id))
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto(udq.date, count(udq.id))
                 from UserDailyQuestion udq
                 where udq.date between :startDate and :endDate
                 group by udq.date
@@ -65,7 +65,7 @@ public class DailyStatsRepository {
      */
     public List<DateCountDto> findCompletedDailyReportCountsLast7Days(LocalDate startDate, LocalDate endDateInclusive) {
         return em.createQuery("""
-                select new com.devkor.ifive.nadab.domain.stats.core.dto.DateCountDto(dr.date, count(dr.id))
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto(dr.date, count(dr.id))
                 from DailyReport dr
                 where dr.date between :startDate and :endDate
                   and dr.status = 'COMPLETED'
