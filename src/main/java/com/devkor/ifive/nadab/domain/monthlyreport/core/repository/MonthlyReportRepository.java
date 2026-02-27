@@ -30,6 +30,7 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
         UPDATE monthly_reports
         SET status = :status,
             content = cast(:content as jsonb),
+            summary = :summary,
             discovered = :discovered,
             improve = :improve,
             analyzed_at = CURRENT_TIMESTAMP
@@ -40,7 +41,8 @@ public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Lo
             @Param("status") String status,
             @Param("content") String contentJson,
             @Param("discovered") String discovered,
-            @Param("improve") String improve
+            @Param("improve") String improve,
+            @Param("summary") String summary
     );
 
     /**

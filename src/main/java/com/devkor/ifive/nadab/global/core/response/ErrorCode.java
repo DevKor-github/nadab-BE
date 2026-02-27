@@ -183,6 +183,8 @@ public enum ErrorCode {
     MONTHLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),
     MONTHLY_REPORT_REWRITE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 형식이 올바르지 않습니다"),
 
+    MONTHLY_REPORT_SUMMARY_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 summary의 형식이 올바르지 않습니다"),
+
     // ==================== AI (인공지능) ====================
     // 502 Bad Gateway
     AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "AI 응답 형식을 해석할 수 없습니다"),

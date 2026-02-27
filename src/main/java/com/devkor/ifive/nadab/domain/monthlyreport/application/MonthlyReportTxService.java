@@ -93,6 +93,8 @@ public class MonthlyReportTxService {
 
     public void confirmMonthly(Long reportId, Long logId, ReportContent content) {
         ReportContent normalized = content.normalized();
+
+        String summary = normalized.summary();
         String discovered = normalized.discovered().plainText();
         String improve = normalized.improve().plainText();
 
@@ -103,7 +105,8 @@ public class MonthlyReportTxService {
         } catch (Exception e) {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
-        monthlyReportRepository.markCompleted(reportId, MonthlyReportStatus.COMPLETED.name(), contentJson, discovered, improve);
+        monthlyReportRepository.markCompleted(
+                reportId, MonthlyReportStatus.COMPLETED.name(), contentJson, discovered, improve, summary);
 
         // log를 CONFIRMED로
         crystalLogRepository.markConfirmed(logId);
