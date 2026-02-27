@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.stats.controller;
 
 import com.devkor.ifive.nadab.domain.stats.application.DailyStatsService;
-import com.devkor.ifive.nadab.domain.stats.core.dto.DailyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

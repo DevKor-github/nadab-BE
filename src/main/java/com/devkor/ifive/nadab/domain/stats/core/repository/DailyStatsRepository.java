@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.domain.stats.core.repository;
 
-import com.devkor.ifive.nadab.domain.stats.core.dto.DateCountDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;

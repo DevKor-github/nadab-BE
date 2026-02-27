@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
-import com.devkor.ifive.nadab.domain.stats.core.dto.DailyStatsViewModel;
-import com.devkor.ifive.nadab.domain.stats.core.dto.DateCountDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.domain.stats.core.repository.DailyStatsRepository;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;

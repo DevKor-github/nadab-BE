@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.stats.core.dto;
+package com.devkor.ifive.nadab.domain.stats.core.dto.daily;
 
 import java.util.List;
 
