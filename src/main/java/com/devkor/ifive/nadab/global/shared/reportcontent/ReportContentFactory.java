@@ -11,14 +11,14 @@ public final class ReportContentFactory {
         StyledText oneEmpty = new StyledText(
                 List.of(new Segment("", List.of()))
         );
-        return new ReportContent(oneEmpty, oneEmpty);
+        return new ReportContent("", oneEmpty, oneEmpty);
     }
 
     public static StyledText fromPlain(String text) {
         return new StyledText(List.of(new Segment(text == null ? "" : text, List.of())));
     }
 
-    public static ReportContent fromPlain(String discovered, String improve) {
-        return new ReportContent(fromPlain(discovered), fromPlain(improve));
+    public static ReportContent fromPlain(String summary, String discovered, String improve) {
+        return new ReportContent(summary == null ? "" : summary, fromPlain(discovered), fromPlain(improve));
     }
 }

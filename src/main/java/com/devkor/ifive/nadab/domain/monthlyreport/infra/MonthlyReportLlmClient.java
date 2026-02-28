@@ -43,6 +43,9 @@ public class MonthlyReportLlmClient {
     private static final int MAX_HL_IMPROVE = 1;
     private static final int MAX_HL_SEG_LEN = 30;
 
+    private static final int MIN_SUMMARY = 8;
+    private static final int MAX_SUMMARY = 30;
+
     public AiReportResultDto generate(
             String monthStartDate, String monthEndDate, String weeklySummaries, String representativeEntries) {
         String prompt = monthlyReportPromptLoader.loadPrompt()
@@ -73,15 +76,18 @@ public class MonthlyReportLlmClient {
 
             StyledText discoveredStyled = result.discovered();
             StyledText improveStyled = result.improve();
+            String summary = result.summary();
 
-            if (discoveredStyled == null || improveStyled == null) {
+            if (discoveredStyled == null || improveStyled == null || isBlank(summary)) {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
             }
+
+            validateSummary(summary);
 
             validateStyledText(discoveredStyled, true);
             validateStyledText(improveStyled, false);
 
-            ReportContent reportContent = new ReportContent(discoveredStyled, improveStyled);
+            ReportContent reportContent = new ReportContent(summary.trim(), discoveredStyled, improveStyled);
 
             String discovered = reportContent.discovered().plainText();
             String improve = reportContent.improve().plainText();
@@ -163,7 +169,7 @@ public class MonthlyReportLlmClient {
         if (badD) d = rewriteStyled(rewriteClient, d, true);
         if (badI) i = rewriteStyled(rewriteClient, i, false);
 
-        ReportContent newContent = new ReportContent(d, i);
+        ReportContent newContent = new ReportContent(c.summary(), d, i);
         String newD = newContent.discovered().plainText();
         String newI = newContent.improve().plainText();
 
@@ -287,6 +293,30 @@ public class MonthlyReportLlmClient {
         }
         if (iLen < MIN_IMPROVE || iLen > MAX_IMPROVE) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_IMPROVE_LENGTH_INVALID);
+        }
+    }
+
+    private void validateSummary(String summary) {
+        if (summary == null) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
+        }
+        String s = summary.trim();
+        if (s.length() < MIN_SUMMARY || s.length() > MAX_SUMMARY) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
+        }
+        // 문장부호로 끝내지 않기
+        if (s.endsWith(".") || s.endsWith("!") || s.endsWith("?")) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
+        }
+        // 따옴표 금지(프론트가 처리)
+        if (s.contains("\"") || s.contains("'")) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
+        }
+        // 숫자 금지(시간/빈도 방지)
+        for (int k = 0; k < s.length(); k++) {
+            if (Character.isDigit(s.charAt(k))) {
+                throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
+            }
         }
     }
 }

@@ -91,6 +91,8 @@ public class WeeklyReportTxService {
 
     public void confirmWeekly(Long reportId, Long logId, ReportContent content) {
         ReportContent normalized = content.normalized();
+
+        String summary = normalized.summary();
         String discovered = normalized.discovered().plainText();
         String improve = normalized.improve().plainText();
 
@@ -107,7 +109,8 @@ public class WeeklyReportTxService {
                 WeeklyReportStatus.COMPLETED.name(),
                 contentJson,
                 discovered,
-                improve
+                improve,
+                summary
         );
 
         // log를 CONFIRMED로

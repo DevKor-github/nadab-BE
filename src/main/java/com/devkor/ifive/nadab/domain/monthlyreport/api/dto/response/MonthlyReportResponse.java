@@ -9,6 +9,9 @@ public record MonthlyReportResponse(
         @Schema(description = "리포트가 작성된 달")
         int month,
 
+        @Schema(description = "리포트 요약")
+        String summary,
+
         @Schema(description = "이런 면도 발견되었어요")
         String discovered,
 

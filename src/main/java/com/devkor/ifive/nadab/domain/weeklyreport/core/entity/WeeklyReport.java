@@ -48,6 +48,9 @@ public class WeeklyReport extends CreatableEntity {
     @Column(name = "improve", length = 250)
     private String improve;
 
+    @Column(name = "summary", nullable = false, length = 80)
+    private String summary;
+
     @Type(JsonType.class)
     @Column(name = "content", columnDefinition = "jsonb", nullable = false)
     private ReportContent content;
@@ -76,6 +79,7 @@ public class WeeklyReport extends CreatableEntity {
         // plain 캐시
         wr.discovered = normalized.discovered().plainText();
         wr.improve = normalized.improve().plainText();
+        wr.summary = normalized.summary();
 
         wr.date = date;
         wr.status = status;

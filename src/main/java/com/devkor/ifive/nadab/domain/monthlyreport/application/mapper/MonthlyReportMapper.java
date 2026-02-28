@@ -10,6 +10,7 @@ public final class MonthlyReportMapper {
     public static MonthlyReportResponse toResponse(MonthRangeDto range, MonthlyReport report) {
         return new MonthlyReportResponse(
                 range.monthStartDate().getMonthValue(),
+                report.getSummary(),
                 report.getDiscovered(),
                 report.getImprove(),
                 report.getContent(),
