@@ -135,4 +135,38 @@ public class NotificationTransactionHelper {
         }
         return count;
     }
+
+    /**
+     * RecoveryScheduler: SENDING → SENT (fcmSent=true인 경우)
+     * - FCM 발송은 완료되었지만 상태 업데이트가 실패한 경우
+     * - WHERE fcmSent=true 조건으로 안전하게 SENT로 변경
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean markAsSentIfFcmSent(Long notificationId) {
+        int updated = notificationRepository.markAsSentIfFcmSent(notificationId);
+
+        if (updated == 1) {
+            log.info("✅ FCM already sent, marked as SENT: id={}", notificationId);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * RecoveryScheduler: SENDING → PENDING/DEAD_LETTER (fcmSent=false인 경우)
+     * - FCM 발송이 안 되었거나 실패한 경우 재시도
+     * - retry_count 증가
+     * - MAX 초과 시 DEAD_LETTER로 이동
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean recoverStuckNotification(Long notificationId, int maxRetryCount) {
+        int updated = notificationRepository.recoverStuckNotification(notificationId, maxRetryCount);
+
+        if (updated == 1) {
+            return true;
+        }
+
+        return false;
+    }
 }

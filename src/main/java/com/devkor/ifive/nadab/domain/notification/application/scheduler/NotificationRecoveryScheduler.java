@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.notification.application.scheduler;
 
+import com.devkor.ifive.nadab.domain.notification.application.helper.NotificationTransactionHelper;
 import com.devkor.ifive.nadab.domain.notification.core.entity.Notification;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationStatus;
 import com.devkor.ifive.nadab.domain.notification.core.repository.NotificationRepository;
@@ -7,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -25,7 +25,7 @@ import java.util.List;
 public class NotificationRecoveryScheduler {
 
     private final NotificationRepository notificationRepository;
-    private final NotificationRecoveryScheduler self;  // Self-injection for @Transactional proxy
+    private final NotificationTransactionHelper transactionHelper;
 
     private static final int TIMEOUT_MINUTES = 5;
     private static final int BATCH_SIZE = 100;
@@ -61,7 +61,7 @@ public class NotificationRecoveryScheduler {
             int alreadyProcessed = 0;
 
             for (Notification notification : stuckList) {
-                RecoveryResult result = self.recoverNotification(notification);  // Proxy를 거쳐서 호출
+                RecoveryResult result = recoverNotification(notification);
                 switch (result) {
                     case SENT -> recoveredToSent++;
                     case PENDING -> recoveredToPending++;
@@ -81,33 +81,23 @@ public class NotificationRecoveryScheduler {
     /**
      * 개별 알림 복구
      * - fcmSent 체크로 중복 발송 방지
-     * - WHERE 조건만 사용 (메모리 체크 제거, DB 최신 값 확인)
      * - fcmSent = true: FCM 이미 발송됨, 상태만 SENT로
      * - fcmSent = false: FCM 발송 안 됨, 재시도
-     * - 조건부 UPDATE로 동시성 제어
-     * - 단일 트랜잭션으로 처리 (FCM 발송 없음, 빠른 UPDATE만)
+     * - TransactionHelper로 트랜잭션 분리
      */
-    @Transactional
-    protected RecoveryResult recoverNotification(Notification notification) {
+    private RecoveryResult recoverNotification(Notification notification) {
         Long notificationId = notification.getId();
 
-        // DB 최신 값으로 fcmSent=true → SENT 시도
-        // Atomic: SENDING → SENT
-        int sentCount = notificationRepository.markAsSentIfFcmSent(notificationId);
-
-        if (sentCount == 1) {
-            log.info("✅ FCM already sent, marked as SENT: id={}", notificationId);
+        // 1. fcmSent=true → SENT 시도
+        boolean markedAsSent = transactionHelper.markAsSentIfFcmSent(notificationId);
+        if (markedAsSent) {
             return RecoveryResult.SENT;
         }
 
-        // fcmSent=false → PENDING 복구 시도
-        // Atomic: retry_count 증가 + PENDING/DEAD_LETTER로 변경 (WHERE fcmSent=false)
-        int recoveredCount = notificationRepository.recoverStuckNotification(
-            notificationId,
-            MAX_RETRY_COUNT
-        );
+        // 2. fcmSent=false → PENDING 복구 시도
+        boolean recovered = transactionHelper.recoverStuckNotification(notificationId, MAX_RETRY_COUNT);
 
-        if (recoveredCount == 1) {
+        if (recovered) {
             // 성공: retry_count 증가 - DB에서 최신 값 조회해서 판단
             Notification fresh = notificationRepository.findById(notificationId).orElse(null);
 
