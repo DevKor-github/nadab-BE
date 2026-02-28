@@ -80,6 +80,9 @@ dependencies {
 
     // Hypersistence Utils
     implementation "io.hypersistence:hypersistence-utils-hibernate-63:3.7.6"
+
+    // Thymeleaf (통계 페이지용)
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 }
 
 dependencyManagement {
