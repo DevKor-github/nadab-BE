@@ -10,9 +10,9 @@ import com.devkor.ifive.nadab.global.core.notification.message.NotificationConte
 import com.devkor.ifive.nadab.global.core.notification.message.NotificationMessageFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.Map;
 
@@ -20,6 +20,7 @@ import java.util.Map;
  * 친구 관련 알림 이벤트 리스너
  * - 친구 요청 수신 → 수신자에게 알림
  * - 친구 요청 수락 → 요청자에게 알림
+ * - @Async로 비동기 처리 (친구 요청 처리 API 응답 속도 향상)
  */
 @Component
 @RequiredArgsConstructor
@@ -34,7 +35,8 @@ public class FriendNotificationEventListener {
      * 친구 요청 수신 알림
      * - 수신자에게 알림 전송
      */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async("notificationTaskExecutor")
+    @EventListener
     public void handleFriendRequestReceived(FriendRequestReceivedEvent event) {
         log.debug("Handling friend request received event: friendshipId={}, receiverId={}, requesterId={}",
             event.getFriendshipId(), event.getReceiverId(), event.getRequesterId());
@@ -82,7 +84,8 @@ public class FriendNotificationEventListener {
      * 친구 요청 수락 알림
      * - 요청자에게 알림 전송
      */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async("notificationTaskExecutor")
+    @EventListener
     public void handleFriendRequestAccepted(FriendRequestAcceptedEvent event) {
         log.debug("Handling friend request accepted event: friendshipId={}, requesterId={}, accepterId={}",
             event.getFriendshipId(), event.getRequesterId(), event.getAccepterId());

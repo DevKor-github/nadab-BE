@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application.listener;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxService;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
@@ -13,6 +14,7 @@ import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -30,6 +32,7 @@ public class MonthlyReportGenerationListener {
     private final MonthlyReportLlmClient monthlyReportLlmClient;
     private final MonthlyReportTxService monthlyReportTxService;
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final int MAX_LEN = 245;
 
@@ -73,6 +76,12 @@ public class MonthlyReportGenerationListener {
                     event.crystalLogId(),
                     dto.content()
             );
+
+            // 월간 리포트 완성 이벤트 발행
+            eventPublisher.publishEvent(
+                new MonthlyReportCompletedEvent(event.reportId(), event.userId())
+            );
+
         } catch (Exception e) {
             log.error("[MONTHLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
                     event.userId(), event.reportId(), event.crystalLogId(), e);

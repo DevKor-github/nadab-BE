@@ -83,6 +83,22 @@ public class AsyncConfig {
     }
 
     /**
+     * 알림 이벤트 리스너 전용 실행기
+     * - 알림 생성 및 DB 저장을 비동기로 처리
+     * - FCM 발송은 별도 fcmTaskExecutor에서 처리
+     */
+    @Bean(name = "notificationTaskExecutor")
+    public Executor notificationTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("async-notification-");
+        executor.initialize();
+        return executor;
+    }
+
+    /**
      * FCM 푸시 알림 전용 실행기
      * - FCM은 외부 I/O라 동시성 높게 주되, 무한 큐 적체는 막기 위해 큐 제한
      */

@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.typereport.application.listener;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionName;
 import com.devkor.ifive.nadab.domain.typereport.application.TypeReportTxService;
+import com.devkor.ifive.nadab.domain.typereport.application.event.TypeReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.*;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
 import com.devkor.ifive.nadab.domain.typereport.core.repository.AnalysisTypeRepository;
@@ -15,6 +16,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -42,6 +44,8 @@ public class TypeReportGenerationListener {
     private final PatternExtractionService patternExtractionService;               // Step2
     private final TypeSelectionService typeSelectionService;                       // Step3
     private final TypeReportContentGenerationService typeReportContentGenerationService; // Step4
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final int RECENT_N = 30;
 
@@ -162,11 +166,32 @@ public class TypeReportGenerationListener {
                     content.personas().get(1).title(),
                     content.personas().get(1).content()
             );
+
+            // 유형 리포트 완성 이벤트 발행
+            String categoryName = getCategoryNameKorean(interestCode);
+            eventPublisher.publishEvent(
+                new TypeReportCompletedEvent(event.reportId(), event.userId(), categoryName)
+            );
+
         } catch (Exception e) {
             log.error("[TYPE_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
                     event.userId(), event.reportId(), event.crystalLogId(), e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
         }
+    }
+
+    /**
+     * InterestCode를 한글 카테고리 이름으로 변환
+     */
+    private String getCategoryNameKorean(InterestCode code) {
+        return switch (code) {
+            case PREFERENCE -> "취향";
+            case EMOTION -> "감정";
+            case ROUTINE -> "루틴";
+            case RELATIONSHIP -> "관계";
+            case LOVE -> "사랑";
+            case VALUES -> "가치관";
+        };
     }
 
     private EmotionName toEmotionName(String raw) {
