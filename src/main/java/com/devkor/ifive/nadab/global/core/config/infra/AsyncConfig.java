@@ -81,4 +81,19 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * FCM 푸시 알림 전용 실행기
+     * - FCM은 외부 I/O라 동시성 높게 주되, 무한 큐 적체는 막기 위해 큐 제한
+     */
+    @Bean(name = "fcmTaskExecutor")
+    public Executor fcmTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("async-fcm-");
+        executor.initialize();
+        return executor;
+    }
 }

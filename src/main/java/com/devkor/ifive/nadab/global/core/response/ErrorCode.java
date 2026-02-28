@@ -336,7 +336,19 @@ public enum ErrorCode {
     ANALYSIS_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "분석 유형을 찾을 수 없습니다"),
 
     // 409 Conflict
-    TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다");
+    TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다"),
+
+    // ===================== NOTIFICATION (알림) =====================
+    // 403 Forbidden
+    NOTIFICATION_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 알림이 아닙니다"),
+
+    // 404 Not Found
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다"),
+    DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND, "디바이스를 찾을 수 없습니다"),
+    NOTIFICATION_SETTINGS_NOT_FOUND(HttpStatus.NOT_FOUND, "알림 설정을 찾을 수 없습니다"),
+
+    // 502 Bad Gateway
+    FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다");
 
 
     private final HttpStatus httpStatus;
