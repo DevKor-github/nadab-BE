@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationGroup;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationSetting;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationType;
 import com.devkor.ifive.nadab.domain.notification.core.entity.UserDevice;
+import com.devkor.ifive.nadab.domain.notification.core.repository.NotificationRepository;
 import com.devkor.ifive.nadab.domain.notification.core.repository.NotificationSettingRepository;
 import com.devkor.ifive.nadab.domain.notification.core.repository.UserDeviceRepository;
 import com.devkor.ifive.nadab.domain.notification.infra.FcmClient;
@@ -43,6 +44,7 @@ public class InactiveUserNotificationScheduler {
     private final NotificationMessageFactory messageFactory;
     private final NotificationSettingRepository notificationSettingRepository;
     private final UserDeviceRepository userDeviceRepository;
+    private final NotificationRepository notificationRepository;
     private final FcmClient fcmClient;
 
     private static final long MIN_INACTIVE_DAYS = 2;
@@ -171,14 +173,17 @@ public class InactiveUserNotificationScheduler {
                 return false;
             }
 
-            // 4. FCM 푸시 발송
+            // 4. 실제 읽지 않은 알림 개수 조회 (뱃지 동기화)
+            int unreadCount = (int) notificationRepository.countUnreadByUser(user);
+
+            // 5. FCM 푸시 발송
             NotificationMessageDto messageDto = NotificationMessageDto.builder()
                 .type(NotificationType.INACTIVE_USER_REMINDER)
                 .title(content.title())
                 .body(content.body())
                 .inboxMessage(content.inboxMessage())
                 .targetId(null)
-                .unreadCount(0)  // 알림함에 저장 안 하므로 0
+                .unreadCount(unreadCount)  // 실제 알림함 개수로 뱃지 유지
                 .build();
 
             fcmClient.sendMulticast(tokens, messageDto);

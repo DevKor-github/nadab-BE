@@ -65,8 +65,6 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
 
     /**
      * 마지막 답변일이 특정 일수 이전인 사용자 조회
-     * - 미답변 알림용
-     * - 탈퇴 회원 제외
      */
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.UserWithLastAnswerDate(a.user, max(a.date))
@@ -76,4 +74,18 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
         having max(a.date) <= :cutoffDate
         """)
     List<UserWithLastAnswerDate> findUsersWithLastAnswerBefore(@Param("cutoffDate") LocalDate cutoffDate);
+
+    /**
+     * 특정 날짜에 답변한 사용자 ID 목록 조회
+     */
+    @Query("""
+        select a.user.id
+        from AnswerEntry a
+        where a.user.id in :userIds
+          and a.date = :date
+        """)
+    List<Long> findUserIdsWithAnswerOnDate(
+            @Param("userIds") List<Long> userIds,
+            @Param("date") LocalDate date
+    );
 }
