@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.repository;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.UserWithLastAnswerDate;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -61,4 +62,18 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
             @Param("userId") Long userId,
             @Param("interestCode") InterestCode interestCode
     );
+
+    /**
+     * 마지막 답변일이 특정 일수 이전인 사용자 조회
+     * - 미답변 알림용
+     * - 탈퇴 회원 제외
+     */
+    @Query("""
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.UserWithLastAnswerDate(a.user, max(a.date))
+        from AnswerEntry a
+        where a.user.deletedAt is null
+        group by a.user
+        having max(a.date) <= :cutoffDate
+        """)
+    List<UserWithLastAnswerDate> findUsersWithLastAnswerBefore(@Param("cutoffDate") LocalDate cutoffDate);
 }
