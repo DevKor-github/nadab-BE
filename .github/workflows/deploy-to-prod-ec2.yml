@@ -99,6 +99,10 @@ jobs:
             REPAIR_TYPE_PROMPT="$(printf '%s' "$REPAIR_TYPE_PROMPT_B64" | base64 -d | tr -d '\r')"
             export REPAIR_TYPE_PROMPT
 
+            NOTIFICATION_MESSAGES_B64="${{ secrets.NOTIFICATION_MESSAGES_B64 }}"
+            NOTIFICATION_MESSAGES="$(printf '%s' "$NOTIFICATION_MESSAGES_B64" | base64 -d | tr -d '\r')"
+            export NOTIFICATION_MESSAGES
+
             # ✅ prod 환경변수 주입 + 실행
             DB_URL="${{ secrets.DB_URL }}" \
             DB_USERNAME="${{ secrets.DB_USERNAME }}" \

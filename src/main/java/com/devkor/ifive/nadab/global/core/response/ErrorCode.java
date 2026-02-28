@@ -346,6 +346,12 @@ public enum ErrorCode {
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다"),
     DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND, "디바이스를 찾을 수 없습니다"),
     NOTIFICATION_SETTINGS_NOT_FOUND(HttpStatus.NOT_FOUND, "알림 설정을 찾을 수 없습니다"),
+    NOTIFICATION_MESSAGE_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림 메시지 템플릿 파일을 찾을 수 없습니다"),
+    NOTIFICATION_MESSAGE_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 알림 타입의 메시지 템플릿을 찾을 수 없습니다"),
+
+    // 500 Internal Server Error
+    NOTIFICATION_MESSAGE_FILE_READ_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "알림 메시지 템플릿 파일 읽기에 실패했습니다"),
+    NOTIFICATION_MESSAGES_ENV_VAR_NOT_SET(HttpStatus.INTERNAL_SERVER_ERROR, "환경 변수 NOTIFICATION_MESSAGES가 설정되지 않았습니다"),
 
     // 502 Bad Gateway
     FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다");
