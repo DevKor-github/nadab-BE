@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.friend.application;
 
+import com.devkor.ifive.nadab.domain.friend.application.event.FriendRequestAcceptedEvent;
+import com.devkor.ifive.nadab.domain.friend.application.event.FriendRequestReceivedEvent;
 import com.devkor.ifive.nadab.domain.friend.core.entity.Friendship;
 import com.devkor.ifive.nadab.domain.friend.core.entity.FriendshipStatus;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
@@ -11,6 +13,7 @@ import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +25,7 @@ public class FriendshipCommandService {
 
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public Long sendFriendRequest(Long requesterId, String receiverNickname) {
         // 1. 수신자 조회
@@ -64,6 +68,12 @@ public class FriendshipCommandService {
         Friendship friendship = Friendship.createPending(requester, receiver);
 
         Friendship saved = friendshipRepository.save(friendship);
+
+        // 7. 친구 요청 수신 이벤트 발행
+        eventPublisher.publishEvent(
+            new FriendRequestReceivedEvent(saved.getId(), receiverId, requesterId)
+        );
+
         return saved.getId();
     }
 
@@ -120,6 +130,11 @@ public class FriendshipCommandService {
 
         // 5. 상태 변경
         friendship.accept();
+
+        // 6. 친구 요청 수락 이벤트 발행
+        eventPublisher.publishEvent(
+            new FriendRequestAcceptedEvent(friendship.getId(), requesterId, userId)
+        );
     }
 
     public void rejectFriendRequest(Long userId, Long friendshipId) {

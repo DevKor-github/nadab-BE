@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.question.core.repository;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -67,4 +68,16 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
             @Param("levelOnly") Integer levelOnly,
             Pageable pageable
     );
+
+    /**
+     * 특정 InterestCode의 전체 질문 개수 조회
+     * - 유형 리포트 전체 완료 체크용
+     */
+    @Query("""
+        select count(q)
+        from DailyQuestion q
+        where q.interest.code = :interestCode
+          and q.deletedAt is null
+        """)
+    long countByInterestCode(@Param("interestCode") InterestCode interestCode);
 }

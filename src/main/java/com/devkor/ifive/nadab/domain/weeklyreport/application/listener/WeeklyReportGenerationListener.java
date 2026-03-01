@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.application.listener;
 
 import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportTxService;
+import com.devkor.ifive.nadab.domain.weeklyreport.application.event.WeeklyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
@@ -11,6 +12,7 @@ import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -27,6 +29,7 @@ public class WeeklyReportGenerationListener {
 
     private final WeeklyReportLlmClient weeklyReportLlmClient;
     private final WeeklyReportTxService weeklyReportTxService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final int MAX_LEN = 245;
 
@@ -64,6 +67,12 @@ public class WeeklyReportGenerationListener {
                     event.crystalLogId(),
                     dto.content()
             );
+
+            // 주간 리포트 완성 이벤트 발행
+            eventPublisher.publishEvent(
+                new WeeklyReportCompletedEvent(event.reportId(), event.userId())
+            );
+
         } catch (Exception e) {
             log.error("[WEEKLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
                     event.userId(), event.reportId(), event.crystalLogId(), e);

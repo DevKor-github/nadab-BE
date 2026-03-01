@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.application;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.application.event.DailyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
@@ -11,6 +12,7 @@ import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.repository.DailyQuestionRepository;
 import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionRepository;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -19,6 +21,7 @@ import com.devkor.ifive.nadab.global.exception.NotFoundException;
 
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -34,6 +37,8 @@ public class DailyReportService {
     private final DailyReportTxService dailyReportTxService;
 
     private final DailyReportLlmClient dailyReportLlmClient;
+
+    private final ApplicationEventPublisher eventPublisher;
 
 
     public CreateDailyReportResponse generateDailyReport(Long userId, DailyReportRequest request) {
@@ -70,6 +75,14 @@ public class DailyReportService {
         }
 
         ConfirmDailyAndRewardDto confirmDto = dailyReportTxService.confirmDailyAndReward(prep, dto);
+
+        // 일일 리포트 완성 이벤트 발행 (유형 리포트 제작 가능 알림 체크용)
+        if (question.getInterest() != null) {
+            InterestCode interestCode = question.getInterest().getCode();
+            eventPublisher.publishEvent(
+                new DailyReportCompletedEvent(userId, interestCode)
+            );
+        }
 
         return new CreateDailyReportResponse(
                 prep.reportId(),
