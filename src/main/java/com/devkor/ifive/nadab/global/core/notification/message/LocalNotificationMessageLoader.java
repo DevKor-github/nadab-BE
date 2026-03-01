@@ -30,7 +30,7 @@ public class LocalNotificationMessageLoader implements NotificationMessageLoader
             byte[] bytes = resource.getContentAsByteArray();
             String yaml = new String(bytes, StandardCharsets.UTF_8);
 
-            log.info("알림 메시지 템플릿 로드 완료: {}", TEMPLATE_PATH);
+            log.debug("알림 메시지 템플릿 로드 완료: {}", TEMPLATE_PATH);
             return yaml;
 
         } catch (IOException e) {

@@ -32,11 +32,11 @@ public class NotificationMessageFactory {
         Yaml yamlParser = new Yaml();
         messageTemplates = yamlParser.load(yaml);
 
-        log.info("알림 메시지 템플릿 파싱 완료: {} 타입", messageTemplates.size());
+        log.debug("알림 메시지 템플릿 파싱 완료: {} 타입", messageTemplates.size());
 
         // 모든 NotificationType 템플릿 검증
         validateAllTemplates();
-        log.info("알림 메시지 템플릿 검증 완료");
+        log.debug("알림 메시지 템플릿 검증 완료");
     }
 
     /**
@@ -85,19 +85,32 @@ public class NotificationMessageFactory {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> getTemplate(NotificationType type, Map<String, String> params) {
-        Map<String, Object> typeTemplate = (Map<String, Object>) messageTemplates.get(type.name());
+        Object rawTemplate = messageTemplates.get(type.name());
 
-        if (typeTemplate == null) {
+        if (rawTemplate == null) {
             log.error("알림 메시지 템플릿을 찾을 수 없습니다: {}", type);
             throw new BadRequestException(ErrorCode.NOTIFICATION_MESSAGE_TEMPLATE_NOT_FOUND);
         }
 
         // 특수 케이스 처리
         return switch (type) {
-            case INACTIVE_USER_REMINDER -> getRandomInactivityMessage(typeTemplate, params);
-            case TYPE_REPORT_AVAILABLE -> getMilestoneMessage(typeTemplate, params);
-            default -> typeTemplate;
+            case DAILY_WRITE_REMINDER -> getRandomMessageFromList((List<Map<String, Object>>) rawTemplate);
+            case INACTIVE_USER_REMINDER -> getRandomInactivityMessage((Map<String, Object>) rawTemplate, params);
+            case TYPE_REPORT_AVAILABLE -> getMilestoneMessage((Map<String, Object>) rawTemplate, params);
+            default -> (Map<String, Object>) rawTemplate;
         };
+    }
+
+    /**
+     * 랜덤 메시지 선택 (배열 형태의 템플릿)
+     * - DAILY_WRITE_REMINDER 등에서 사용
+     */
+    private Map<String, Object> getRandomMessageFromList(List<Map<String, Object>> messages) {
+        if (messages == null || messages.isEmpty()) {
+            log.error("랜덤 메시지 템플릿이 비어있습니다");
+            throw new BadRequestException(ErrorCode.NOTIFICATION_MESSAGE_TEMPLATE_NOT_FOUND);
+        }
+        return messages.get(ThreadLocalRandom.current().nextInt(messages.size()));
     }
 
     /**
