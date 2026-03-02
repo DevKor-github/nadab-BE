@@ -17,7 +17,7 @@ public interface NotificationSettingRepository extends JpaRepository<Notificatio
 
     Optional<NotificationSetting> findByUserAndGroup(User user, NotificationGroup group);
 
-    @Query("SELECT ns FROM NotificationSetting ns WHERE ns.user.id IN :userIds")
+    @Query("SELECT ns FROM NotificationSetting ns JOIN FETCH ns.user WHERE ns.user.id IN :userIds")
     List<NotificationSetting> findByUserIdIn(@Param("userIds") List<Long> userIds);
 
     /**
