@@ -5,8 +5,10 @@ import com.devkor.ifive.nadab.domain.notification.core.entity.Notification;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationGroup;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationSetting;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationType;
+import com.devkor.ifive.nadab.domain.notification.core.entity.UserDevice;
 import com.devkor.ifive.nadab.domain.notification.core.repository.NotificationRepository;
 import com.devkor.ifive.nadab.domain.notification.core.repository.NotificationSettingRepository;
+import com.devkor.ifive.nadab.domain.notification.core.repository.UserDeviceRepository;
 import com.devkor.ifive.nadab.domain.notification.infra.FcmNotificationSender;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
@@ -18,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 알림 Command 서비스
@@ -33,6 +37,7 @@ public class NotificationCommandService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationSettingRepository notificationSettingRepository;
+    private final UserDeviceRepository userDeviceRepository;
     private final UserRepository userRepository;
     private final FcmNotificationSender fcmNotificationSender;
     private final ApplicationEventPublisher eventPublisher;
@@ -90,7 +95,22 @@ public class NotificationCommandService {
             return;  // 이벤트 발행 안 함
         }
 
-        // 4. 알림 저장 (PENDING 상태)
+        // 4. 디바이스 체크
+        List<UserDevice> devices = userDeviceRepository.findByUser(user);
+        if (devices.isEmpty()) {
+            // 디바이스 없음 → 알림함에만 저장, FCM 발송 안 함
+            Notification notification = Notification.create(
+                user, type, title, body, inboxMessage, targetId, idempotencyKey
+            );
+            notification.markAsNotificationDisabled();
+            notificationRepository.save(notification);
+
+            log.info("Notification saved to inbox only (no device): userId={}, id={}, status=NOTIFICATION_DISABLED",
+                userId, notification.getId());
+            return;  // 이벤트 발행 안 함
+        }
+
+        // 5. 알림 저장 (PENDING 상태)
         Notification notification = Notification.create(
             user, type, title, body, inboxMessage, targetId, idempotencyKey
         );
@@ -99,7 +119,7 @@ public class NotificationCommandService {
         log.info("Notification created (PENDING): id={}, type={}, userId={}",
             notification.getId(), type, userId);
 
-        // 5. 이벤트 발행 (트랜잭션 커밋 후 EventListener가 즉시 발송)
+        // 6. 이벤트 발행 (트랜잭션 커밋 후 EventListener가 즉시 발송)
         eventPublisher.publishEvent(new NotificationCreatedEvent(notification.getId()));
     }
 

@@ -45,7 +45,7 @@ public class DailyReportService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
-        DailyQuestion question = dailyQuestionRepository.findById(request.questionId())
+        DailyQuestion question = dailyQuestionRepository.findByIdWithInterest(request.questionId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NOT_FOUND));
 
         LocalDate today = TodayDateTimeProvider.getTodayDate();
