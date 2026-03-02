@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Long> {
 
@@ -80,4 +81,10 @@ public interface DailyQuestionRepository extends JpaRepository<DailyQuestion, Lo
           and q.deletedAt is null
         """)
     long countByInterestCode(@Param("interestCode") InterestCode interestCode);
+
+    /**
+     * ID로 질문 조회 (Interest fetch join)
+     */
+    @Query("SELECT q FROM DailyQuestion q LEFT JOIN FETCH q.interest WHERE q.id = :id")
+    Optional<DailyQuestion> findByIdWithInterest(@Param("id") Long id);
 }
