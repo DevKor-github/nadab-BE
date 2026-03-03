@@ -29,7 +29,7 @@ public class NotificationRecoveryScheduler {
 
     private static final int TIMEOUT_MINUTES = 5;
     private static final int BATCH_SIZE = 100;
-    private static final int MAX_RETRY_COUNT = 3;
+    private static final int MAX_RETRY_COUNT = 1;  // DEAD_LETTER 비율 모니터링 후 필요시 증가
 
     /**
      * SENDING 상태 타임아웃 복구

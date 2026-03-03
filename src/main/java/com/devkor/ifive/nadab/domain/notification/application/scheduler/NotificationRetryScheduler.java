@@ -32,16 +32,18 @@ public class NotificationRetryScheduler {
     private final NotificationTransactionHelper transactionHelper;
 
     private static final int BATCH_SIZE = 100;
-    private static final int MAX_RETRY_COUNT = 3;
+    private static final int MAX_RETRY_COUNT = 1;  // DEAD_LETTER 비율 모니터링 후 필요시 증가
 
     /**
      * Exponential Backoff 재시도 전략
-     * - retry_count별 대기 시간:
-     *   0회: 10초
-     *   1회: 20초
-     *   2회: 40초 (최대 3회 재시도)
+     * - 현재 설정: retry_count 0회만 재시도 (10초 대기)
+     * - 총 시도 횟수: 2회 (최초 1회 + 재시도 1회)
+     *
+     * [향후 확장 가능]
+     * - DEAD_LETTER 비율이 높으면: {10, 20} (재시도 2회)
+     * - 더 필요하면: {10, 20, 40} (재시도 3회)
      */
-    private static final int[] RETRY_DELAYS_SECONDS = {10, 20, 40};
+    private static final int[] RETRY_DELAYS_SECONDS = {10};
 
     /**
      * 알림 재시도
@@ -111,7 +113,7 @@ public class NotificationRetryScheduler {
      */
     protected int retryFailedByRetryCount(int retryCount, OffsetDateTime now) {
         // Exponential Backoff 대기 시간 계산
-        int delaySeconds = RETRY_DELAYS_SECONDS[Math.min(retryCount, RETRY_DELAYS_SECONDS.length - 1)];
+        int delaySeconds = RETRY_DELAYS_SECONDS[0];
         OffsetDateTime threshold = now.minusSeconds(delaySeconds);
 
         // updated_at < threshold인 FAILED 알림 조회

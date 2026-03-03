@@ -21,7 +21,7 @@ public class NotificationTransactionHelper {
 
     private final NotificationRepository notificationRepository;
 
-    private static final int MAX_RETRY_COUNT = 3;
+    private static final int MAX_RETRY_COUNT = 1;  // DEAD_LETTER 비율 모니터링 후 필요시 증가
 
     /**
      * EventListener: PENDING → SENDING & fcmSent = true (낙관적 설정, Atomic Operation)
