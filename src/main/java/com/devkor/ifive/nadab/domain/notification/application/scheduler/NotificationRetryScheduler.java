@@ -32,16 +32,18 @@ public class NotificationRetryScheduler {
     private final NotificationTransactionHelper transactionHelper;
 
     private static final int BATCH_SIZE = 100;
-    private static final int MAX_RETRY_COUNT = 3;
+    private static final int MAX_RETRY_COUNT = 1;  // DEAD_LETTER 비율 모니터링 후 필요시 증가
 
     /**
      * Exponential Backoff 재시도 전략
-     * - retry_count별 대기 시간:
-     *   0회: 10초
-     *   1회: 20초
-     *   2회: 40초 (최대 3회 재시도)
+     * - 현재 설정: retry_count 0회만 재시도 (10초 대기)
+     * - 총 시도 횟수: 2회 (최초 1회 + 재시도 1회)
+     *
+     * [향후 확장 가능]
+     * - DEAD_LETTER 비율이 높으면: {10, 20} (재시도 2회)
+     * - 더 필요하면: {10, 20, 40} (재시도 3회)
      */
-    private static final int[] RETRY_DELAYS_SECONDS = {10, 20, 40};
+    private static final int[] RETRY_DELAYS_SECONDS = {10};
 
     /**
      * 알림 재시도
@@ -53,10 +55,17 @@ public class NotificationRetryScheduler {
     public void retryNotifications() {
         try {
             // 1. PENDING 알림 재시도 (EventListener Fallback)
-            retryPendingNotifications();
+            int pendingRetried = retryPendingNotifications();
 
             // 2. FAILED 알림 재시도 (Exponential Backoff)
-            retryFailedNotifications();
+            int failedRetried = retryFailedNotifications();
+
+            // 3. 재시도가 있을 때만 로그
+            int totalRetried = pendingRetried + failedRetried;
+            if (totalRetried > 0) {
+                log.info("Retry scheduler completed: pending={}, failed={}, total={}",
+                    pendingRetried, failedRetried, totalRetried);
+            }
 
         } catch (Exception e) {
             log.error("Failed to retry notifications", e);
@@ -68,18 +77,20 @@ public class NotificationRetryScheduler {
      * - EventListener 실패 시 PENDING 상태로 남은 알림 처리
      * - 100개씩 배치 처리
      */
-    private void retryPendingNotifications() {
+    private int retryPendingNotifications() {
         List<Notification> pendingList = notificationRepository
             .findByStatusOrderByIdAsc(NotificationStatus.PENDING, BATCH_SIZE);
 
         if (pendingList.isEmpty()) {
-            return;
+            return 0;
         }
 
-        log.info("Retrying {} PENDING notifications (EventListener Fallback)", pendingList.size());
+        log.debug("Retrying {} PENDING notifications (EventListener Fallback)", pendingList.size());
 
         // 배치 처리
         processBatch(pendingList, NotificationStatus.PENDING);
+
+        return pendingList.size();
     }
 
     /**
@@ -88,7 +99,7 @@ public class NotificationRetryScheduler {
      * - FAILED → 바로 재발송 (PENDING 거치지 않음)
      * - retry_count >= MAX_RETRY_COUNT → DEAD_LETTER
      */
-    private void retryFailedNotifications() {
+    private int retryFailedNotifications() {
         OffsetDateTime now = OffsetDateTime.now();
         int totalRetried = 0;
 
@@ -102,8 +113,10 @@ public class NotificationRetryScheduler {
         transactionHelper.moveFailedToDeadLetter();
 
         if (totalRetried > 0) {
-            log.info("Retried {} FAILED notifications with Exponential Backoff", totalRetried);
+            log.debug("Retried {} FAILED notifications with Exponential Backoff", totalRetried);
         }
+
+        return totalRetried;
     }
 
     /**
@@ -111,7 +124,7 @@ public class NotificationRetryScheduler {
      */
     protected int retryFailedByRetryCount(int retryCount, OffsetDateTime now) {
         // Exponential Backoff 대기 시간 계산
-        int delaySeconds = RETRY_DELAYS_SECONDS[Math.min(retryCount, RETRY_DELAYS_SECONDS.length - 1)];
+        int delaySeconds = RETRY_DELAYS_SECONDS[0];
         OffsetDateTime threshold = now.minusSeconds(delaySeconds);
 
         // updated_at < threshold인 FAILED 알림 조회
@@ -127,7 +140,7 @@ public class NotificationRetryScheduler {
             return 0;
         }
 
-        log.info("Retrying {} FAILED notifications: retryCount={}, delay={}s",
+        log.debug("Retrying {} FAILED notifications: retryCount={}, delay={}s",
             failedList.size(), retryCount, delaySeconds);
 
         // FAILED → 바로 재발송
@@ -150,7 +163,7 @@ public class NotificationRetryScheduler {
             return;
         }
 
-        log.info("Acquired {} notifications for batch processing", acquiredList.size());
+        log.debug("Acquired {} notifications for batch processing", acquiredList.size());
 
         try {
             // FCM 발송 (트랜잭션 밖)
@@ -221,7 +234,7 @@ public class NotificationRetryScheduler {
                     int actualRetryCount = (fromStatus == NotificationStatus.FAILED)
                         ? notification.getRetryCount() + 1
                         : notification.getRetryCount();
-                    log.info("✅ Notification sent successfully: id={}, retryCount={}",
+                    log.debug("✅ Notification sent successfully: id={}, retryCount={}",
                         notificationId, actualRetryCount);
                 }
             } else {

@@ -46,8 +46,6 @@ public class FcmNotificationSender {
      * - Invalid Token 자동 삭제
      */
     public boolean sendInternal(Notification notification) {
-        log.debug("Sending notification: id={}", notification.getId());
-
         User user = notification.getUser();
 
         // 탈퇴한 사용자는 발송 안 함
@@ -97,9 +95,6 @@ public class FcmNotificationSender {
         if (!success) {
             log.warn("All devices have invalid tokens: userId={}, totalDevices={}",
                     user.getId(), devices.size());
-        } else {
-            log.debug("Notification sent: id={}, validDevices={}/{}",
-                    notification.getId(), validTokens.size(), devices.size());
         }
 
         return success;
@@ -114,8 +109,6 @@ public class FcmNotificationSender {
         if (notifications.isEmpty()) {
             return Collections.emptyMap();
         }
-
-        log.debug("Sending batch notifications: count={}", notifications.size());
 
         // 1. 사용자 ID 목록 추출
         List<Long> userIds = notifications.stream()
@@ -180,9 +173,6 @@ public class FcmNotificationSender {
             if (!success) {
                 log.warn("All devices have invalid tokens: userId={}, totalDevices={}",
                     userId, devices.size());
-            } else {
-                log.debug("Notification sent: id={}, validDevices={}/{}",
-                    notification.getId(), validTokens.size(), devices.size());
             }
 
             results.put(notification.getId(), success);
@@ -236,8 +226,6 @@ public class FcmNotificationSender {
      */
     @Async("fcmTaskExecutor")
     public void sendSilentBadgeUpdate(Long userId) {
-        log.debug("Sending silent badge update: userId={}", userId);
-
         // 사용자 조회
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {

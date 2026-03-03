@@ -58,7 +58,7 @@ public class InactiveUserNotificationScheduler {
      */
     @Scheduled(cron = "0 0 22 * * *", zone = "Asia/Seoul")
     public void notifyInactiveUsers() {
-        log.info("Starting inactive user notification scheduler");
+        log.debug("Starting inactive user notification scheduler");
 
         try {
             // 날짜 변경 시 중복 방지 Set 초기화
@@ -72,7 +72,7 @@ public class InactiveUserNotificationScheduler {
             List<UserWithLastAnswerDate> results = answerEntryRepository.findUsersWithLastAnswerBefore(cutoffDate);
 
             if (results.isEmpty()) {
-                log.info("No inactive users found");
+                log.debug("No inactive users found");
                 return;
             }
 
@@ -141,7 +141,7 @@ public class InactiveUserNotificationScheduler {
         try {
             // 1. 알림 설정 체크
             if (setting != null && !setting.isEnabled()) {
-                log.info("User disabled notification group, skip: userId={}, group={}",
+                log.debug("User disabled notification group, skip: userId={}, group={}",
                     user.getId(), setting.getGroup());
                 return false;
             }
@@ -159,7 +159,7 @@ public class InactiveUserNotificationScheduler {
 
             // 3. FCM 토큰 검증
             if (devices.isEmpty()) {
-                log.info("No FCM tokens found, skip: userId={}", user.getId());
+                log.debug("No FCM tokens found, skip: userId={}", user.getId());
                 return false;
             }
 
@@ -169,7 +169,7 @@ public class InactiveUserNotificationScheduler {
                 .toList();
 
             if (tokens.isEmpty()) {
-                log.info("No valid FCM tokens, skip: userId={}", user.getId());
+                log.debug("No valid FCM tokens, skip: userId={}", user.getId());
                 return false;
             }
 
@@ -188,7 +188,7 @@ public class InactiveUserNotificationScheduler {
 
             fcmClient.sendMulticast(tokens, messageDto);
 
-            log.info("Inactive user push notification sent: userId={}, daysInactive={}, deviceCount={}",
+            log.debug("Inactive user push notification sent: userId={}, daysInactive={}, deviceCount={}",
                 user.getId(), daysInactive, tokens.size());
 
             return true;

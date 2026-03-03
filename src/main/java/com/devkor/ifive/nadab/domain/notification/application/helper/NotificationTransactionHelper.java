@@ -21,7 +21,7 @@ public class NotificationTransactionHelper {
 
     private final NotificationRepository notificationRepository;
 
-    private static final int MAX_RETRY_COUNT = 3;
+    private static final int MAX_RETRY_COUNT = 1;  // DEAD_LETTER 비율 모니터링 후 필요시 증가
 
     /**
      * EventListener: PENDING → SENDING & fcmSent = true (낙관적 설정, Atomic Operation)
@@ -80,7 +80,7 @@ public class NotificationTransactionHelper {
             );
 
             if (updated == 1) {
-                log.info("✅ Notification sent successfully: id={}", notificationId);
+                log.debug("✅ Notification sent successfully: id={}", notificationId);
                 return true;
             } else {
                 log.warn("Status already changed during send: id={}, will be recovered by RecoveryScheduler",
@@ -146,7 +146,7 @@ public class NotificationTransactionHelper {
         int updated = notificationRepository.markAsSentIfFcmSent(notificationId);
 
         if (updated == 1) {
-            log.info("✅ FCM already sent, marked as SENT: id={}", notificationId);
+            log.debug("✅ FCM already sent, marked as SENT: id={}", notificationId);
             return true;
         }
 

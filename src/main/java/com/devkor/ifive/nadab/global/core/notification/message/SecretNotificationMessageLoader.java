@@ -25,7 +25,7 @@ public class SecretNotificationMessageLoader implements NotificationMessageLoade
             throw new BadRequestException(ErrorCode.NOTIFICATION_MESSAGES_ENV_VAR_NOT_SET);
         }
 
-        log.info("알림 메시지 템플릿 로드 완료 (환경 변수)");
+        log.debug("알림 메시지 템플릿 로드 완료 (환경 변수)");
         return messagesYaml;
     }
 }

@@ -70,7 +70,7 @@ public class FcmClient {
 
             BatchResponse response = firebaseMessaging.sendEachForMulticast(fcmMessage);
 
-            log.info("FCM multicast sent: total={}, success={}, failure={}",
+            log.debug("FCM multicast sent: total={}, success={}, failure={}",
                 response.getResponses().size(), response.getSuccessCount(), response.getFailureCount());
 
             // Invalid token 자동 정리
@@ -122,7 +122,7 @@ public class FcmClient {
 
             BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
 
-            log.info("Silent badge update sent: total={}, success={}, failure={}, badge={}",
+            log.debug("Silent badge update sent: total={}, success={}, failure={}, badge={}",
                 response.getResponses().size(), response.getSuccessCount(),
                 response.getFailureCount(), badge);
 

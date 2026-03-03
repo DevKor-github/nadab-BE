@@ -49,7 +49,6 @@ public class NotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleNotificationCreated(NotificationCreatedEvent event) {
         Long notificationId = event.getNotificationId();
-        log.debug("Handling notification created event: id={}", notificationId);
 
         try {
             // T2: PENDING → SENDING & fcmSent = true (낙관적 설정)

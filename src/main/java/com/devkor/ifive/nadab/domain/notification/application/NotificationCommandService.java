@@ -90,7 +90,7 @@ public class NotificationCommandService {
             notification.markAsNotificationDisabled();
             notificationRepository.save(notification);
 
-            log.info("Notification saved to inbox only (user disabled): userId={}, group={}, id={}, status=NOTIFICATION_DISABLED",
+            log.debug("Notification saved to inbox only (user disabled): userId={}, group={}, id={}, status=NOTIFICATION_DISABLED",
                 userId, group, notification.getId());
             return;  // 이벤트 발행 안 함
         }
@@ -105,7 +105,7 @@ public class NotificationCommandService {
             notification.markAsNotificationDisabled();
             notificationRepository.save(notification);
 
-            log.info("Notification saved to inbox only (no device): userId={}, id={}, status=NOTIFICATION_DISABLED",
+            log.debug("Notification saved to inbox only (no device): userId={}, id={}, status=NOTIFICATION_DISABLED",
                 userId, notification.getId());
             return;  // 이벤트 발행 안 함
         }
@@ -116,7 +116,7 @@ public class NotificationCommandService {
         );
         notificationRepository.save(notification);
 
-        log.info("Notification created (PENDING): id={}, type={}, userId={}",
+        log.debug("Notification created (PENDING): id={}, type={}, userId={}",
             notification.getId(), type, userId);
 
         // 6. 이벤트 발행 (트랜잭션 커밋 후 EventListener가 즉시 발송)

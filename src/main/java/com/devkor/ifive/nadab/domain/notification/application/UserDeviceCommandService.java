@@ -48,7 +48,7 @@ public class UserDeviceCommandService {
                 || !existing.getDeviceId().equals(deviceId)
                 || !existing.getPlatform().equals(platform)) {
                 userDeviceRepository.delete(existing);
-                log.info("Deleted existing token: was for userId={}, now for userId={}",
+                log.debug("Deleted existing token: was for userId={}, now for userId={}",
                     existing.getUser().getId(), userId);
             }
         }
@@ -61,14 +61,14 @@ public class UserDeviceCommandService {
             // 기존 디바이스 토큰 업데이트
             UserDevice device = existingDevice.get();
             device.updateToken(fcmToken);
-            log.info("Device token updated: userId={}, platform={}", userId, platform);
+            log.debug("Device token updated: userId={}, platform={}", userId, platform);
             return false; // 기존 디바이스 업데이트
         } else {
             // 새 디바이스 등록
             try {
                 UserDevice newDevice = UserDevice.create(user, fcmToken, deviceId, platform);
                 userDeviceRepository.save(newDevice);
-                log.info("Device registered: userId={}, platform={}", userId, platform);
+                log.debug("Device registered: userId={}, platform={}", userId, platform);
                 return true; // 새 디바이스 등록
             } catch (DataIntegrityViolationException e) {
                 // 동시성으로 인해 이미 생성된 경우 (Race Condition)
@@ -114,6 +114,6 @@ public class UserDeviceCommandService {
             .orElseThrow(() -> new NotFoundException(ErrorCode.DEVICE_NOT_FOUND));
 
         userDeviceRepository.delete(device);
-        log.info("Device deleted: userId={}, deviceId={}, platform={}", userId, deviceId, platform);
+        log.debug("Device deleted: userId={}, deviceId={}, platform={}", userId, deviceId, platform);
     }
 }
