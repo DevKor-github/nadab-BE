@@ -76,7 +76,7 @@ public class NotificationRetryScheduler {
             return;
         }
 
-        log.info("Retrying {} PENDING notifications (EventListener Fallback)", pendingList.size());
+        log.debug("Retrying {} PENDING notifications (EventListener Fallback)", pendingList.size());
 
         // 배치 처리
         processBatch(pendingList, NotificationStatus.PENDING);
@@ -102,7 +102,7 @@ public class NotificationRetryScheduler {
         transactionHelper.moveFailedToDeadLetter();
 
         if (totalRetried > 0) {
-            log.info("Retried {} FAILED notifications with Exponential Backoff", totalRetried);
+            log.debug("Retried {} FAILED notifications with Exponential Backoff", totalRetried);
         }
     }
 
@@ -127,7 +127,7 @@ public class NotificationRetryScheduler {
             return 0;
         }
 
-        log.info("Retrying {} FAILED notifications: retryCount={}, delay={}s",
+        log.debug("Retrying {} FAILED notifications: retryCount={}, delay={}s",
             failedList.size(), retryCount, delaySeconds);
 
         // FAILED → 바로 재발송
@@ -150,7 +150,7 @@ public class NotificationRetryScheduler {
             return;
         }
 
-        log.info("Acquired {} notifications for batch processing", acquiredList.size());
+        log.debug("Acquired {} notifications for batch processing", acquiredList.size());
 
         try {
             // FCM 발송 (트랜잭션 밖)
@@ -221,7 +221,7 @@ public class NotificationRetryScheduler {
                     int actualRetryCount = (fromStatus == NotificationStatus.FAILED)
                         ? notification.getRetryCount() + 1
                         : notification.getRetryCount();
-                    log.info("✅ Notification sent successfully: id={}, retryCount={}",
+                    log.debug("✅ Notification sent successfully: id={}, retryCount={}",
                         notificationId, actualRetryCount);
                 }
             } else {

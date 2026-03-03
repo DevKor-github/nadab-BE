@@ -34,7 +34,7 @@ public class WeeklyReportAvailableScheduler {
      */
     @Scheduled(cron = "0 0 8 * * MON", zone = "Asia/Seoul")
     public void notifyWeeklyReportAvailable() {
-        log.info("Starting weekly report available notification scheduler");
+        log.debug("Starting weekly report available notification scheduler");
 
         try {
             // 직전주 범위 계산

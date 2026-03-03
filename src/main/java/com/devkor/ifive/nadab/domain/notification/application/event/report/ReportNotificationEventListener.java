@@ -53,9 +53,6 @@ public class ReportNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleWeeklyReportCompleted(WeeklyReportCompletedEvent event) {
-        log.debug("Handling weekly report completed event: reportId={}, userId={}",
-            event.getReportId(), event.getUserId());
-
         try {
             // 메시지 생성
             NotificationContent content = messageFactory.createMessage(
@@ -75,7 +72,7 @@ public class ReportNotificationEventListener {
                 idempotencyKey
             );
 
-            log.info("Weekly report completed notification created: reportId={}, userId={}",
+            log.debug("Weekly report completed notification created: reportId={}, userId={}",
                 event.getReportId(), event.getUserId());
 
         } catch (Exception e) {
@@ -90,9 +87,6 @@ public class ReportNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleMonthlyReportCompleted(MonthlyReportCompletedEvent event) {
-        log.debug("Handling monthly report completed event: reportId={}, userId={}",
-            event.getReportId(), event.getUserId());
-
         try {
             // 메시지 생성
             NotificationContent content = messageFactory.createMessage(
@@ -112,7 +106,7 @@ public class ReportNotificationEventListener {
                 idempotencyKey
             );
 
-            log.info("Monthly report completed notification created: reportId={}, userId={}",
+            log.debug("Monthly report completed notification created: reportId={}, userId={}",
                 event.getReportId(), event.getUserId());
 
         } catch (Exception e) {
@@ -127,9 +121,6 @@ public class ReportNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleTypeReportCompleted(TypeReportCompletedEvent event) {
-        log.debug("Handling type report completed event: reportId={}, userId={}, categoryName={}",
-            event.getReportId(), event.getUserId(), event.getCategoryName());
-
         try {
             // 메시지 생성
             Map<String, String> params = Map.of("categoryName", event.getCategoryName());
@@ -150,7 +141,7 @@ public class ReportNotificationEventListener {
                 idempotencyKey
             );
 
-            log.info("Type report completed notification created: reportId={}, userId={}, categoryName={}",
+            log.debug("Type report completed notification created: reportId={}, userId={}, categoryName={}",
                 event.getReportId(), event.getUserId(), event.getCategoryName());
 
         } catch (Exception e) {
@@ -167,8 +158,6 @@ public class ReportNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleWeeklyReportAvailable(WeeklyReportAvailableEvent event) {
-        log.debug("Handling weekly report available event: userId={}", event.getUserId());
-
         try {
             // 메시지 생성
             NotificationContent content = messageFactory.createMessage(
@@ -189,7 +178,7 @@ public class ReportNotificationEventListener {
                 idempotencyKey
             );
 
-            log.info("Weekly report available notification created: userId={}", event.getUserId());
+            log.debug("Weekly report available notification created: userId={}", event.getUserId());
 
         } catch (Exception e) {
             log.error("Failed to handle weekly report available event: userId={}, error={}",
@@ -203,9 +192,6 @@ public class ReportNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleMonthlyReportAvailable(MonthlyReportAvailableEvent event) {
-        log.debug("Handling monthly report available event: userId={}, nickname={}",
-            event.getUserId(), event.getNickname());
-
         try {
             // 메시지 생성
             Map<String, String> params = Map.of("nickname", event.getNickname());
@@ -227,7 +213,7 @@ public class ReportNotificationEventListener {
                 idempotencyKey
             );
 
-            log.info("Monthly report available notification created: userId={}", event.getUserId());
+            log.debug("Monthly report available notification created: userId={}", event.getUserId());
 
         } catch (Exception e) {
             log.error("Failed to handle monthly report available event: userId={}, error={}",
@@ -242,9 +228,6 @@ public class ReportNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleDailyReportCompleted(DailyReportCompletedEvent event) {
-        log.debug("Handling daily report completed event: userId={}, interestCode={}",
-                event.getUserId(), event.getInterestCode());
-
         try {
             // 해당 InterestCode의 총 답변 개수 조회
             long answerCount = answerEntryRepository.countByUserIdAndInterestCode(
@@ -319,7 +302,7 @@ public class ReportNotificationEventListener {
             idempotencyKey
         );
 
-        log.info("Type report available notification created: userId={}, interestCode={}, milestone={}",
+        log.debug("Type report available notification created: userId={}, interestCode={}, milestone={}",
             userId, interestCode, milestone);
     }
 

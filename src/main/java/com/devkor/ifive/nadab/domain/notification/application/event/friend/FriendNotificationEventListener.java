@@ -38,9 +38,6 @@ public class FriendNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleFriendRequestReceived(FriendRequestReceivedEvent event) {
-        log.debug("Handling friend request received event: friendshipId={}, receiverId={}, requesterId={}",
-            event.getFriendshipId(), event.getReceiverId(), event.getRequesterId());
-
         try {
             // 요청자 정보 조회
             User requester = userRepository.findById(event.getRequesterId())
@@ -71,7 +68,7 @@ public class FriendNotificationEventListener {
                 idempotencyKey
             );
 
-            log.info("Friend request notification created: friendshipId={}, receiverId={}",
+            log.debug("Friend request notification created: friendshipId={}, receiverId={}",
                 event.getFriendshipId(), event.getReceiverId());
 
         } catch (Exception e) {
@@ -87,9 +84,6 @@ public class FriendNotificationEventListener {
     @Async("notificationTaskExecutor")
     @EventListener
     public void handleFriendRequestAccepted(FriendRequestAcceptedEvent event) {
-        log.debug("Handling friend request accepted event: friendshipId={}, requesterId={}, accepterId={}",
-            event.getFriendshipId(), event.getRequesterId(), event.getAccepterId());
-
         try {
             // 수락자 정보 조회
             User accepter = userRepository.findById(event.getAccepterId())
@@ -120,7 +114,7 @@ public class FriendNotificationEventListener {
                 idempotencyKey
             );
 
-            log.info("Friend accepted notification created: friendshipId={}, requesterId={}",
+            log.debug("Friend accepted notification created: friendshipId={}, requesterId={}",
                 event.getFriendshipId(), event.getRequesterId());
 
         } catch (Exception e) {

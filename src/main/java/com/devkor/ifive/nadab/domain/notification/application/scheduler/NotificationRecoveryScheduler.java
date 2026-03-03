@@ -52,7 +52,7 @@ public class NotificationRecoveryScheduler {
                 return;
             }
 
-            log.warn("Recovering {} stuck SENDING notifications (timeout: {} minutes)",
+            log.debug("Recovering {} stuck SENDING notifications (timeout: {} minutes)",
                 stuckList.size(), TIMEOUT_MINUTES);
 
             int recoveredToSent = 0;
@@ -70,7 +70,7 @@ public class NotificationRecoveryScheduler {
                 }
             }
 
-            log.info("Recovery completed: SENT={}, PENDING={}, DEAD_LETTER={}, alreadyProcessed={}",
+            log.debug("Recovery completed: SENT={}, PENDING={}, DEAD_LETTER={}, alreadyProcessed={}",
                 recoveredToSent, recoveredToPending, recoveredToDeadLetter, alreadyProcessed);
 
         } catch (Exception e) {

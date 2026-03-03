@@ -62,11 +62,11 @@ public class DailyWriteReminderScheduler {
             List<User> targetUsers = notificationSettingRepository.findUsersForDailyWriteReminder(currentTime);
 
             if (targetUsers.isEmpty()) {
-                log.trace("No users to notify at {}", currentTime);
+                log.debug("No users to notify at {}", currentTime);
                 return;
             }
 
-            log.info("Found {} users for daily write reminder at {}", targetUsers.size(), currentTime);
+            log.debug("Found {} users for daily write reminder at {}", targetUsers.size(), currentTime);
 
             // 2. 오늘 이미 답변한 사용자 제외
             List<Long> targetUserIds = targetUsers.stream()
@@ -83,11 +83,11 @@ public class DailyWriteReminderScheduler {
                 .toList();
 
             if (usersToNotify.isEmpty()) {
-                log.info("All users already answered today, skip notification");
+                log.debug("All users already answered today, skip notification");
                 return;
             }
 
-            log.info("Users to notify after filtering: {} (answered: {})",
+            log.debug("Users to notify after filtering: {} (answered: {})",
                 usersToNotify.size(), answeredUserIds.size());
 
             // 3. FCM 토큰 조회

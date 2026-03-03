@@ -34,7 +34,7 @@ public class MonthlyReportAvailableScheduler {
      */
     @Scheduled(cron = "0 0 8 1 * *", zone = "Asia/Seoul")
     public void notifyMonthlyReportAvailable() {
-        log.info("Starting monthly report available notification scheduler");
+        log.debug("Starting monthly report available notification scheduler");
 
         try {
             // 지난달 범위 계산

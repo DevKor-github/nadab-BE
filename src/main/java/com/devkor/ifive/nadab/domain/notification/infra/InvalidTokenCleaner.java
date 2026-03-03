@@ -36,9 +36,8 @@ public class InvalidTokenCleaner {
         }
 
         try {
-            log.info("Cleaning up invalid tokens: count={}", invalidTokens.size());
             int deletedCount = userDeviceRepository.deleteByFcmTokenIn(invalidTokens);
-            log.info("Invalid tokens cleanup completed: deleted={}", deletedCount);
+            log.debug("Invalid tokens cleanup completed: deleted={}", deletedCount);
             return deletedCount;
         } catch (Exception e) {
             log.warn("Invalid FCM tokens cleanup failed ({} tokens): {}",
