@@ -55,10 +55,17 @@ public class NotificationRetryScheduler {
     public void retryNotifications() {
         try {
             // 1. PENDING 알림 재시도 (EventListener Fallback)
-            retryPendingNotifications();
+            int pendingRetried = retryPendingNotifications();
 
             // 2. FAILED 알림 재시도 (Exponential Backoff)
-            retryFailedNotifications();
+            int failedRetried = retryFailedNotifications();
+
+            // 3. 재시도가 있을 때만 로그
+            int totalRetried = pendingRetried + failedRetried;
+            if (totalRetried > 0) {
+                log.info("Retry scheduler completed: pending={}, failed={}, total={}",
+                    pendingRetried, failedRetried, totalRetried);
+            }
 
         } catch (Exception e) {
             log.error("Failed to retry notifications", e);
@@ -70,18 +77,20 @@ public class NotificationRetryScheduler {
      * - EventListener 실패 시 PENDING 상태로 남은 알림 처리
      * - 100개씩 배치 처리
      */
-    private void retryPendingNotifications() {
+    private int retryPendingNotifications() {
         List<Notification> pendingList = notificationRepository
             .findByStatusOrderByIdAsc(NotificationStatus.PENDING, BATCH_SIZE);
 
         if (pendingList.isEmpty()) {
-            return;
+            return 0;
         }
 
         log.debug("Retrying {} PENDING notifications (EventListener Fallback)", pendingList.size());
 
         // 배치 처리
         processBatch(pendingList, NotificationStatus.PENDING);
+
+        return pendingList.size();
     }
 
     /**
@@ -90,7 +99,7 @@ public class NotificationRetryScheduler {
      * - FAILED → 바로 재발송 (PENDING 거치지 않음)
      * - retry_count >= MAX_RETRY_COUNT → DEAD_LETTER
      */
-    private void retryFailedNotifications() {
+    private int retryFailedNotifications() {
         OffsetDateTime now = OffsetDateTime.now();
         int totalRetried = 0;
 
@@ -106,6 +115,8 @@ public class NotificationRetryScheduler {
         if (totalRetried > 0) {
             log.debug("Retried {} FAILED notifications with Exponential Backoff", totalRetried);
         }
+
+        return totalRetried;
     }
 
     /**
