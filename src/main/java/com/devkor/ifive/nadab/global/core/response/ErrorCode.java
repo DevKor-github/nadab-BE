@@ -330,6 +330,14 @@ public enum ErrorCode {
 
     TYPE_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "유형 리포트 작성 자격이 없습니다. (해당 유형 30회 이상 완료 필요)"),
 
+    TYPE_REPORT_REWRITE_TYPE_ANALYSIS_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "typeAnalysis 글자 수가 규칙을 벗어났어요."),
+    TYPE_REPORT_REWRITE_TYPE_ANALYSIS_PARAGRAPH_INVALID(HttpStatus.BAD_REQUEST, "typeAnalysis 문단 규칙(2문단)이 깨졌어요."),
+    TYPE_REPORT_REWRITE_PERSONA_1_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "personas[0].content 글자 수가 규칙을 벗어났어요."),
+    TYPE_REPORT_REWRITE_PERSONA_2_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "personas[1].content 글자 수가 규칙을 벗어났어요."),
+    TYPE_REPORT_REWRITE_LINEBREAK_INVALID(HttpStatus.BAD_REQUEST, "리라이트 결과에 줄바꿈이 포함되어 있어요."),
+    TYPE_REPORT_REWRITE_BANNED_WORD_USED(HttpStatus.BAD_REQUEST, "리라이트 결과에 금지 단어가 포함되어 있어요."),
+    TYPE_REPORT_REWRITE_INPUT_SCHEMA_INVALID(HttpStatus.BAD_REQUEST, "리라이트 대상 필드가 없거나 타입이 올바르지 않아요."),
+
     // 404 Not Found
     TYPE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "유형 리포트를 찾을 수 없습니다"),
     TYPE_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 유형 리포트가 아직 생성 완료되지 않았습니다"),
@@ -337,6 +345,12 @@ public enum ErrorCode {
 
     // 409 Conflict
     TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다"),
+
+    // 503 Service Unavailable
+    TYPE_REPORT_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "타입 리포트 리라이트에서 AI 응답이 비어있어요."),
+    TYPE_REPORT_REWRITE_JSON_PARSE_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "타입 리포트 리라이트 응답 JSON 파싱에 실패했어요."),
+    TYPE_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "타입 리포트 리라이트 응답 JSON 매핑에 실패했어요."),
+    TYPE_REPORT_REWRITE_OUTPUT_EMPTY(HttpStatus.SERVICE_UNAVAILABLE, "리라이트 결과가 비어있어요."),
 
     // ===================== NOTIFICATION (알림) =====================
     // 403 Forbidden
