@@ -347,9 +347,9 @@ public enum ErrorCode {
     TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다"),
 
     // 503 Service Unavailable
-    TYPE_REPORT_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "타입 리포트 리라이트에서 AI 응답이 비어있어요."),
-    TYPE_REPORT_REWRITE_JSON_PARSE_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "타입 리포트 리라이트 응답 JSON 파싱에 실패했어요."),
-    TYPE_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "타입 리포트 리라이트 응답 JSON 매핑에 실패했어요."),
+    TYPE_REPORT_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "유형 리포트 리라이트에서 AI 응답이 비어있어요."),
+    TYPE_REPORT_REWRITE_JSON_PARSE_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "유형 리포트 리라이트 응답 JSON 파싱에 실패했어요."),
+    TYPE_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "유형 리포트 리라이트 응답 JSON 매핑에 실패했어요."),
     TYPE_REPORT_REWRITE_OUTPUT_EMPTY(HttpStatus.SERVICE_UNAVAILABLE, "리라이트 결과가 비어있어요."),
 
     // ===================== NOTIFICATION (알림) =====================
