@@ -57,7 +57,7 @@ public class TypeReportContentGenerationService {
             return dto;
         } catch (AiResponseParseException e) {
             // 리페어 1회
-            JsonNode repaired = llmClient.repairRaw(expectedAnalysisTypeCode, raw.toString());
+            JsonNode repaired = llmClient.rewriteOnly(raw);
             TypeReportContentDto dto2 = toDto(repaired);
             validate(dto2, expectedAnalysisTypeCode);
             return dto2;
