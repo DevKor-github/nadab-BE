@@ -16,8 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -30,16 +28,16 @@ public class TypeReportLlmClient {
     private final LlmRouter llmRouter;
 
     private final LlmProvider provider = LlmProvider.GEMINI;
-    private static final LlmProvider REWRITE_PROVIDER = LlmProvider.OPENAI;
+    private static final LlmProvider REWRITE_PROVIDER = LlmProvider.GEMINI;
 
-    private static final int MIN_TYPE_ANALYSIS = 260;
-    private static final int MAX_TYPE_ANALYSIS = 340;
+    private static final int MIN_TYPE_ANALYSIS = 220;
+    private static final int MAX_TYPE_ANALYSIS = 300;
 
-    private static final int MIN_PERSONA_CONTENT = 160;
-    private static final int MAX_PERSONA_CONTENT = 240;
+    private static final int MIN_PERSONA_CONTENT = 140;
+    private static final int MAX_PERSONA_CONTENT = 220;
 
-    private static final int REWRITE_MIN_MARGIN = 20;
-    private static final int REWRITE_MAX_MARGIN = 20;
+    private static final int REWRITE_MIN_MARGIN = 10;
+    private static final int REWRITE_MAX_MARGIN = 10;
 
     private static final String[] BANNED_WORDS = {
             "패턴", "분석", "데이터", "기록", "습관", "장점", "단점", "모습", "결국", "보여집니다", "확인됩니다"
@@ -201,8 +199,9 @@ public class TypeReportLlmClient {
                 in
         );
 
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(OpenAiApi.ChatModel.GPT_4_1_MINI)
+        GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+                .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+                .responseMimeType("application/json")
                 .temperature(0.0)
                 .build();
 
@@ -257,8 +256,9 @@ public class TypeReportLlmClient {
                 in
         );
 
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(OpenAiApi.ChatModel.GPT_4_1_MINI)
+        GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+                .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+                .responseMimeType("application/json")
                 .temperature(0.0)
                 .build();
 

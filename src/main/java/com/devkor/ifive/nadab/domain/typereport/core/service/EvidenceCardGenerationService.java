@@ -17,8 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EvidenceCardGenerationService {
 
-    private static final int MIN_LEN = 50;
-    private static final int MAX_LEN = 400;
+    private static final int MAX_LEN = 500;
 
     private final TypeEvidenceCardLlmClient llmClient;
 
@@ -68,7 +67,7 @@ public class EvidenceCardGenerationService {
 
             // 길이 체크
             int len = card.length(); // 한글 기준 대체로 char length == 글자수(공백 포함)
-            if (len < MIN_LEN || len > MAX_LEN) {
+            if (len > MAX_LEN) {
                 throw new AiResponseParseException(ErrorCode.EVIDENCE_CARD_LENGTH_INVALID);
             }
 
