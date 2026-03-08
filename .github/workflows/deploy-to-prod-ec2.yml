@@ -111,14 +111,10 @@ jobs:
             FRONTEND_SERVER_URL="${{ secrets.FRONTEND_SERVER_URL }}" \
             NAVER_CLIENT_ID="${{ secrets.NAVER_CLIENT_ID }}" \
             NAVER_CLIENT_SECRET="${{ secrets.NAVER_CLIENT_SECRET }}" \
-            NAVER_REDIRECT_URI="${{ secrets.NAVER_REDIRECT_URI }}" \
             GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
             GOOGLE_ANDROID_CLIENT_ID="${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}" \
-            GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-            GOOGLE_REDIRECT_URI="${{ secrets.GOOGLE_REDIRECT_URI }}" \
             KAKAO_CLIENT_ID="${{ secrets.KAKAO_CLIENT_ID }}" \
             KAKAO_CLIENT_SECRET="${{ secrets.KAKAO_CLIENT_SECRET }}" \
-            KAKAO_REDIRECT_URI="${{ secrets.KAKAO_REDIRECT_URI }}" \
             KAKAO_APP_ID="${{ secrets.KAKAO_APP_ID }}" \
             IAM_ACCESS_KEY="${{ secrets.IAM_ACCESS_KEY }}" \
             IAM_SECRET_KEY="${{ secrets.IAM_SECRET_KEY }}" \
