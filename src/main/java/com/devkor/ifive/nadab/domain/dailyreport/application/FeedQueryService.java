@@ -3,7 +3,6 @@ package com.devkor.ifive.nadab.domain.dailyreport.application;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.FeedResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.FeedListResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.ShareStatusResponse;
-import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto;
 import com.devkor.ifive.nadab.domain.friend.core.entity.Friendship;
@@ -11,8 +10,6 @@ import com.devkor.ifive.nadab.domain.friend.core.entity.FriendshipStatus;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
-import com.devkor.ifive.nadab.global.core.response.ErrorCode;
-import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -70,12 +67,10 @@ public class FeedQueryService {
     }
 
     public ShareStatusResponse getShareStatus(Long userId) {
-        // 1. 당일 DailyReport 조회
         LocalDate today = TodayDateTimeProvider.getTodayDate();
-        DailyReport report = dailyReportRepository.findByUserIdAndDate(userId, today)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
-
-        return new ShareStatusResponse(report.getIsShared());
+        return dailyReportRepository.findByUserIdAndDate(userId, today)
+                .map(report -> new ShareStatusResponse(report.getIsShared()))
+                .orElse(new ShareStatusResponse(false));
     }
 
     private String buildProfileUrl(String profileImageKey, DefaultProfileType defaultProfileType) {
