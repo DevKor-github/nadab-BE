@@ -113,11 +113,6 @@ public class FeedController {
                             responseCode = "401",
                             description = "인증 실패",
                             content = @Content
-                    ),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "ErrorCode: DAILY_REPORT_NOT_FOUND - 당일 리포트를 찾을 수 없음",
-                            content = @Content
                     )
             }
     )
