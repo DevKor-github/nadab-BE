@@ -27,12 +27,20 @@ public class AnswerEntryService {
                 isDayPassed ? TodayDateTimeProvider.getTodayDate().minusDays(1) : TodayDateTimeProvider.getTodayDate();
 
         return answerEntryRepository.findByUserAndDate(user, targetDate)
+                .map(existing -> {
+                    existing.updateContent(answerText);
+                    return existing;
+                })
                 .orElseGet(() -> {
                     try {
                         return answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, targetDate));
                     } catch (DataIntegrityViolationException e) {
                         // 동시 요청에서 이미 누가 만들었을 수 있음 -> 재조회로 멱등 처리
                         return answerEntryRepository.findByUserAndDate(user, targetDate)
+                                .map(found -> {
+                                    found.updateContent(answerText);
+                                    return found;
+                                })
                                 .orElseThrow(() -> e);
                     }
                 });
