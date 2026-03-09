@@ -1,7 +1,7 @@
-# ⏳ Morae BE
+# ⏳ Nadab BE
 
 ###  🔗️ Note
-> 이 문서는 Saerok 프로젝트의 README를 참고하여 구성하였으며, Morae의 컨벤션에 맞게 수정되었습니다.
+> 이 문서는 [Saerok 프로젝트](https://github.com/DevKor-github/saerok-BE)의 README를 참고하여 구성하였으며, Nadab의 컨벤션에 맞게 수정되었습니다.
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## 🧾 Commit Convention
 
-Morae는 Conventional Commits 규칙을 기반으로 commitlint를 사용해 커밋 메시지 품질을 관리합니다.
+Nadab은 Conventional Commits 규칙을 기반으로 commitlint를 사용해 커밋 메시지 품질을 관리합니다.
 
 모든 커밋은 아래와 같이 지정된 type / scope / subject 형식을 따라야 하며, 규칙을 위반하면 커밋이 거부됩니다.
 ```

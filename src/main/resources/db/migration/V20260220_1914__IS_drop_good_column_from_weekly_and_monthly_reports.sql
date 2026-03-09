@@ -1,0 +1,5 @@
+ALTER TABLE weekly_reports
+DROP COLUMN IF EXISTS good;
+
+ALTER TABLE monthly_reports
+DROP COLUMN IF EXISTS good;

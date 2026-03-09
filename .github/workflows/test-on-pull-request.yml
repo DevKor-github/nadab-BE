@@ -1,0 +1,29 @@
+name: Run Tests on Pull Request to Develop
+
+on:
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  test:
+    name: Test on PR to Develop
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout source code
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: 🐳 Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔧 Grant execute permission for Gradle
+        run: chmod +x gradlew
+
+      - name: 🧪 Run tests
+        run: ./gradlew test
