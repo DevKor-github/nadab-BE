@@ -55,6 +55,11 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
         and f.status = 'PENDING'
         and lower(r.nickname) like lower(:keyword) escape '\\'
         and f.user1.deletedAt is null and f.user2.deletedAt is null
+        and not exists (
+            select 1 from UserBlock ub
+            where (ub.blocker.id = :userId and ub.blocked.id = r.id)
+               or (ub.blocker.id = r.id and ub.blocked.id = :userId)
+        )
         order by f.createdAt desc
         """)
     List<Friendship> findReceivedPendingRequestsByKeyword(
