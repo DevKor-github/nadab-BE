@@ -368,7 +368,15 @@ public enum ErrorCode {
     NOTIFICATION_MESSAGES_ENV_VAR_NOT_SET(HttpStatus.INTERNAL_SERVER_ERROR, "환경 변수 NOTIFICATION_MESSAGES가 설정되지 않았습니다"),
 
     // 502 Bad Gateway
-    FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다");
+    FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다"),
+
+    // ==================== MODERATION (신고) ====================
+    // 400 Bad Request
+    CONTENT_REPORT_INVALID(HttpStatus.BAD_REQUEST, "잘못된 신고 요청입니다"),
+    CONTENT_REPORT_SELF_REPORT_FORBIDDEN(HttpStatus.BAD_REQUEST, "자신의 게시글은 신고할 수 없습니다"),
+
+    // 409 Conflict
+    CONTENT_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 게시글입니다");
 
 
     private final HttpStatus httpStatus;
