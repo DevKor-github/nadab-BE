@@ -1,12 +1,17 @@
 package com.devkor.ifive.nadab.domain.moderation.api;
 
+import com.devkor.ifive.nadab.domain.moderation.api.dto.request.BlockUserRequest;
 import com.devkor.ifive.nadab.domain.moderation.api.dto.request.ReportContentRequest;
+import com.devkor.ifive.nadab.domain.moderation.api.dto.response.BlockedUserListResponse;
 import com.devkor.ifive.nadab.domain.moderation.application.ContentReportCommandService;
+import com.devkor.ifive.nadab.domain.moderation.application.UserBlockCommandService;
+import com.devkor.ifive.nadab.domain.moderation.application.UserBlockQueryService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +29,8 @@ import org.springframework.web.bind.annotation.*;
 public class ModerationController {
 
     private final ContentReportCommandService contentReportCommandService;
+    private final UserBlockCommandService userBlockCommandService;
+    private final UserBlockQueryService userBlockQueryService;
 
     @PostMapping("/reports")
     @PreAuthorize("isAuthenticated()")
@@ -85,6 +92,93 @@ public class ModerationController {
                 request.reason(),
                 request.customReason()
         );
+        return ApiResponseEntity.noContent();
+    }
+
+    @PostMapping("/blocks")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "사용자 차단",
+            description = """
+                    특정 사용자를 차단합니다.
+
+                    - 차단 즉시 기존 친구 관계(수락/대기 포함)를 제거합니다.
+                    - 상호 검색 결과 및 상호 피드 노출이 즉시 중단됩니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "차단 성공",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    - ErrorCode: MODERATION_CANNOT_BLOCK_SELF - 본인 차단 불가
+                                    - ErrorCode: MODERATION_ALREADY_BLOCKED - 이미 차단한 사용자
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "ErrorCode: USER_NOT_FOUND",
+                            content = @Content
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> blockUser(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody BlockUserRequest request
+    ) {
+        userBlockCommandService.blockUser(principal.getId(), request.blockedNickname());
+        return ApiResponseEntity.noContent();
+    }
+
+    @GetMapping("/blocks")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "차단 사용자 목록 조회",
+            description = "내가 차단한 사용자 목록을 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = BlockedUserListResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<BlockedUserListResponse>> getBlockedUsers(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        BlockedUserListResponse response = userBlockQueryService.getBlockedUsers(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/blocks/{userBlockId}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "사용자 차단 해제",
+            description = "차단 관계를 해제합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "차단 해제 성공"),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "ErrorCode: MODERATION_BLOCK_NOT_FOUND - 차단 관계를 찾을 수 없음",
+                            content = @Content
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> unblockUser(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long userBlockId
+    ) {
+        userBlockCommandService.unblockUser(principal.getId(), userBlockId);
         return ApiResponseEntity.noContent();
     }
 }

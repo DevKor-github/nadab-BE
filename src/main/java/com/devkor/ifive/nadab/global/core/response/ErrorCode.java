@@ -367,6 +367,9 @@ public enum ErrorCode {
     NOTIFICATION_MESSAGE_FILE_READ_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "알림 메시지 템플릿 파일 읽기에 실패했습니다"),
     NOTIFICATION_MESSAGES_ENV_VAR_NOT_SET(HttpStatus.INTERNAL_SERVER_ERROR, "환경 변수 NOTIFICATION_MESSAGES가 설정되지 않았습니다"),
 
+    // 502 Bad Gateway
+    FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다"),
+
     // ==================== MODERATION (차단) ====================
     // 400 Bad Request
     MODERATION_CANNOT_BLOCK_SELF(HttpStatus.BAD_REQUEST, "본인을 차단할 수 없습니다"),
@@ -374,9 +377,6 @@ public enum ErrorCode {
 
     // 404 Not Found
     MODERATION_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "차단 관계를 찾을 수 없습니다"),
-
-    // 502 Bad Gateway
-    FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다"),
 
     // ==================== MODERATION (신고) ====================
     // 400 Bad Request
