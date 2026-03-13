@@ -370,6 +370,15 @@ public enum ErrorCode {
     // 502 Bad Gateway
     FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다"),
 
+    // ==================== MODERATION (차단) ====================
+    // 400 Bad Request
+    MODERATION_CANNOT_BLOCK_SELF(HttpStatus.BAD_REQUEST, "본인을 차단할 수 없습니다"),
+    MODERATION_ALREADY_BLOCKED(HttpStatus.BAD_REQUEST, "이미 차단한 사용자입니다"),
+    MODERATION_BLOCK_RELATIONSHIP_EXISTS(HttpStatus.BAD_REQUEST, "차단 관계에서는 친구 요청을 처리할 수 없습니다"),
+
+    // 404 Not Found
+    MODERATION_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "차단 관계를 찾을 수 없습니다"),
+
     // ==================== MODERATION (신고) ====================
     // 400 Bad Request
     CONTENT_REPORT_INVALID(HttpStatus.BAD_REQUEST, "잘못된 신고 요청입니다"),

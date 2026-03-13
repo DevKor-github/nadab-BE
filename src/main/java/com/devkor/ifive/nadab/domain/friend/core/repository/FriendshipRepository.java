@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
 
@@ -56,11 +55,24 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
         and f.status = 'PENDING'
         and lower(r.nickname) like lower(:keyword) escape '\\'
         and f.user1.deletedAt is null and f.user2.deletedAt is null
+        and not exists (
+            select 1 from UserBlock ub
+            where (ub.blocker.id = :userId and ub.blocked.id = r.id)
+               or (ub.blocker.id = r.id and ub.blocked.id = :userId)
+        )
         order by f.createdAt desc
         """)
     List<Friendship> findReceivedPendingRequestsByKeyword(
             @Param("userId") Long userId,
             @Param("keyword") String keyword
     );
+
+    @Modifying
+    @Query("""
+        delete from Friendship f
+        where f.user1.id = :userId1
+          and f.user2.id = :userId2
+    """)
+    int deleteByUserIds(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
 }

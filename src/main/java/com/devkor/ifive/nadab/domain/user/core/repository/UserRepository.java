@@ -43,6 +43,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
           and u.deletedAt is null
           and (:cursor is null or u.nickname > :cursor)
           and (:excludeUserIds is null or u.id not in :excludeUserIds)
+          and not exists (
+              select 1 from UserBlock ub
+              where ub.blocker.id = :userId
+                and ub.blocked.id = u.id
+          )
+          and not exists (
+              select 1 from UserBlock ub
+              where ub.blocker.id = u.id
+                and ub.blocked.id = :userId
+          )
         order by
           case
             when lower(u.nickname) = lower(:rawKeyword) then 1

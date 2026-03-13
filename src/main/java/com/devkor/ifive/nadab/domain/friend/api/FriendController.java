@@ -183,6 +183,7 @@ public class FriendController {
                             description = """
                                     - ErrorCode: FRIENDSHIP_ALREADY_PROCESSED - 이미 처리된 요청
                                     - ErrorCode: FRIEND_LIMIT_EXCEEDED - 친구 수 20명 초과
+                                    - ErrorCode: MODERATION_BLOCK_RELATIONSHIP_EXISTS - 차단 관계 존재
                                     """,
                             content = @Content
                     ),
@@ -217,7 +218,10 @@ public class FriendController {
                     @ApiResponse(responseCode = "204", description = "거절 성공"),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "ErrorCode: FRIENDSHIP_ALREADY_PROCESSED - 이미 처리된 요청",
+                            description = """
+                                    - ErrorCode: FRIENDSHIP_ALREADY_PROCESSED - 이미 처리된 요청
+                                    - ErrorCode: MODERATION_BLOCK_RELATIONSHIP_EXISTS - 차단 관계 존재
+                                    """,
                             content = @Content
                     ),
                     @ApiResponse(
