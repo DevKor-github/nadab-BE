@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.friend.application.event.FriendRequestRecei
 import com.devkor.ifive.nadab.domain.friend.core.entity.Friendship;
 import com.devkor.ifive.nadab.domain.friend.core.entity.FriendshipStatus;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
+import com.devkor.ifive.nadab.domain.moderation.core.repository.UserBlockRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -25,6 +26,7 @@ public class FriendshipCommandService {
 
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final UserBlockRepository userBlockRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public Long sendFriendRequest(Long requesterId, String receiverNickname) {
@@ -128,6 +130,11 @@ public class FriendshipCommandService {
             throw new BadRequestException(ErrorCode.FRIEND_LIMIT_EXCEEDED);
         }
 
+        // 차단 관계 확인
+        if (userBlockRepository.existsAnyBlockBetweenUsers(userId, requesterId)) {
+            throw new BadRequestException(ErrorCode.MODERATION_BLOCK_RELATIONSHIP_EXISTS);
+        }
+
         // 5. 상태 변경
         friendship.accept();
 
@@ -150,6 +157,12 @@ public class FriendshipCommandService {
         // 3. 상태 확인
         if (friendship.getStatus() != FriendshipStatus.PENDING) {
             throw new BadRequestException(ErrorCode.FRIENDSHIP_ALREADY_PROCESSED);
+        }
+
+        // 차단관계 확인
+        Long requesterId = friendship.getOtherUserId(userId);
+        if (userBlockRepository.existsAnyBlockBetweenUsers(userId, requesterId)) {
+            throw new BadRequestException(ErrorCode.MODERATION_BLOCK_RELATIONSHIP_EXISTS);
         }
 
         // 4. 삭제
