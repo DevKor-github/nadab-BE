@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.api;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.FeedListResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.ShareStartResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.ShareStatusResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.FeedQueryService;
 import com.devkor.ifive.nadab.domain.dailyreport.application.FeedService;
@@ -32,13 +33,22 @@ public class FeedController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "공유 시작 API",
-            description = "당일 DailyReport를 친구들에게 공유합니다.",
+            description = """
+                    당일 DailyReport를 친구들에게 공유합니다.
+
+                    응답 상태:
+                    - SHARED: 공유가 정상적으로 시작됨
+                    - SUSPENDED: 신고 10건 이상 & 서로 다른 신고자 2명 이상으로 인해 피드 공유 활동이 차단됨
+                    """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
-                            responseCode = "204",
-                            description = "공유 시작 성공",
-                            content = @Content
+                            responseCode = "200",
+                            description = "공유 요청 처리 완료 (SHARED 또는 SUSPENDED 반환)",
+                            content = @Content(
+                                    schema = @Schema(implementation = ShareStartResponse.class),
+                                    mediaType = "application/json"
+                            )
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -52,11 +62,11 @@ public class FeedController {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<Void>> startSharing(
+    public ResponseEntity<ApiResponseDto<ShareStartResponse>> startSharing(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        feedService.startSharing(principal.getId());
-        return ApiResponseEntity.noContent();
+        ShareStartResponse response = feedService.startSharing(principal.getId());
+        return ApiResponseEntity.ok(response);
     }
 
     @PostMapping("/unshare")

@@ -122,6 +122,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
 
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto(
+            dr.id,
             ae.user.nickname,
             ae.user.profileImageKey,
             ae.user.defaultProfileType,
