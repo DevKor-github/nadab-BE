@@ -8,6 +8,8 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto;
 import com.devkor.ifive.nadab.domain.friend.core.entity.Friendship;
 import com.devkor.ifive.nadab.domain.friend.core.entity.FriendshipStatus;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
+import com.devkor.ifive.nadab.domain.moderation.application.SharingSuspensionService;
+import com.devkor.ifive.nadab.domain.moderation.core.repository.ContentReportRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
@@ -16,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,8 @@ public class FeedQueryService {
     private final FriendshipRepository friendshipRepository;
     private final DailyReportRepository dailyReportRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final ContentReportRepository contentReportRepository;
+    private final SharingSuspensionService sharingSuspensionService;
 
     public FeedListResponse getFeeds(Long userId) {
         // 1. ACCEPTED 상태의 친구 관계 조회
@@ -42,17 +48,40 @@ public class FeedQueryService {
             return new FeedListResponse(List.of());
         }
 
-        // 4. 당일 공유된 피드 조회
-        LocalDate today = TodayDateTimeProvider.getTodayDate();
-        List<FeedDto> feedDtos = dailyReportRepository
-                .findSharedFeedsByFriendIds(today, friendIds);
+        // 4. 공유 활동 중지된 유저 제외
+        Set<Long> suspendedUserIds = new HashSet<>(
+                sharingSuspensionService.getSharingSuspendedUserIds(friendIds)
+        );
+        List<Long> activeFriendIds = friendIds.stream()
+                .filter(id -> !suspendedUserIds.contains(id))
+                .toList();
 
-        // 5. 응답 DTO 변환
+        // 5. 공유 가능한 친구가 없으면 빈 리스트 반환
+        if (activeFriendIds.isEmpty()) {
+            return new FeedListResponse(List.of());
+        }
+
+        // 6. 당일 공유된 피드 조회
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        List<FeedDto> feedDtos = dailyReportRepository.findSharedFeedsByFriendIds(today, activeFriendIds);
+
+        // 7. 내가 신고한 글 제외
+        List<Long> dailyReportIds = feedDtos.stream()
+                .map(FeedDto::dailyReportId)
+                .toList();
+
+        Set<Long> reportedIds = new HashSet<>(
+                contentReportRepository.findReportedDailyReportIdsByReporter(userId, dailyReportIds)
+        );
+
+        // 8. 필터링 및 응답 DTO 변환
         List<FeedResponse> feeds = feedDtos.stream()
+                .filter(dto -> !reportedIds.contains(dto.dailyReportId()))
                 .map(dto -> {
                     String profileUrl = buildProfileUrl(dto.profileImageKey(), dto.defaultProfileType());
 
                     return new FeedResponse(
+                            dto.dailyReportId(),
                             dto.nickname(),
                             profileUrl,
                             dto.interestCode() != null ? dto.interestCode().name() : null,

@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
  * 피드 조회용 DTO
  */
 public record FeedDto(
+        Long dailyReportId,
         String nickname,
         String profileImageKey,
         DefaultProfileType defaultProfileType,

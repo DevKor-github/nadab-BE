@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "피드 응답")
 public record FeedResponse(
 
+        @Schema(description = "DailyReport ID (신고 시 사용)", example = "123")
+        Long dailyReportId,
+
         @Schema(description = "친구 닉네임", example = "모래")
         String friendNickname,
 
