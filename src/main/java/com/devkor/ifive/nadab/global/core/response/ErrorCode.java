@@ -1,0 +1,397 @@
+package com.devkor.ifive.nadab.global.core.response;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+
+@Getter
+@RequiredArgsConstructor
+public enum ErrorCode {
+
+    // ==================== 공통 ====================
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다"),
+    VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다"),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
+    EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다"),
+    FILE_STORAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "스토리지에서 해당 파일을 찾을 수 없습니다"), // S3 등 스토리지에 실제 파일 객체가 없는 경우
+
+    // ==================== AUTH (인증) ====================
+    // 400 Bad Request
+    AUTH_EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다"),
+    AUTH_PASSWORD_REUSE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "이전 비밀번호와 동일한 비밀번호는 사용할 수 없습니다"),
+    AUTH_SOCIAL_ACCOUNT_PASSWORD_CHANGE_FORBIDDEN(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다"),
+    AUTH_WITHDRAWN_ACCOUNT_RESTORE_REQUIRED(HttpStatus.BAD_REQUEST, "탈퇴한 계정입니다. 원래 로그인 방식으로 복구를 진행해주세요."),
+    AUTH_ACCOUNT_WITHDRAWN(HttpStatus.BAD_REQUEST, "탈퇴한 계정입니다. 계정 복구를 진행해주세요"),
+    AUTH_ALREADY_WITHDRAWN(HttpStatus.BAD_REQUEST, "이미 탈퇴한 계정입니다"),
+    AUTH_NOT_WITHDRAWN(HttpStatus.BAD_REQUEST, "탈퇴하지 않은 계정입니다"),
+    AUTH_RESTORE_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, "복구 가능 기간(14일)이 지났습니다"),
+    AUTH_SOCIAL_ACCOUNT_RESTORE_FORBIDDEN(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 일반 계정 복구를 사용할 수 없습니다"),
+    AUTH_UNSUPPORTED_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth2 제공자입니다"),
+
+    // 401 Unauthorized
+    AUTH_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다"),
+    AUTH_INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않거나 만료된 Refresh Token입니다"),
+    AUTH_REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "Refresh Token이 없습니다"),
+    AUTH_INVALID_STATE(HttpStatus.UNAUTHORIZED, "유효하지 않거나 만료된 state입니다"),
+    AUTH_OAUTH2_TOKEN_FAILED(HttpStatus.UNAUTHORIZED, "소셜 로그인 토큰 발급에 실패했습니다"),
+    AUTH_OAUTH2_USERINFO_FAILED(HttpStatus.UNAUTHORIZED, "소셜 로그인 사용자 정보 조회에 실패했습니다"),
+    AUTH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다"),
+    AUTH_TOKEN_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "토큰 서명 검증에 실패했습니다"),
+    AUTH_TOKEN_MALFORMED(HttpStatus.UNAUTHORIZED, "토큰 형식이 올바르지 않습니다"),
+    AUTH_TOKEN_VERIFICATION_FAILED(HttpStatus.UNAUTHORIZED, "토큰 검증에 실패했습니다"),
+    AUTH_TOKEN_USERID_INVALID(HttpStatus.UNAUTHORIZED, "토큰의 유저 ID 형식이 올바르지 않습니다"),
+    AUTH_TOKEN_ROLES_MISSING(HttpStatus.UNAUTHORIZED, "토큰에 권한 정보가 없습니다"),
+
+    // 403 Forbidden
+    AUTH_ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다"),
+
+    // 404 Not Found
+    AUTH_DUMMY_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "더미 유저(ID: 11111)가 존재하지 않습니다"),
+
+    // 409 Conflict
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER(HttpStatus.CONFLICT, "이미 네이버 계정으로 가입된 이메일입니다. 네이버로 로그인해주세요."),
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE(HttpStatus.CONFLICT, "이미 구글 계정으로 가입된 이메일입니다. 구글로 로그인해주세요."),
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO(HttpStatus.CONFLICT, "이미 카카오 계정으로 가입된 이메일입니다. 카카오로 로그인해주세요."),
+    AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC(HttpStatus.CONFLICT, "이미 일반 계정으로 가입된 이메일입니다. 이메일/비밀번호로 로그인해주세요."),
+
+    // ==================== EMAIL (이메일 인증) ====================
+    // 400 Bad Request
+    EMAIL_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, "이미 인증이 완료되었습니다"),
+    EMAIL_VERIFICATION_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인증 코드가 만료되었습니다. 재발송을 요청해주세요."),
+    EMAIL_VERIFICATION_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다"),
+    EMAIL_INVALID_VERIFICATION_TYPE(HttpStatus.BAD_REQUEST, "올바르지 않은 인증 타입입니다"),
+    EMAIL_SOCIAL_ACCOUNT_PASSWORD_RESET_FORBIDDEN(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 비밀번호 찾기를 사용할 수 없습니다"),
+    EMAIL_WITHDRAWN_ACCOUNT_PASSWORD_RESET_FORBIDDEN(HttpStatus.BAD_REQUEST, "탈퇴한 계정입니다. 계정 복구는 비밀번호를 기억하는 경우에만 가능합니다."),
+    EMAIL_WITHDRAWN_ACCOUNT_SIGNUP_FORBIDDEN(HttpStatus.BAD_REQUEST, "탈퇴한 계정입니다. 로그인 후 계정 복구를 진행해주세요."),
+
+    // 404 Not Found
+    EMAIL_VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "인증 요청을 찾을 수 없습니다"),
+    EMAIL_NOT_REGISTERED(HttpStatus.NOT_FOUND, "등록되지 않은 이메일입니다"),
+
+    // ==================== TERMS (약관) ====================
+    // 400 Bad Request
+    TERMS_SERVICE_AGREEMENT_REQUIRED(HttpStatus.BAD_REQUEST, "서비스 이용약관에 동의해야 합니다"),
+    TERMS_PRIVACY_POLICY_REQUIRED(HttpStatus.BAD_REQUEST, "개인정보 처리방침에 동의해야 합니다"),
+    TERMS_AGE_VERIFICATION_REQUIRED(HttpStatus.BAD_REQUEST, "만 14세 이상 확인에 동의해야 합니다"),
+
+    // 404 Not Found
+    TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "약관을 찾을 수 없습니다"),
+
+    // ==================== USER (유저) ====================
+    // 400 Bad Request
+    USER_UPDATE_NO_DATA(HttpStatus.BAD_REQUEST, "수정할 프로필 정보가 없습니다"),
+    USER_INTEREST_CODE_INVALID(HttpStatus.BAD_REQUEST, "지원하지 않는 관심 주제 코드입니다"),
+
+    // 404 Not Found
+    INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "관심 주제를 찾을 수 없습니다"),
+    USER_INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 관심 주제를 찾을 수 없습니다"),
+
+    // ==================== IMAGE (이미지) ====================
+    // 400 Bad Request
+    IMAGE_UNSUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 이미지 타입입니다"),
+    IMAGE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "이미지 크기가 제한을 초과했습니다 (최대 5MB)"),
+    IMAGE_METADATA_INVALID(HttpStatus.BAD_REQUEST, "파일 메타데이터를 읽을 수 없습니다. 다시 시도해주세요."),
+
+    // ==================== QUESTION (질문) ====================
+    // 400 Bad Request
+    DAILY_QUESTION_MISMATCH(HttpStatus.BAD_REQUEST, "요청한 질문이 사용자에게 할당된 오늘의 질문과 일치하지 않습니다"),
+
+    // 404 Not Found
+    QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다"),
+    QUESTION_NOT_FOUND_FOR_CONDITION(HttpStatus.NOT_FOUND, "조건에 맞는 질문을 찾을 수 없습니다"),
+    QUESTION_NO_ALTERNATIVE(HttpStatus.NOT_FOUND, "리롤 가능한 질문이 없습니다"),
+    DAILY_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 질문이 아직 생성되지 않았습니다"),
+
+    // 409 Conflict
+    QUESTION_REROLL_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘의 질문은 하루에 한 번만 새로 받을 수 있습니다"),
+    QUESTION_ALREADY_ANSWERED(HttpStatus.CONFLICT, "오늘의 질문에 이미 답변을 작성한 후에는 질문을 새로 받을 수 없습니다"),
+
+    // ==================== WALLET (지갑) ====================
+    // 400 Bad Request
+    WALLET_INSUFFICIENT_BALANCE(HttpStatus.BAD_REQUEST, "보유한 크리스탈이 부족합니다"),
+
+    //404 Not Found
+    WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자의 지갑을 찾을 수 없습니다"),
+
+    // ==================== CRYSTAL_LOG (크리스탈 로그) ====================
+    // 404 Not Found
+    CRYSTAL_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "크리스탈 로그를 찾을 수 없습니다"),
+
+    // ==================== DAILY_REPORT (일간 리포트) ====================
+    // 404 Not Found
+    DAILY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "일간 리포트를 찾을 수 없습니다"),
+
+    // 409 Conflict - 일간
+    DAILY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 일간 리포트가 존재합니다"),
+
+    // ==================== WEEKLY_REPORT (주간 리포트) ====================
+    // 400 Bad Request
+    WEEKLY_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "주간 리포트 작성 자격이 없습니다. (지난 주 4회 이상 완료 필요)"),
+    WEEKLY_REPORT_INPUT_ENTRIES_EMPTY(HttpStatus.BAD_REQUEST, "주간 리포트 생성을 위한 입력 데이터가 비어있습니다"),
+
+    // 404 Not Found
+    WEEKLY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "주간 리포트를 찾을 수 없습니다"),
+    WEEKLY_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 주간 리포트가 아직 생성 완료되지 않았습니다"),
+
+    // 409 Conflict
+    WEEKLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 주간 리포트가 존재합니다"),
+    WEEKLY_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 주간 리포트를 생성 중입니다"),
+
+    // 502 Bad Gateway (AI 결과 스펙 위반/파싱 실패)
+    WEEKLY_REPORT_AI_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답 JSON을 매핑할 수 없습니다"),
+    WEEKLY_REPORT_AI_JSON_MISSING_FIELDS(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답 JSON에 필수 필드가 없거나 형식이 올바르지 않습니다"),
+    WEEKLY_REPORT_AI_SEGMENT_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 segment 형식이 올바르지 않습니다"),
+
+    WEEKLY_REPORT_HIGHLIGHT_WITHOUT_BOLD(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답에서 HIGHLIGHT는 BOLD와 함께여야 합니다"),
+    WEEKLY_REPORT_HIGHLIGHT_COUNT_EXCEEDED(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 하이라이트 개수가 제한을 초과했습니다"),
+    WEEKLY_REPORT_HIGHLIGHT_SEGMENT_TOO_LONG(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 하이라이트 구간이 너무 깁니다"),
+
+    WEEKLY_REPORT_DISCOVERED_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 discovered 길이가 제한을 만족하지 않습니다"),
+    WEEKLY_REPORT_IMPROVE_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 improve 길이가 제한을 만족하지 않습니다"),
+    WEEKLY_REPORT_TOTAL_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 총 길이가 제한을 만족하지 않습니다"),
+
+    WEEKLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "주간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),
+    WEEKLY_REPORT_REWRITE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 리라이트 응답 형식이 올바르지 않습니다"),
+
+    WEEKLY_REPORT_SUMMARY_INVALID(HttpStatus.BAD_GATEWAY, "주간 리포트 AI 응답의 summary의 형식이 올바르지 않습니다"),
+
+    // ==================== MONTHLY_REPORT (월간 리포트) ====================
+    // 400 Bad Request
+    MONTHLY_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "월간 리포트 작성 자격이 없습니다. (지난 달 15회 이상 완료 필요)"),
+
+    // 404 Not Found
+    MONTHLY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "월간 리포트를 찾을 수 없습니다"),
+    MONTHLY_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 월간 리포트가 아직 생성 완료되지 않았습니다"),
+
+    // 409 Conflict
+    MONTHLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 월간 리포트가 존재합니다"),
+    MONTHLY_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 월간 리포트를 생성 중입니다"),
+
+    // 502 Bad Gateway - AI 응답(스키마/규칙) 문제
+    MONTHLY_REPORT_AI_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답 JSON을 매핑할 수 없습니다"),
+    MONTHLY_REPORT_AI_JSON_MISSING_FIELDS(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답 JSON에 필수 필드가 없거나 형식이 올바르지 않습니다"),
+    MONTHLY_REPORT_AI_SEGMENT_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 segment 형식이 올바르지 않습니다"),
+
+    MONTHLY_REPORT_HIGHLIGHT_WITHOUT_BOLD(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답에서 HIGHLIGHT는 BOLD와 함께여야 합니다"),
+    MONTHLY_REPORT_HIGHLIGHT_COUNT_EXCEEDED(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 하이라이트 개수가 제한을 초과했습니다"),
+    MONTHLY_REPORT_HIGHLIGHT_SEGMENT_TOO_LONG(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 하이라이트 구간이 너무 깁니다"),
+
+    MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 discovered 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_IMPROVE_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 improve 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_TOTAL_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 총 길이가 제한을 만족하지 않습니다"),
+
+    MONTHLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),
+    MONTHLY_REPORT_REWRITE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 형식이 올바르지 않습니다"),
+
+    MONTHLY_REPORT_SUMMARY_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 AI 응답의 summary의 형식이 올바르지 않습니다"),
+
+    // ==================== AI (인공지능) ====================
+    // 502 Bad Gateway
+    AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "AI 응답 형식을 해석할 수 없습니다"),
+    AI_RESPONSE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "AI 응답 JSON의 필수 필드가 비어있습니다"),
+
+    // 503 Service Unavailable
+    AI_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 서비스로부터 응답을 받지 못했습니다"),
+    AI_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI Rewrite 서비스로부터 응답을 받지 못했습니다"),
+    AI_EVIDENCE_CARD_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 증거 카드 생성 서비스로부터 응답을 받지 못했습니다"),
+    AI_PATTERN_EXTRACT_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 패턴 추출 서비스로부터 응답을 받지 못했습니다"),
+    AI_TYPE_SELECT_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 유형 선택 서비스로부터 응답을 받지 못했습니다"),
+
+    // ==================== EMOTION (감정) ====================
+    // 404 Not Found
+    EMOTION_NOT_FOUND(HttpStatus.NOT_FOUND, "감정 정보를 찾을 수 없습니다"),
+
+    // ==================== ANSWER (답변) ====================
+    // 403 Forbidden
+    ANSWER_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 답변만 조회할 수 있습니다"),
+
+    // 404 Not Found
+    ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "작성된 답변 내역을 찾을 수 없습니다"),
+
+    // ==================== SEARCH (검색) ====================
+    // 403 Forbidden
+    SEARCH_HISTORY_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 검색어만 삭제할 수 있습니다"),
+
+    // 404 Not Found
+    SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색어를 찾을 수 없습니다"),
+
+    // ==================== PROMPT (프롬프트) ====================
+    // 400 Bad Request
+    PROMPT_DAILY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "일간 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_DAILY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 일간 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_DAILY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "INSIGHT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_WEEKLY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "주간 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_WEEKLY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 주간 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_WEEKLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "WEEKLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_MONTHLY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "월간 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_MONTHLY_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 월간 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_MONTHLY_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "MONTHLY_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_EVIDENCE_CARD_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "Evidence Card 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_EVIDENCE_CARD_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 Evidence Card 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_EVIDENCE_CARD_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "EVIDENCE_CARD_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_PATTERN_EXTRACT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "패턴 추출 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_PATTERN_EXTRACT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 패턴 추출 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_PATTERN_EXTRACT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "PATTERN_EXTRACT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_TYPE_SELECT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 선택 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_SELECT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 선택 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_SELECT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "TYPE_SELECT_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_TYPE_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_TYPE_REPAIR_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 Repair 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_TYPE_REPAIR_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 Repair 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_TYPE_REPAIR_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "REPAIR_TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    // ==================== NICKNAME (닉네임) ====================
+    // 400 Bad Request
+    NICKNAME_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "닉네임 변경 가능 횟수를 초과했습니다 (14일 내 최대 2회)"),
+    NICKNAME_ALREADY_TAKEN(HttpStatus.BAD_REQUEST, "이미 사용 중인 닉네임입니다"),
+
+    // ==================== FRIEND (친구) ====================
+    // 400 Bad Request
+    FRIENDSHIP_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 친구 요청입니다"),
+    FRIENDSHIP_USER_NOT_INVOLVED(HttpStatus.BAD_REQUEST, "해당 유저는 이 친구 관계에 포함되지 않습니다"),
+    FRIENDSHIP_CANNOT_SEND_TO_SELF(HttpStatus.BAD_REQUEST, "본인에게 친구 요청을 보낼 수 없습니다"),
+    FRIENDSHIP_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 친구이거나 친구 요청이 존재합니다"),
+    FRIEND_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "친구는 최대 20명까지 추가할 수 있어요"),
+    FRIEND_RECEIVER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "상대방의 친구 목록이 가득 찼습니다"),
+
+    // 403 Forbidden
+    FRIENDSHIP_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 친구 관계만 관리할 수 있습니다"),
+
+    // 404 Not Found
+    FRIENDSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 관계를 찾을 수 없습니다"),
+    FRIEND_SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다"),
+
+    // ===================== EVIDENCE_CARD (증거 카드) =====================
+    // 400 Bad Request
+    EVIDENCE_CARD_JSON_MISSING_ID_OR_CARD(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'id' 또는 'card' 필드가 없습니다"),
+    EVIDENCE_CARD_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'id' 필드 값이 입력된 DailyEntry ID 목록에 없습니다"),
+    EVIDENCE_CARD_DUPLICATE_ID(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 중복된) 'id' 필드 값이 있습니다"),
+    EVIDENCE_CARD_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'card' 필드 값이 길이 제한(120~180자)을 만족하지 않습니다"),
+    EVIDENCE_CARD_ID_MISSING(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 입력된 DailyEntry ID 목록에 해당하는 'id' 필드 값이 없습니다"),
+
+    // ===================== PATTERN_EXTRACT (패턴 추출) =====================
+    // 400 Bad Request
+    PATTERN_JSON_MISSING_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'patterns' 필드가 없거나 배열이 아닙니다"),
+    PATTERN_JSON_MISSING_LABEL_OR_NOTE(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'label' 또는 'note' 필드가 없거나 문자열이 아닙니다"),
+    PATTERN_JSON_MISSING_EVIDENCE_IDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 'evidence_ids' 필드가 없거나 배열이 아닙니다"),
+    PATTERN_JSON_EVIDENCE_ID_NOT_TEXT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'evidence_ids' 배열 원소가 문자열이 아닙니다"),
+
+    PATTERN_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 patterns 개수가 제한(3~6개)을 만족하지 않습니다"),
+    PATTERN_LABEL_BLANK(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'label' 값이 비어있습니다"),
+    PATTERN_LABEL_TOO_LONG(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'label' 값이 길이 제한(25자)을 초과합니다"),
+    PATTERN_NOTE_BLANK(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'note' 값이 비어있습니다"),
+    PATTERN_NOTE_TOO_LONG(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'note' 값이 길이 제한(60자)을 초과합니다"),
+
+    PATTERN_EVIDENCE_ID_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 'evidence_ids' 개수가 제한(2~4개)을 만족하지 않습니다"),
+    PATTERN_EVIDENCE_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence id가 입력된 EvidenceCard ID 목록에 없습니다"),
+    PATTERN_EVIDENCE_ID_DUPLICATED_ACROSS_PATTERNS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 여러 패턴에 중복 사용되었습니다"),
+
+    PATTERN_RESULT_EMPTY(HttpStatus.BAD_REQUEST, "패턴 추출을 위한 EvidenceCard 입력이 비어있습니다"),
+    PATTERN_JSON_MAPPING_FAILED(HttpStatus.BAD_REQUEST, "AI 응답 JSON을 매핑하는 과정에서 오류가 발생했습니다"),
+
+    // ==================== TYPE_SELECT (유형 선택) ====================
+    // 400 Bad Request
+    TYPE_SELECT_INPUT_EMPTY(HttpStatus.BAD_REQUEST, "유형 선택을 위한 입력 데이터가 비어있습니다"),
+
+    TYPE_SELECT_JSON_MISSING_FIELDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 필수 필드(analysisTypeCode/confidence/because)가 없거나 형식이 올바르지 않습니다"),
+    TYPE_SELECT_JSON_BECAUSE_ITEM_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 because 항목 형식이 올바르지 않습니다"),
+    TYPE_SELECT_JSON_EVIDENCE_ID_NOT_TEXT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence_ids 배열 원소가 문자열이 아닙니다"),
+
+    TYPE_SELECT_CONFIDENCE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 confidence 값이 범위(0~100)를 만족하지 않습니다"),
+    TYPE_SELECT_BECAUSE_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 because 개수가 제한(2~3개)을 만족하지 않습니다"),
+    TYPE_SELECT_EVIDENCE_ID_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence_ids 개수가 제한(1~4개)을 만족하지 않습니다"),
+
+    TYPE_SELECT_CODE_NOT_IN_CANDIDATES(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 후보 analysis_types 6개 중 하나가 아닙니다"),
+    TYPE_SELECT_EVIDENCE_ID_NOT_IN_INPUT(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 evidence id가 입력된 EvidenceCard ID 목록에 없습니다"),
+    TYPE_SELECT_EVIDENCE_ID_DUPLICATED(HttpStatus.BAD_REQUEST, "AI 응답 JSON에서 evidence id가 중복 사용되었습니다"),
+
+    // ===================== TYPE_REPORT (유형 리포트) =====================
+    // 400 Bad Request
+    TYPE_REPORT_GENERATE_INPUT_EMPTY(HttpStatus.BAD_REQUEST, "유형 리포트 생성을 위한 입력 데이터가 비어있습니다"),
+
+    TYPE_REPORT_JSON_MISSING_FIELDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 필수 필드(analysisTypeCode/typeAnalysis/personas)가 없거나 형식이 올바르지 않습니다"),
+    TYPE_REPORT_PERSONAS_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 형식이 올바르지 않습니다"),
+    TYPE_REPORT_PERSONA_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 개수가 2개가 아닙니다"),
+
+    TYPE_REPORT_TYPE_ANALYSIS_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 typeAnalysis 길이가 제한(230~270자)을 만족하지 않습니다"),
+    TYPE_REPORT_PERSONA_TITLE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona title 길이가 제한(1~15자)을 만족하지 않습니다"),
+    TYPE_REPORT_PERSONA_CONTENT_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona content 길이가 제한(180~220자)을 만족하지 않습니다"),
+
+    TYPE_REPORT_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 analysisTypeCode가 선택된 analysisTypeCode와 일치하지 않습니다"),
+
+    TYPE_REPORT_NOT_ENOUGH_REPORTS(HttpStatus.BAD_REQUEST, "유형 리포트 작성 자격이 없습니다. (해당 유형 30회 이상 완료 필요)"),
+
+    TYPE_REPORT_REWRITE_TYPE_ANALYSIS_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "typeAnalysis 글자 수가 규칙을 벗어났어요."),
+    TYPE_REPORT_REWRITE_TYPE_ANALYSIS_PARAGRAPH_INVALID(HttpStatus.BAD_REQUEST, "typeAnalysis 문단 규칙(2문단)이 깨졌어요."),
+    TYPE_REPORT_REWRITE_PERSONA_1_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "personas[0].content 글자 수가 규칙을 벗어났어요."),
+    TYPE_REPORT_REWRITE_PERSONA_2_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "personas[1].content 글자 수가 규칙을 벗어났어요."),
+    TYPE_REPORT_REWRITE_LINEBREAK_INVALID(HttpStatus.BAD_REQUEST, "리라이트 결과에 줄바꿈이 포함되어 있어요."),
+    TYPE_REPORT_REWRITE_BANNED_WORD_USED(HttpStatus.BAD_REQUEST, "리라이트 결과에 금지 단어가 포함되어 있어요."),
+    TYPE_REPORT_REWRITE_INPUT_SCHEMA_INVALID(HttpStatus.BAD_REQUEST, "리라이트 대상 필드가 없거나 타입이 올바르지 않아요."),
+
+    // 404 Not Found
+    TYPE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "유형 리포트를 찾을 수 없습니다"),
+    TYPE_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 유형 리포트가 아직 생성 완료되지 않았습니다"),
+    ANALYSIS_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "분석 유형을 찾을 수 없습니다"),
+
+    // 409 Conflict
+    TYPE_REPORT_IN_PROGRESS(HttpStatus.CONFLICT, "현재 유형 리포트를 생성 중입니다"),
+
+    // 503 Service Unavailable
+    TYPE_REPORT_REWRITE_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "유형 리포트 리라이트에서 AI 응답이 비어있어요."),
+    TYPE_REPORT_REWRITE_JSON_PARSE_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "유형 리포트 리라이트 응답 JSON 파싱에 실패했어요."),
+    TYPE_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "유형 리포트 리라이트 응답 JSON 매핑에 실패했어요."),
+    TYPE_REPORT_REWRITE_OUTPUT_EMPTY(HttpStatus.SERVICE_UNAVAILABLE, "리라이트 결과가 비어있어요."),
+
+    // ===================== NOTIFICATION (알림) =====================
+    // 403 Forbidden
+    NOTIFICATION_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 알림이 아닙니다"),
+
+    // 404 Not Found
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다"),
+    DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND, "디바이스를 찾을 수 없습니다"),
+    NOTIFICATION_SETTINGS_NOT_FOUND(HttpStatus.NOT_FOUND, "알림 설정을 찾을 수 없습니다"),
+    NOTIFICATION_MESSAGE_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림 메시지 템플릿 파일을 찾을 수 없습니다"),
+    NOTIFICATION_MESSAGE_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 알림 타입의 메시지 템플릿을 찾을 수 없습니다"),
+
+    // 500 Internal Server Error
+    NOTIFICATION_MESSAGE_FILE_READ_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "알림 메시지 템플릿 파일 읽기에 실패했습니다"),
+    NOTIFICATION_MESSAGES_ENV_VAR_NOT_SET(HttpStatus.INTERNAL_SERVER_ERROR, "환경 변수 NOTIFICATION_MESSAGES가 설정되지 않았습니다"),
+
+    // 502 Bad Gateway
+    FCM_SEND_FAILED(HttpStatus.BAD_GATEWAY, "FCM 알림 발송에 실패했습니다"),
+
+    // ==================== MODERATION (차단) ====================
+    // 400 Bad Request
+    MODERATION_CANNOT_BLOCK_SELF(HttpStatus.BAD_REQUEST, "본인을 차단할 수 없습니다"),
+    MODERATION_ALREADY_BLOCKED(HttpStatus.BAD_REQUEST, "이미 차단한 사용자입니다"),
+    MODERATION_BLOCK_RELATIONSHIP_EXISTS(HttpStatus.BAD_REQUEST, "차단 관계에서는 친구 요청을 처리할 수 없습니다"),
+
+    // 404 Not Found
+    MODERATION_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "차단 관계를 찾을 수 없습니다"),
+
+    // ==================== MODERATION (신고) ====================
+    // 400 Bad Request
+    CONTENT_REPORT_INVALID(HttpStatus.BAD_REQUEST, "잘못된 신고 요청입니다"),
+    CONTENT_REPORT_SELF_REPORT_FORBIDDEN(HttpStatus.BAD_REQUEST, "자신의 게시글은 신고할 수 없습니다"),
+
+    // 409 Conflict
+    CONTENT_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 게시글입니다");
+
+
+    private final HttpStatus httpStatus;
+    private final String message;
+
+    public String getCode() {
+        return this.name();
+    }
+}

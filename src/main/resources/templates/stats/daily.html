@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>NADAB — Daily Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:         #0d0f14;
+      --surface:    #161920;
+      --surface-2:  #1e2230;
+      --border:     #2a2f3e;
+      --accent:     #6c8fff;
+      --accent-2:   #ff7eb3;
+      --accent-3:   #4de8c2;
+      --text-1:     #e8eaf2;
+      --text-2:     #8b91a8;
+      --text-3:     #4f556a;
+      --radius:     14px;
+      --radius-sm:  8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      padding: 28px 24px;
+    }
+
+    /* ─── Header ─── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--text-2);
+      text-transform: uppercase;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .refreshed-at {
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: var(--text-3);
+    }
+    .refreshed-at span { color: var(--text-2); }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-2);
+      font-family: 'Syne', sans-serif;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .2s, color .2s, background .2s;
+    }
+    .btn-refresh:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(108,143,255,.08);
+    }
+    .btn-refresh svg { width:14px; height:14px; }
+
+    /* ─── Health status ─── */
+    .health-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: var(--text-2);
+      transition: border-color .3s;
+    }
+    .health-bar.ok    { border-color: rgba(77,232,194,.45); }
+    .health-bar.error { border-color: rgba(255,126,179,.45); }
+
+    .health-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--text-3);
+      transition: background .3s, box-shadow .3s;
+    }
+    .health-bar.ok    .health-dot { background: var(--accent-3); box-shadow: 0 0 6px rgba(77,232,194,.7); }
+    .health-bar.error .health-dot { background: var(--accent-2); box-shadow: 0 0 6px rgba(255,126,179,.7); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .25; }
+    }
+    .health-bar.loading .health-dot { animation: pulse 1.1s ease infinite; }
+    .health-text { color: var(--text-1); font-weight: 500; }
+
+    /* ─── Tabs ─── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      width: fit-content;
+      margin-bottom: 28px;
+    }
+
+    .tab-link {
+      text-decoration: none;
+      padding: 7px 22px;
+      border-radius: 999px;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text-2);
+      transition: background .2s, color .2s;
+    }
+    .tab-link:hover { color: var(--text-1); }
+    .tab-link.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ─── KPI Card ─── */
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(108,143,255,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .kpi-label {
+      font-size: .78rem;
+      color: var(--text-2);
+      margin-bottom: 8px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .kpi-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 2.8rem;
+      font-weight: 500;
+      line-height: 1;
+      color: var(--text-1);
+    }
+
+    /* ─── Charts grid ─── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .chart-card-wide { grid-column: 1 / -1; }
+
+    @media (max-width: 800px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card-wide { grid-column: unset; }
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .chart-card-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .chart-card-title {
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .chart-card-subtitle {
+      font-size: .8rem;
+      color: var(--text-2);
+      margin-top: 5px;
+    }
+
+    .chart-card-body {
+      padding: 20px 20px 16px;
+    }
+
+    /* ─── Dot accent on card titles ─── */
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+    .dot-blue  { background: var(--accent); }
+    .dot-pink  { background: var(--accent-2); }
+    .dot-teal  { background: var(--accent-3); }
+
+    /* ─── Fade-in animation ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .kpi-card   { animation: fadeUp .4s ease both; }
+    .chart-card { animation: fadeUp .4s ease both; }
+    .chart-card:nth-child(1) { animation-delay: .05s; }
+    .chart-card:nth-child(2) { animation-delay: .1s; }
+    .chart-card:nth-child(3) { animation-delay: .15s; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">NADAB · Stats</div>
+  <div class="header-right">
+    <div id="healthBar" class="health-bar loading">
+      <span class="health-dot"></span>
+      <span id="healthText" class="health-text">서버 확인 중…</span>
+    </div>
+    <div class="refreshed-at">
+      마지막 갱신 <span th:text="${vm.refreshedAt}">—</span>
+    </div>
+    <button class="btn-refresh" onclick="location.reload()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.5 8A5.5 5.5 0 1 1 9 2.6"/>
+        <polyline points="9 1 13.5 2.6 12 7"/>
+      </svg>
+      새로고침
+    </button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'daily' ? ' active' : ''"
+     th:href="@{/stats/daily}">일간</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'total' ? ' active' : ''"
+     th:href="@{/stats/total}">전체</a>
+</div>
+
+<!-- KPI -->
+<div class="kpi-card">
+  <div>
+    <div class="kpi-label">현재 공유 중인 일간 리포트</div>
+    <div class="kpi-value" th:text="${vm.sharedDailyReportCount}">0</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+  <!-- Chart 1 -->
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-card-title">
+        <span class="dot dot-blue"></span>일간 가입자 수
+      </div>
+      <div class="chart-card-subtitle">최근 7일</div>
+    </div>
+    <div class="chart-card-body">
+      <canvas id="signupChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2 -->
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-card-title">
+        <span class="dot dot-pink"></span>할당된 질문 개수
+      </div>
+      <div class="chart-card-subtitle">최근 7일 · 홈 화면 진입 시 할당</div>
+    </div>
+    <div class="chart-card-body">
+      <canvas id="assignedChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 3 (wide) -->
+  <div class="chart-card chart-card-wide">
+    <div class="chart-card-header">
+      <div class="chart-card-title">
+        <span class="dot dot-teal"></span>생성된 일간 리포트 개수
+      </div>
+      <div class="chart-card-subtitle">최근 7일</div>
+    </div>
+    <div class="chart-card-body">
+      <canvas id="completedChart" height="90"></canvas>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  const labels         = [[${vm.labels}]];
+  const signupCounts   = [[${vm.signupCounts}]].map(v => parseInt(v, 10));
+  const assignedCounts = [[${vm.assignedQuestionCounts}]].map(v => parseInt(v, 10));
+  const completedCounts= [[${vm.completedDailyReportCounts}]].map(v => parseInt(v, 10));
+
+  Chart.defaults.color = '#8b91a8';
+  Chart.defaults.font.family = "'DM Mono', monospace";
+  Chart.defaults.font.size = 11;
+
+  const gridColor = 'rgba(255,255,255,0.05)';
+  const borderColor = 'rgba(255,255,255,0.08)';
+
+  function makeGradient(ctx, color) {
+    const g = ctx.createLinearGradient(0, 0, 0, 220);
+    g.addColorStop(0, color.replace('1)', '0.18)'));
+    g.addColorStop(1, color.replace('1)', '0)'));
+    return g;
+  }
+
+  const configs = [
+    { id: 'signupChart',    label: '가입자 수',     data: signupCounts,    color: 'rgba(108,143,255,1)' },
+    { id: 'assignedChart',  label: '할당 질문 수',  data: assignedCounts,  color: 'rgba(255,126,179,1)' },
+    { id: 'completedChart', label: '생성된 리포트',  data: completedCounts, color: 'rgba(77,232,194,1)'  },
+  ];
+
+  configs.forEach(({ id, label, data, color }) => {
+    const canvasEl = document.getElementById(id);
+    const ctx2d    = canvasEl.getContext('2d');
+    const gradient = makeGradient(ctx2d, color);
+
+    new Chart(canvasEl, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label,
+          data,
+          tension: 0.35,
+          fill: true,
+          backgroundColor: gradient,
+          borderColor: color,
+          borderWidth: 2,
+          pointBackgroundColor: color,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e2230',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 12,
+            titleColor: '#e8eaf2',
+            bodyColor: '#8b91a8',
+            titleFont: { family: "'Syne', sans-serif", weight: '700', size: 12 },
+            bodyFont: { family: "'DM Mono', monospace", size: 12 },
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor, borderColor },
+            ticks: { maxRotation: 0 },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: gridColor, borderColor },
+            ticks: { precision: 0, stepSize: 1 },
+          }
+        }
+      }
+    });
+  });
+
+  // ─── Health check ───
+  async function checkHealth() {
+    const bar  = document.getElementById('healthBar');
+    const text = document.getElementById('healthText');
+    try {
+      const res = await fetch('/health', { cache: 'no-store' });
+      if (res.ok) {
+        bar.className  = 'health-bar ok';
+        text.textContent = 'SERVER OK';
+      } else {
+        bar.className  = 'health-bar error';
+        text.textContent = `ERROR ${res.status}`;
+      }
+    } catch {
+      bar.className  = 'health-bar error';
+      text.textContent = 'UNREACHABLE';
+    }
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 30_000);
+</script>
+
+</body>
+</html>
