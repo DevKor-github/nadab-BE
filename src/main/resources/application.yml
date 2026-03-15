@@ -1,10 +1,6 @@
 spring:
   application:
-    name: nadab
-
-  config:
-    import:
-      - classpath:config/reserved-nicknames.yml
+    name: morae
 
   profiles:
     active: local
@@ -15,74 +11,8 @@ spring:
         format_sql: true
     show-sql: true
 
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: true
-    baseline-version: 0
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_ADDRESS}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-          connectiontimeout: 5000
-          timeout: 5000
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY}
-      chat:
-        options:
-          model: gpt-4o-mini
-          temperature: 0.0
-    anthropic:
-      api-key: ${ANTHROPIC_API_KEY}
-      chat:
-        options:
-          model: claude-3-haiku-20240307
-          temperature: 0.2
-    google:
-      genai:
-        api-key: ${GOOGLE_GENAI_API_KEY}
-        chat:
-          options:
-            model: gemini-2.5-flash
-            temperature: 0.2
-
 springdoc:
   api-docs:
     enabled: false   # 공통: 기본 꺼두기
   swagger-ui:
     path: /swagger-ui.html
-
-token:
-  jwt-secret: ${JWT_SECRET}
-  access-token-expiration: 3600000  # 1시간 (밀리초)
-  refresh-token-expiration: 1209600000  # 14일 (밀리초)
-
-cloud:
-  aws:
-    region:
-      static: ap-northeast-2
-    credentials:
-      access-key: ${IAM_ACCESS_KEY}
-      secret-key: ${IAM_SECRET_KEY}
-    s3:
-      bucket: ${BUCKET_NAME}
-
-app:
-  cookie:
-    secure: false
-    same-site: Lax
-
-api_prefix: /api/v1
-
-firebase:
-  admin:
-    key-base64: ${FIREBASE_ADMIN_KEY}

@@ -1,4 +1,0 @@
-ALTER TABLE weekly_reports
-    ALTER COLUMN discovered DROP NOT NULL,
-    ALTER COLUMN good DROP NOT NULL,
-    ALTER COLUMN improve DROP NOT NULL;

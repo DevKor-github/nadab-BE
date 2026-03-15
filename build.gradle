@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.devkor.ifive'
 version = '0.0.1-SNAPSHOT'
-description = 'Spring Boot backend server for Nadab project'
+description = 'Spring Boot backend server for Morae project'
 
 java {
 	toolchain {
@@ -22,11 +22,6 @@ configurations {
 
 repositories {
 	mavenCentral()
-}
-
-ext {
-    set('testcontainersVersion', "2.0.3")
-    set('springAiVersion', "1.1.2")
 }
 
 dependencies {
@@ -47,52 +42,6 @@ dependencies {
     // Flyway
     implementation 'org.flywaydb:flyway-core:11.7.1'
     implementation 'org.flywaydb:flyway-database-postgresql:11.7.1'
-
-    // JWT
-    implementation 'com.auth0:java-jwt:4.5.0'
-
-    // WebClient (OAuth2 직접 구현용)
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
-    // AWS S3
-    implementation platform('software.amazon.awssdk:bom:2.39.4')
-    implementation 'software.amazon.awssdk:s3'
-
-    // BadWordFiltering 라이브러리
-    implementation 'io.github.vaneproject:badwordfiltering:1.0.0'
-    implementation 'com.modernmt.text:profanity-filter:1.0.1'
-
-    // Spring Mail
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-
-    // Spring AI - OpenAI
-    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
-
-    // testcontainers
-    testImplementation 'org.testcontainers:postgresql'
-    testImplementation "org.testcontainers:junit-jupiter"
-
-    // Anthropic (Claude)
-    implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
-
-    // Gemini
-    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
-
-    // Hypersistence Utils
-    implementation "io.hypersistence:hypersistence-utils-hibernate-63:3.7.6"
-
-    // Thymeleaf (통계 페이지용)
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-
-    // Firebase Admin SDK
-    implementation 'com.google.firebase:firebase-admin:9.7.1'
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
-        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
-    }
 }
 
 tasks.named('test') {

@@ -17,8 +17,6 @@ module.exports = {
             "auth",
             "user",
             "ai",
-            "report",
-            "search",
             "friend",
             "notify",
             "infra",
@@ -105,12 +103,6 @@ module.exports = {
                     },
                     ai: {
                         description: '🤖 AI 처리 (예: 벡터 검색, OpenAI API, 모델 응답 로직)'
-                    },
-                    report: {
-                        description: '📔 리포트 도메인 (예: 리포트 생성, 조회, 관리)'
-                    },
-                    search: {
-                        description: '🔍 검색 도메인 (예: 질문/답변 검색, 최근 검색어)'
                     },
                     friend: {
                         description: '👥 친구 도메인 (예: 친구 신청, 수락, 목록 관리)'
