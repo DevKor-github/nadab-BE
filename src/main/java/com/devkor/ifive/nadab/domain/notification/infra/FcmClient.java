@@ -48,6 +48,7 @@ public class FcmClient {
             AndroidConfig androidConfig = AndroidConfig.builder()
                 .setPriority(AndroidConfig.Priority.HIGH)
                 .setNotification(AndroidNotification.builder()
+                    .setChannelId("default_push")
                     .setSound("default")  // 시스템 기본 사운드
                     .setDefaultSound(true)
                     .setPriority(AndroidNotification.Priority.HIGH)
