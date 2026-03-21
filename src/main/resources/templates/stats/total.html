@@ -281,6 +281,12 @@
      th:classappend="${activeTab} == 'daily' ? ' active' : ''"
      th:href="@{/stats/daily}">일간</a>
   <a class="tab-link"
+     th:classappend="${activeTab} == 'weekly' ? ' active' : ''"
+     th:href="@{/stats/weekly}">주간</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'monthly' ? ' active' : ''"
+     th:href="@{/stats/monthly}">월간</a>
+  <a class="tab-link"
      th:classappend="${activeTab} == 'total' ? ' active' : ''"
      th:href="@{/stats/total}">전체</a>
 </div>
