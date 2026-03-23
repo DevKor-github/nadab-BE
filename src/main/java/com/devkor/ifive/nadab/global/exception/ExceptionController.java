@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -64,6 +65,15 @@ public class ExceptionController {
 
         String parameterName = ex.getName();
         String errorMessage = String.format("%s 형식이 올바르지 않습니다. 올바른 형식으로 입력해주세요.", parameterName);
+
+        return ApiResponseEntity.error(ErrorCode.VALIDATION_FAILED, errorMessage);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        log.warn("HttpMessageNotReadableException: {}", ex.getMessage(), ex);
+
+        String errorMessage = "요청 본문 형식이 올바르지 않습니다. 올바른 형식으로 입력해주세요.";
 
         return ApiResponseEntity.error(ErrorCode.VALIDATION_FAILED, errorMessage);
     }
