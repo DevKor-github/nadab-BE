@@ -23,12 +23,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * EventListener:
  *   T2: PENDING → SENDING & fcmSent = true (낙관적 설정, TransactionHelper)
  *   FCM 발송 (트랜잭션 밖)
- *   T3: SENDING → SENT (fcmSent = true 유지, TransactionHelper)
+ *     └─ T3: Invalid 토큰 정리 (별도 트랜잭션 - REQUIRES_NEW)
+ *   T4: SENDING → SENT (fcmSent = true 유지, TransactionHelper)
  *       또는 SENDING → FAILED & fcmSent = false (복구, TransactionHelper)
  *
  * 중복 발송 방지:
  * - fcmSent를 FCM 발송 전에 미리 true로 설정
- * - FCM 성공 후 T3 실패 시 → fcmSent = true로 보호
+ * - FCM 성공 후 T4 실패 시 → fcmSent = true로 보호
  * - RecoveryScheduler가 fcmSent = true 확인 → SENT로만 변경
  */
 @Component
@@ -58,10 +59,10 @@ public class NotificationEventListener {
             Notification notification = notificationRepository.findByIdWithUser(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
 
-            // FCM 발송 (트랜잭션 밖)
+            // FCM 발송 (트랜잭션 밖, 내부에서 T3: Invalid 토큰 정리)
             boolean fcmSuccess = fcmSender.sendInternal(notification);
 
-            // T3: FCM 발송 결과에 따른 최종 상태 업데이트 (별도 트랜잭션)
+            // T4: FCM 발송 결과에 따른 최종 상태 업데이트 (별도 트랜잭션)
             boolean updated = transactionHelper.updateFinalStatus(notificationId, fcmSuccess);
 
             // UPDATE 실패 시 처리

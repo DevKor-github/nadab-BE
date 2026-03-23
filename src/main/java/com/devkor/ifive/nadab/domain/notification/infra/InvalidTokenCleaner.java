@@ -8,13 +8,15 @@ import com.google.firebase.messaging.SendResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Invalid FCM 토큰 정리 Component
- * - 호출자의 트랜잭션에 참여
+ * - 독립적인 트랜잭션으로 실행 (FCM 발송과 분리)
  */
 @Component
 @RequiredArgsConstructor
@@ -26,8 +28,8 @@ public class InvalidTokenCleaner {
     /**
      * Invalid Token 자동 정리
      * - DB에서 Invalid Token 삭제
-     * - 호출자의 트랜잭션에 참여 (FCM 발송 처리의 일부)
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int cleanupInvalidTokens(List<String> fcmTokens, BatchResponse response) {
         List<String> invalidTokens = collectInvalidTokens(fcmTokens, response);
 
