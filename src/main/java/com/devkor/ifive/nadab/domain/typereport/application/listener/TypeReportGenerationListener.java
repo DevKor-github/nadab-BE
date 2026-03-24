@@ -1,9 +1,17 @@
 package com.devkor.ifive.nadab.domain.typereport.application.listener;
 
-import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionName;
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.typereport.application.TypeReportTxService;
 import com.devkor.ifive.nadab.domain.typereport.application.event.TypeReportCompletedEvent;
-import com.devkor.ifive.nadab.domain.typereport.core.dto.*;
+import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeEmotionStatsCalculator;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
+import com.devkor.ifive.nadab.domain.typereport.core.dto.AnalysisTypeCandidateDto;
+import com.devkor.ifive.nadab.domain.typereport.core.dto.EvidenceCardDto;
+import com.devkor.ifive.nadab.domain.typereport.core.dto.PatternExtractionResultDto;
+import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReportContentDto;
+import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReportGenerationRequestedEventDto;
+import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeSelectionResultDto;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
 import com.devkor.ifive.nadab.domain.typereport.core.repository.AnalysisTypeRepository;
 import com.devkor.ifive.nadab.domain.typereport.core.repository.TypeDailyEntryQueryRepository;
@@ -74,6 +82,23 @@ public class TypeReportGenerationListener {
             recentEntries = typeDailyEntryQueryRepository.findRecentDailyEntriesByInterest(event.userId(), interestCode, PageRequest.of(0, RECENT_N));
         } catch (Exception e) {
             log.error("[TYPE_REPORT][QUERY_FAILED] userId={}, reportId={}, interest={}",
+                    event.userId(), event.reportId(), interestCode, e);
+            typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
+            return;
+        }
+
+        // 1-1) 동일 관심사 전체 COMPLETED DailyReport 감정 집계 스냅샷
+        TypeEmotionStatsContent emotionStats;
+        try {
+            emotionStats = TypeEmotionStatsCalculator.calculate(
+                    typeDailyEntryQueryRepository.countCompletedEmotionStatsByInterest(
+                            event.userId(),
+                            interestCode,
+                            DailyReportStatus.COMPLETED
+                    )
+            );
+        } catch (Exception e) {
+            log.error("[TYPE_REPORT][EMOTION_STATS_FAILED] userId={}, reportId={}, interest={}",
                     event.userId(), event.reportId(), interestCode, e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
             return;
@@ -161,6 +186,10 @@ public class TypeReportGenerationListener {
                     event.previousCompletedReportId(),
                     content.analysisTypeCode(),
                     content.typeAnalysis(),
+                    // 아래 3개 파라미터는 컴파일을 위한 임시용
+                    TypeContentFactory.fromPlainText(content.typeAnalysis()),
+                    TypeContentFactory.emptyText(),
+                    emotionStats,
                     content.personas().get(0).title(),
                     content.personas().get(0).content(),
                     content.personas().get(1).title(),
@@ -192,17 +221,5 @@ public class TypeReportGenerationListener {
             case LOVE -> "사랑";
             case VALUES -> "가치관";
         };
-    }
-
-    private EmotionName toEmotionName(String raw) {
-        if (raw == null || raw.isBlank()) return null;
-
-        // 1) code가 enum 상수명과 같은 경우
-        try {
-            return EmotionName.valueOf(raw);
-        } catch (Exception ignored) {
-        }
-
-        return null;
     }
 }
