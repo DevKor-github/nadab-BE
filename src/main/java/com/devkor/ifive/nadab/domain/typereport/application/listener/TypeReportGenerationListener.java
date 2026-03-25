@@ -4,7 +4,6 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.typereport.application.TypeReportTxService;
 import com.devkor.ifive.nadab.domain.typereport.application.event.TypeReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeEmotionStatsCalculator;
-import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.AnalysisTypeCandidateDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.EvidenceCardDto;
@@ -79,7 +78,11 @@ public class TypeReportGenerationListener {
         // 1) 최근 N개 DailyEntryDto 조회
         List<DailyEntryDto> recentEntries;
         try {
-            recentEntries = typeDailyEntryQueryRepository.findRecentDailyEntriesByInterest(event.userId(), interestCode, PageRequest.of(0, RECENT_N));
+            recentEntries = typeDailyEntryQueryRepository.findRecentDailyEntriesByInterest(
+                    event.userId(),
+                    interestCode,
+                    PageRequest.of(0, RECENT_N)
+            );
         } catch (Exception e) {
             log.error("[TYPE_REPORT][QUERY_FAILED] userId={}, reportId={}, interest={}",
                     event.userId(), event.reportId(), interestCode, e);
@@ -169,6 +172,7 @@ public class TypeReportGenerationListener {
                     selectedType,
                     patterns,
                     cards,
+                    emotionStats,
                     selection.analysisTypeCode()
             );
         } catch (Exception e) {
@@ -186,9 +190,8 @@ public class TypeReportGenerationListener {
                     event.previousCompletedReportId(),
                     content.analysisTypeCode(),
                     content.typeAnalysis(),
-                    // 아래 3개 파라미터는 컴파일을 위한 임시용
-                    TypeContentFactory.fromPlainText(content.typeAnalysis()),
-                    TypeContentFactory.emptyText(),
+                    content.typeAnalysisContent(),
+                    content.emotionSummaryContent(),
                     emotionStats,
                     content.personas().get(0).title(),
                     content.personas().get(0).content(),

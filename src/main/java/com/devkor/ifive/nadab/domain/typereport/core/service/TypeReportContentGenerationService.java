@@ -1,6 +1,8 @@
 package com.devkor.ifive.nadab.domain.typereport.core.service;
 
 import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeReportInputAssembler;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.AnalysisTypeCandidateDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.EvidenceCardDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.PatternExtractionResultDto;
@@ -35,9 +37,11 @@ public class TypeReportContentGenerationService {
             AnalysisTypeCandidateDto selectedType,
             PatternExtractionResultDto patterns,
             List<EvidenceCardDto> allCards,
+            TypeEmotionStatsContent emotionStats,
             String expectedAnalysisTypeCode
     ) {
-        if (selectedType == null || patterns == null || allCards == null || allCards.isEmpty() || expectedAnalysisTypeCode == null) {
+        if (selectedType == null || patterns == null || allCards == null || allCards.isEmpty()
+                || emotionStats == null || expectedAnalysisTypeCode == null) {
             throw new AiResponseParseException(ErrorCode.TYPE_REPORT_GENERATE_INPUT_EMPTY);
         }
 
@@ -110,7 +114,13 @@ public class TypeReportContentGenerationService {
             personas.add(new TypeReportContentDto.PersonaDto(titleNode.asText(), contentNode.asText()));
         }
 
-        return new TypeReportContentDto(code, typeAnalysis, personas);
+        return new TypeReportContentDto(
+                code,
+                typeAnalysis,
+                TypeContentFactory.fromPlainText(typeAnalysis).normalized(),
+                TypeContentFactory.emptyText().normalized(),
+                personas
+        );
     }
 
     private void validate(TypeReportContentDto dto, String expectedAnalysisTypeCode) {
