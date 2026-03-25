@@ -43,15 +43,16 @@ public class TypeReportLlmClient {
             "패턴", "분석", "데이터", "기록", "습관", "장점", "단점", "모습", "결국", "보여집니다", "확인됩니다"
     };
 
-    public JsonNode generateRaw(String selectedType, String patterns, String evidenceCards) {
-        if (blank(selectedType) || blank(patterns) || blank(evidenceCards)) {
+    public JsonNode generateRaw(String selectedType, String patterns, String evidenceCards, String emotionStats) {
+        if (blank(selectedType) || blank(patterns) || blank(evidenceCards) || blank(emotionStats)) {
             throw new AiResponseParseException(ErrorCode.TYPE_REPORT_GENERATE_INPUT_EMPTY);
         }
 
         String prompt = promptLoader.loadPrompt()
                 .replace("{selectedType}", selectedType)
                 .replace("{patterns}", patterns)
-                .replace("{evidenceCards}", evidenceCards);
+                .replace("{evidenceCards}", evidenceCards)
+                .replace("{emotionStats}", emotionStats);
 
         ChatClient client = llmRouter.route(provider);
 

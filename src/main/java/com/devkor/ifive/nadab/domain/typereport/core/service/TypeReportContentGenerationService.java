@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.typereport.core.service;
 import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeReportInputAssembler;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.AnalysisTypeCandidateDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.EvidenceCardDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.PatternExtractionResultDto;
@@ -10,6 +11,7 @@ import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReportContentDto;
 import com.devkor.ifive.nadab.domain.typereport.infra.TypeReportLlmClient;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class TypeReportContentGenerationService {
     private static final int PERSONA_CONTENT_MAX = 300;
 
     private final TypeReportLlmClient llmClient;
+    private final ObjectMapper objectMapper;
 
     public TypeReportContentDto generate(
             AnalysisTypeCandidateDto selectedType,
@@ -51,8 +54,9 @@ public class TypeReportContentGenerationService {
         String selectedTypeText = TypeReportInputAssembler.assembleSelectedType(selectedType);
         String patternsText = TypeReportInputAssembler.assemblePatterns(patterns);
         String evidenceCardsText = TypeReportInputAssembler.assembleEvidenceCards(representative);
+        String emotionStatsText = TypeReportInputAssembler.assembleEmotionStats(emotionStats);
 
-        JsonNode raw = llmClient.generateRaw(selectedTypeText, patternsText, evidenceCardsText);
+        JsonNode raw = llmClient.generateRaw(selectedTypeText, patternsText, evidenceCardsText, emotionStatsText);
 
         // 1차 파싱/검증
         try {
@@ -93,6 +97,8 @@ public class TypeReportContentGenerationService {
     private TypeReportContentDto toDto(JsonNode raw) {
         JsonNode codeNode = raw.get("analysisTypeCode");
         JsonNode typeAnalysisNode = raw.get("typeAnalysis");
+        JsonNode typeAnalysisContentNode = raw.get("typeAnalysisContent");
+        JsonNode emotionSummaryContentNode = raw.get("emotionSummaryContent");
         JsonNode personasNode = raw.get("personas");
 
         if (codeNode == null || !codeNode.isTextual() ||
@@ -103,6 +109,14 @@ public class TypeReportContentGenerationService {
 
         String code = codeNode.asText();
         String typeAnalysis = typeAnalysisNode.asText();
+        TypeTextContent typeAnalysisContent = parseTypeTextContent(
+                typeAnalysisContentNode,
+                TypeContentFactory.fromPlainText(typeAnalysis)
+        );
+        TypeTextContent emotionSummaryContent = parseTypeTextContent(
+                emotionSummaryContentNode,
+                TypeContentFactory.emptyText()
+        );
 
         List<TypeReportContentDto.PersonaDto> personas = new ArrayList<>();
         for (JsonNode p : personasNode) {
@@ -117,8 +131,8 @@ public class TypeReportContentGenerationService {
         return new TypeReportContentDto(
                 code,
                 typeAnalysis,
-                TypeContentFactory.fromPlainText(typeAnalysis).normalized(),
-                TypeContentFactory.emptyText().normalized(),
+                typeAnalysisContent,
+                emotionSummaryContent,
                 personas
         );
     }
@@ -131,6 +145,10 @@ public class TypeReportContentGenerationService {
         int typeLen = dto.typeAnalysis() == null ? 0 : dto.typeAnalysis().length();
         if (typeLen < TYPE_ANALYSIS_MIN || typeLen > TYPE_ANALYSIS_MAX) {
             throw new AiResponseParseException(ErrorCode.TYPE_REPORT_TYPE_ANALYSIS_LENGTH_INVALID);
+        }
+
+        if (dto.typeAnalysisContent() == null || dto.emotionSummaryContent() == null) {
+            throw new AiResponseParseException(ErrorCode.TYPE_REPORT_JSON_MISSING_FIELDS);
         }
 
         List<TypeReportContentDto.PersonaDto> personas = dto.personas();
@@ -148,6 +166,19 @@ public class TypeReportContentGenerationService {
             if (contentLen < PERSONA_CONTENT_MIN || contentLen > PERSONA_CONTENT_MAX) {
                 throw new AiResponseParseException(ErrorCode.TYPE_REPORT_PERSONA_CONTENT_LENGTH_INVALID);
             }
+        }
+    }
+
+    private TypeTextContent parseTypeTextContent(JsonNode node, TypeTextContent fallback) {
+        if (node == null || node.isNull()) {
+            return fallback.normalized();
+        }
+        try {
+            TypeTextContent parsed = objectMapper.treeToValue(node, TypeTextContent.class);
+            if (parsed == null) return fallback.normalized();
+            return parsed.normalized();
+        } catch (Exception e) {
+            throw new AiResponseParseException(ErrorCode.TYPE_REPORT_JSON_MISSING_FIELDS);
         }
     }
 }
