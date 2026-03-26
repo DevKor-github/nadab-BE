@@ -42,15 +42,13 @@ public interface TypeDailyEntryQueryRepository extends Repository<DailyReport, L
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.EmotionStatsCountDto(
             e.code,
             e.name,
-            count(dr)
+            count(dr.id)
         )
-          from DailyReport dr
-          join dr.answerEntry ae
-          join ae.question q
-          join q.interest i
-          join dr.emotion e
-         where ae.user.id = :userId
-           and i.code = :interestCode
+          from Emotion e
+          left join DailyReport dr
+            on dr.emotion = e
+           and dr.answerEntry.user.id = :userId
+           and dr.answerEntry.question.interest.code = :interestCode
            and dr.status = :status
          group by e.code, e.name
     """)
