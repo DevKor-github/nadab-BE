@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TypeReportContentGenerationService {
 
-    private static final int TYPE_ANALYSIS_MIN = 100;
-    private static final int TYPE_ANALYSIS_MAX = 350;
+    private static final int TYPE_ANALYSIS_MIN = 220;
+    private static final int TYPE_ANALYSIS_MAX = 300;
 
     private static final int PERSONA_COUNT = 2;
     private static final int PERSONA_TITLE_MIN = 1;
