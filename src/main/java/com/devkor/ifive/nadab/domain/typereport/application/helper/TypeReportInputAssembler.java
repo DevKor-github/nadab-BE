@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.typereport.application.helper;
 
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.AnalysisTypeCandidateDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.EvidenceCardDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.PatternExtractionResultDto;
@@ -41,6 +42,31 @@ public final class TypeReportInputAssembler {
             sb.append("- id: ").append(n(c.id())).append("\n")
                     .append("  date: ").append(c.date() == null ? "N/A" : c.date()).append("\n")
                     .append("  card: ").append(n(c.card())).append("\n\n");
+        }
+        return sb.toString().trim();
+    }
+
+    public static String assembleEmotionStats(TypeEmotionStatsContent stats) {
+        if (stats == null) return "";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("total_count: ").append(stats.totalCount() == null ? 0 : stats.totalCount()).append("\n")
+                .append("dominant_emotion_code: ").append(n(stats.dominantEmotionCode())).append("\n")
+                .append("positive_percent: ").append(stats.positivePercent() == null ? 0 : stats.positivePercent()).append("\n")
+                .append("emotions:\n");
+
+        List<TypeEmotionStatsContent.EmotionStat> emotions = stats.emotions();
+        if (emotions == null || emotions.isEmpty()) {
+            sb.append("- none");
+            return sb.toString().trim();
+        }
+
+        for (TypeEmotionStatsContent.EmotionStat e : emotions) {
+            if (e == null) continue;
+            sb.append("- code: ").append(n(e.emotionCode())).append("\n")
+                    .append("  name: ").append(n(e.emotionName())).append("\n")
+                    .append("  count: ").append(e.count() == null ? 0 : e.count()).append("\n")
+                    .append("  percent: ").append(e.percent() == null ? 0 : e.percent()).append("\n");
         }
         return sb.toString().trim();
     }

@@ -1,12 +1,17 @@
 package com.devkor.ifive.nadab.domain.typereport.core.entity;
 
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.entity.SoftDeletableEntity;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -38,6 +43,18 @@ public class TypeReport extends SoftDeletableEntity {
 
     @Column(name = "type_analysis", length = 400)
     private String typeAnalysis;
+
+    @Type(JsonType.class)
+    @Column(name = "type_analysis_content", columnDefinition = "jsonb")
+    private TypeTextContent typeAnalysisContent;
+
+    @Type(JsonType.class)
+    @Column(name = "emotion_summary_content", columnDefinition = "jsonb")
+    private TypeTextContent emotionSummaryContent;
+
+    @Type(JsonType.class)
+    @Column(name = "emotion_stats", columnDefinition = "jsonb")
+    private TypeEmotionStatsContent emotionStats;
 
     @Column(name = "persona1_title", length = 15)
     private String persona1Title;
@@ -75,6 +92,9 @@ public class TypeReport extends SoftDeletableEntity {
         report.interestCode = interestCode;
         report.analysisType = analysisType;
         report.typeAnalysis = typeAnalysis;
+        report.typeAnalysisContent = TypeContentFactory.fromPlainText(typeAnalysis).normalized();
+        report.emotionSummaryContent = TypeContentFactory.emptyText().normalized();
+        report.emotionStats = TypeContentFactory.emptyEmotionStats();
         report.persona1Title = persona1Title;
         report.persona1Content = persona1Content;
         report.persona2Title = persona2Title;

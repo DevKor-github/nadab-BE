@@ -122,6 +122,13 @@ public class TypeReportController {
         - ```requiredCount```: 유형 리포트 생성을 위해 필요한 최소 완료 개수 (현재 30) </br>
         - ```canGenerate```: 현재 시점에 생성 조건을 충족했는지 여부 </br>
         - ```isFirstFree```: 해당 interest의 “첫 유형 리포트 생성 무료” 대상 여부 </br></br>
+        
+        **<텍스트 스타일(styled) 지원>** </br>
+        유형 리포트는 강조 표현을 위해 ```typeAnalysisContent```와 ```emotionSummaryContent``` 필드에 구조화된 형태로 함께 제공됩니다. </br>
+        각 필드는 ```styledText```에 대해 ```segments``` 배열을 가지며, </br>
+        각 segment는 ```text```와 ```marks```를 포함합니다. </br>
+        ```marks```에는 ```BOLD```, ```HIGHLIGHT```만 포함될 수 있습니다. </br>
+        클라이언트는 ```segments```를 순서대로 이어 붙여 렌더링하고, ```marks```에 따라 볼드/하이라이트를 적용하면 됩니다. </br>
 
         선택 가능한 관심 주제 코드는 다음과 같습니다. </br>
         - **PREFERENCE** : 취향 </br>
@@ -191,6 +198,13 @@ public class TypeReportController {
         - ```requiredCount```: 생성에 필요한 최소 개수 (현재 30) </br>
         - ```canGenerate```: 현재 생성 조건 충족 여부 </br>
         - ```isFirstFree```: 해당 interest의 첫 생성 무료 대상 여부 </br></br>
+        
+        **<텍스트 스타일(styled) 지원>** </br>
+        유형 리포트는 강조 표현을 위해 ```typeAnalysisContent```와 ```emotionSummaryContent``` 필드에 구조화된 형태로 함께 제공됩니다. </br>
+        각 필드는 ```styledText```에 대해 ```segments``` 배열을 가지며, </br>
+        각 segment는 ```text```와 ```marks```를 포함합니다. </br>
+        ```marks```에는 ```BOLD```, ```HIGHLIGHT```만 포함될 수 있습니다. </br>
+        클라이언트는 ```segments```를 순서대로 이어 붙여 렌더링하고, ```marks```에 따라 볼드/하이라이트를 적용하면 됩니다. </br>
         """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
