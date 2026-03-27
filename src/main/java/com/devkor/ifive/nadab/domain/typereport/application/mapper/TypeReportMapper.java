@@ -16,6 +16,9 @@ public final class TypeReportMapper {
                 (analysisType != null) ? analysisType.getHashtag2() : null,  // 해시태그 2
                 (analysisType != null) ? analysisType.getHashtag3() : null,  // 해시태그 3
                 report.getTypeAnalysis(),
+                report.getTypeAnalysisContent(),
+                report.getEmotionSummaryContent(),
+                report.getEmotionStats(),
                 report.getPersona1Title(),
                 report.getPersona1Content(),
                 report.getPersona2Title(),

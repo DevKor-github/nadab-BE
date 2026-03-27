@@ -321,6 +321,10 @@ public enum ErrorCode {
     TYPE_REPORT_JSON_MISSING_FIELDS(HttpStatus.BAD_REQUEST, "AI 응답 JSON에 필수 필드(analysisTypeCode/typeAnalysis/personas)가 없거나 형식이 올바르지 않습니다"),
     TYPE_REPORT_PERSONAS_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 형식이 올바르지 않습니다"),
     TYPE_REPORT_PERSONA_COUNT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 personas 개수가 2개가 아닙니다"),
+    TYPE_REPORT_AI_SEGMENT_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 segment 형식이 올바르지 않습니다"),
+    TYPE_REPORT_HIGHLIGHT_WITHOUT_BOLD(HttpStatus.BAD_REQUEST, "AI 응답에서 HIGHLIGHT는 BOLD와 함께 포함되어야 합니다"),
+    TYPE_REPORT_HIGHLIGHT_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "AI 응답의 하이라이트 개수가 제한을 초과했습니다"),
+    TYPE_REPORT_HIGHLIGHT_SEGMENT_TOO_LONG(HttpStatus.BAD_REQUEST, "AI 응답의 하이라이트 구간이 너무 깁니다"),
 
     TYPE_REPORT_TYPE_ANALYSIS_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 typeAnalysis 길이가 제한(230~270자)을 만족하지 않습니다"),
     TYPE_REPORT_PERSONA_TITLE_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 JSON의 persona title 길이가 제한(1~15자)을 만족하지 않습니다"),
@@ -335,7 +339,6 @@ public enum ErrorCode {
     TYPE_REPORT_REWRITE_PERSONA_1_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "personas[0].content 글자 수가 규칙을 벗어났어요."),
     TYPE_REPORT_REWRITE_PERSONA_2_LENGTH_INVALID(HttpStatus.BAD_REQUEST, "personas[1].content 글자 수가 규칙을 벗어났어요."),
     TYPE_REPORT_REWRITE_LINEBREAK_INVALID(HttpStatus.BAD_REQUEST, "리라이트 결과에 줄바꿈이 포함되어 있어요."),
-    TYPE_REPORT_REWRITE_BANNED_WORD_USED(HttpStatus.BAD_REQUEST, "리라이트 결과에 금지 단어가 포함되어 있어요."),
     TYPE_REPORT_REWRITE_INPUT_SCHEMA_INVALID(HttpStatus.BAD_REQUEST, "리라이트 대상 필드가 없거나 타입이 올바르지 않아요."),
 
     // 404 Not Found

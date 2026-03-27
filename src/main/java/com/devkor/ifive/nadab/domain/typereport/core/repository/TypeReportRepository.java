@@ -96,34 +96,40 @@ public interface TypeReportRepository extends JpaRepository<TypeReport, Long> {
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-    UPDATE TypeReport tr
-       SET tr.status = :status,
-           tr.analysisType = (
-               SELECT at
-                 FROM AnalysisType at
-                WHERE at.code = :analysisTypeCode
-                  AND at.deletedAt IS NULL
-           ),
-           tr.typeAnalysis = :typeAnalysis,
-           tr.persona1Title = :persona1Title,
-           tr.persona1Content = :persona1Content,
-           tr.persona2Title = :persona2Title,
-           tr.persona2Content = :persona2Content,
-           tr.analyzedAt = CURRENT_TIMESTAMP
-     WHERE tr.id = :reportId
-       AND EXISTS (
-           SELECT 1
-             FROM AnalysisType at2
-            WHERE at2.code = :analysisTypeCode
-              AND at2.deletedAt IS NULL
-       )
-""")
+    @Query(value = """
+        UPDATE type_reports tr
+           SET status = :status,
+               analysis_type_id = (
+                   SELECT at.id
+                     FROM analysis_types at
+                    WHERE at.code = :analysisTypeCode
+                      AND at.deleted_at IS NULL
+               ),
+               type_analysis = :typeAnalysis,
+               type_analysis_content = cast(:typeAnalysisContent as jsonb),
+               emotion_summary_content = cast(:emotionSummaryContent as jsonb),
+               emotion_stats = cast(:emotionStats as jsonb),
+               persona1_title = :persona1Title,
+               persona1_content = :persona1Content,
+               persona2_title = :persona2Title,
+               persona2_content = :persona2Content,
+               analyzed_at = CURRENT_TIMESTAMP
+         WHERE tr.id = :reportId
+           AND EXISTS (
+               SELECT 1
+                 FROM analysis_types at2
+                WHERE at2.code = :analysisTypeCode
+                  AND at2.deleted_at IS NULL
+           )
+""", nativeQuery = true)
     int markCompleted(
             @Param("reportId") Long reportId,
-            @Param("status") TypeReportStatus status,
+            @Param("status") String status,
             @Param("analysisTypeCode") String analysisTypeCode,
             @Param("typeAnalysis") String typeAnalysis,
+            @Param("typeAnalysisContent") String typeAnalysisContent,
+            @Param("emotionSummaryContent") String emotionSummaryContent,
+            @Param("emotionStats") String emotionStats,
             @Param("persona1Title") String persona1Title,
             @Param("persona1Content") String persona1Content,
             @Param("persona2Title") String persona2Title,

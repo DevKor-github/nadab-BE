@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.typereport.application;
 
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReserveResultDto;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
@@ -16,6 +18,8 @@ import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -33,6 +37,7 @@ public class TypeReportTxService {
     private final CrystalLogRepository crystalLogRepository;
 
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     private static final long TYPE_REPORT_COST = 100L;
     private static final long FREE_COST = 0L;
@@ -101,22 +106,43 @@ public class TypeReportTxService {
             Long previousCompletedReportId,
             String analysisTypeCode,
             String typeAnalysis,
+            TypeTextContent typeAnalysisContent,
+            TypeTextContent emotionSummaryContent,
+            TypeEmotionStatsContent emotionStats,
             String persona1Title,
             String persona1Content,
             String persona2Title,
             String persona2Content
     ) {
+        TypeTextContent normalizedTypeAnalysisContent = typeAnalysisContent.normalized();
+        TypeTextContent normalizedEmotionSummaryContent = emotionSummaryContent.normalized();
+        TypeEmotionStatsContent normalizedEmotionStats = emotionStats.normalized();
 
-        // 새 리포트가 완성된 뒤에만 이전 completed 리포트 soft-delete
+        String typeAnalysisContentJson;
+        String emotionSummaryContentJson;
+        String emotionStatsJson;
+
+        try {
+            typeAnalysisContentJson = objectMapper.writeValueAsString(normalizedTypeAnalysisContent);
+            emotionSummaryContentJson = objectMapper.writeValueAsString(normalizedEmotionSummaryContent);
+            emotionStatsJson = objectMapper.writeValueAsString(normalizedEmotionStats);
+        } catch (Exception e) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+
         if (previousCompletedReportId != null) {
             typeReportRepository.softDeleteById(previousCompletedReportId);
         }
+
         // 그 다음 새 리포트 COMPLETED로 업데이트 (analysisTypeCode 유효성 검사 포함)
         int updated = typeReportRepository.markCompleted(
                 reportId,
-                TypeReportStatus.COMPLETED,
+                TypeReportStatus.COMPLETED.name(),
                 analysisTypeCode,
                 typeAnalysis,
+                typeAnalysisContentJson,
+                emotionSummaryContentJson,
+                emotionStatsJson,
                 persona1Title,
                 persona1Content,
                 persona2Title,
