@@ -29,6 +29,11 @@ public class NicknameValidator {
             return NicknameValidationResultDto.fail("닉네임은 2자 이상 10자 이하여야 합니다.");
         }
 
+        // 한글 자모(ㄱ-ㅎ, ㅏ-ㅣ) 포함 금지
+        if (nickname.matches(".*[ㄱ-ㅎㅏ-ㅣ].*")) {
+            return NicknameValidationResultDto.fail("닉네임에는 완성되지 않은 한글을 사용할 수 없습니다.");
+        }
+
         // 한글/영문만 허용
         if (!nickname.matches("^[가-힣a-zA-Z]+$")) {
             return NicknameValidationResultDto.fail("닉네임은 한글과 영문만 사용할 수 있습니다.");
