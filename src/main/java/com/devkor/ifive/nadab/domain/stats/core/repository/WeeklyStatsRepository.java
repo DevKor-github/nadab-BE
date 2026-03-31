@@ -72,6 +72,23 @@ public class WeeklyStatsRepository {
                 .getResultList();
     }
 
+    public List<DateCountDto> findCompletedDailyReportCountsByDateBetween(
+            LocalDate startDate,
+            LocalDate endDateInclusive
+    ) {
+        return em.createQuery("""
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto(dr.date, count(dr.id))
+                from DailyReport dr
+                where dr.date between :startDate and :endDate
+                  and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+                group by dr.date
+                order by dr.date
+                """, DateCountDto.class)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDateInclusive)
+                .getResultList();
+    }
+
     public long countInProgressWeeklyReportsNow() {
         return em.createQuery("""
             select count(wr.id)

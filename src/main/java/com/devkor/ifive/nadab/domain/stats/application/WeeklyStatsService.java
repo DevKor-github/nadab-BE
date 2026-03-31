@@ -55,9 +55,13 @@ public class WeeklyStatsService {
         Map<LocalDate, Long> completedMap = aggregateByWeekStart(
                 repo.findCompletedWeeklyReportCountsByDateBetween(startWeekStart, endDateInclusive)
         );
+        Map<LocalDate, Long> completedDailyMap = aggregateByWeekStart(
+                repo.findCompletedDailyReportCountsByDateBetween(startWeekStart, endDateInclusive)
+        );
 
         List<Long> signupCounts = weekStarts.stream().map(d -> signupMap.getOrDefault(d, 0L)).toList();
         List<Long> assignedCounts = weekStarts.stream().map(d -> assignedMap.getOrDefault(d, 0L)).toList();
+        List<Long> completedDailyCounts = weekStarts.stream().map(d -> completedDailyMap.getOrDefault(d, 0L)).toList();
         List<Long> completedCounts = weekStarts.stream().map(d -> completedMap.getOrDefault(d, 0L)).toList();
 
         long inProgressNow = repo.countInProgressWeeklyReportsNow();
@@ -66,6 +70,7 @@ public class WeeklyStatsService {
                 labels,
                 signupCounts,
                 assignedCounts,
+                completedDailyCounts,
                 completedCounts,
                 inProgressNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
