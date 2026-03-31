@@ -179,11 +179,8 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 20px;
     }
-    .chart-card-wide { grid-column: 1 / -1; }
-
     @media (max-width: 800px) {
       .charts-grid { grid-template-columns: 1fr; }
-      .chart-card-wide { grid-column: unset; }
     }
 
     .chart-card {
@@ -222,6 +219,7 @@
     .dot-blue { background: var(--accent); }
     .dot-pink { background: var(--accent-2); }
     .dot-teal { background: var(--accent-3); }
+    .dot-orange { background: #f5a524; }
   </style>
 </head>
 <body>
@@ -289,13 +287,23 @@
     </div>
   </div>
 
-  <div class="chart-card chart-card-wide">
+  <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-teal"></span>생성된 월간 리포트 수</div>
+      <div class="chart-card-title"><span class="dot dot-teal"></span>생성된 일간 리포트 수</div>
       <div class="chart-card-subtitle">최근 5개월</div>
     </div>
     <div class="chart-card-body">
-      <canvas id="completedChart" height="90"></canvas>
+      <canvas id="completedDailyChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-card-title"><span class="dot dot-orange"></span>생성된 월간 리포트 수</div>
+      <div class="chart-card-subtitle">최근 5개월</div>
+    </div>
+    <div class="chart-card-body">
+      <canvas id="completedMonthlyChart" height="140"></canvas>
     </div>
   </div>
 </div>
@@ -304,7 +312,8 @@
   const labels = [[${vm.labels}]];
   const signupCounts = [[${vm.signupCounts}]].map(v => parseInt(v, 10));
   const assignedCounts = [[${vm.assignedQuestionCounts}]].map(v => parseInt(v, 10));
-  const completedCounts = [[${vm.completedMonthlyReportCounts}]].map(v => parseInt(v, 10));
+  const completedDailyCounts = [[${vm.completedDailyReportCounts}]].map(v => parseInt(v, 10));
+  const completedMonthlyCounts = [[${vm.completedMonthlyReportCounts}]].map(v => parseInt(v, 10));
 
   Chart.defaults.color = '#8b91a8';
   Chart.defaults.font.family = "'DM Mono', monospace";
@@ -323,7 +332,8 @@
   const configs = [
     { id: 'signupChart', label: '가입자 수', data: signupCounts, color: 'rgba(108,143,255,1)' },
     { id: 'assignedChart', label: '할당 질문 수', data: assignedCounts, color: 'rgba(255,126,179,1)' },
-    { id: 'completedChart', label: '월간 리포트 생성 수', data: completedCounts, color: 'rgba(77,232,194,1)' },
+    { id: 'completedDailyChart', label: '일간 리포트 생성 수', data: completedDailyCounts, color: 'rgba(77,232,194,1)' },
+    { id: 'completedMonthlyChart', label: '월간 리포트 생성 수', data: completedMonthlyCounts, color: 'rgba(245,165,36,1)' },
   ];
 
   configs.forEach(({ id, label, data, color }) => {
