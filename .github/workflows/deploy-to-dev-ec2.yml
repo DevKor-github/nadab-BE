@@ -117,6 +117,7 @@ jobs:
             NAVER_REDIRECT_URI="${{ secrets.NAVER_REDIRECT_URI }}" \
             GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
             GOOGLE_ANDROID_CLIENT_ID="${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}" \
+            GOOGLE_IOS_CLIENT_ID="${{ secrets.GOOGLE_IOS_CLIENT_ID }}" \
             GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
             GOOGLE_REDIRECT_URI="${{ secrets.GOOGLE_REDIRECT_URI }}" \
             KAKAO_CLIENT_ID="${{ secrets.KAKAO_CLIENT_ID }}" \
