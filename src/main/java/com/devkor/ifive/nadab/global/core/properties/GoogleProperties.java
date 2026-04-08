@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class GoogleProperties {
     private String clientId;           // 웹용 Client ID
     private String androidClientId;    // Android용 Client ID
+    private String iosClientId;        // iOS용 Client ID
     private String clientSecret;
     private String redirectUri;
 }
