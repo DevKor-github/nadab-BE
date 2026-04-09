@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.global.exception.BadRequestException;
  * - 지원되는 소셜 로그인 제공자를 정의
  */
 public enum OAuth2Provider {
+    APPLE,
     GOOGLE,
     KAKAO,
     NAVER;
