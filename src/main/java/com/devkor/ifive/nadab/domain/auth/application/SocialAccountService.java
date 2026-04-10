@@ -46,7 +46,13 @@ public class SocialAccountService {
                     }
                     return user;
                 })
-                .orElseGet(() -> saveNewSocialUser(email, provider, providerId));
+                .orElseGet(() -> {
+                    // 신규 사용자 생성 시 email 필수
+                    if (email == null || email.isBlank()) {
+                        throw new BadRequestException(ErrorCode.AUTH_OAUTH2_USERINFO_FAILED);
+                    }
+                    return saveNewSocialUser(email, provider, providerId);
+                });
     }
 
     // User 조회 실패시 신규 소셜 로그인 사용자 생성
@@ -64,6 +70,7 @@ public class SocialAccountService {
             if (existingSocialAccount != null) {
                 // 소셜 로그인 계정
                 ErrorCode errorCode = switch (existingSocialAccount.getProviderType()) {
+                    case APPLE -> ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_APPLE;
                     case GOOGLE -> ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE;
                     case KAKAO -> ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO;
                     case NAVER -> ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER;

@@ -30,10 +30,8 @@ public class SocialAccount extends CreatableEntity {
     @Column(name = "provider_type", nullable = false)
     private ProviderType providerType;
 
-    // @Convert(converter = KmsEncryptedStringConverter.class)
-    // 추후 구현 예정. 구현될 때까지 이 필드는 null로 둘 것
-    @Column(name = "refresh_token", columnDefinition = "TEXT")
-    private String refreshToken = null;
+    @Embedded
+    private SocialAuthRefreshToken refreshToken;
 
     public static SocialAccount create(User user, String providerUserId, ProviderType providerType) {
         SocialAccount socialAccount = new SocialAccount();
@@ -41,5 +39,9 @@ public class SocialAccount extends CreatableEntity {
         socialAccount.providerUserId = providerUserId;
         socialAccount.providerType = providerType;
         return socialAccount;
+    }
+
+    public void updateRefreshToken(SocialAuthRefreshToken refreshToken) {
+        this.refreshToken = refreshToken;
     }
 }

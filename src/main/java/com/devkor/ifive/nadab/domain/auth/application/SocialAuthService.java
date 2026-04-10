@@ -43,6 +43,7 @@ public class SocialAuthService {
             case NAVER -> naverOAuth2Client.buildAuthorizationUrl(state);
             case GOOGLE -> googleOAuth2Client.buildAuthorizationUrl(state);
             case KAKAO -> kakaoOAuth2Client.buildAuthorizationUrl(state);
+            default -> throw new OAuth2Exception(ErrorCode.AUTH_UNSUPPORTED_OAUTH2_PROVIDER);
         };
     }
 
@@ -60,6 +61,7 @@ public class SocialAuthService {
             case NAVER -> naverOAuth2Client.fetchAccessToken(code, state);
             case GOOGLE -> googleOAuth2Client.fetchAccessToken(code);
             case KAKAO -> kakaoOAuth2Client.fetchAccessToken(code);
+            default -> throw new OAuth2Exception(ErrorCode.AUTH_UNSUPPORTED_OAUTH2_PROVIDER);
         };
 
         // 3. 사용자 정보 조회
@@ -67,6 +69,7 @@ public class SocialAuthService {
             case NAVER -> naverOAuth2Client.fetchUserInfo(accessToken);
             case GOOGLE -> googleOAuth2Client.fetchUserInfo(accessToken);
             case KAKAO -> kakaoOAuth2Client.fetchUserInfo(accessToken);
+            default -> throw new OAuth2Exception(ErrorCode.AUTH_UNSUPPORTED_OAUTH2_PROVIDER);
         };
 
         // 4. 사용자 조회 또는 생성
