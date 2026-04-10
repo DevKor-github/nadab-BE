@@ -75,6 +75,8 @@ cloud:
       secret-key: ${IAM_SECRET_KEY}
     s3:
       bucket: ${BUCKET_NAME}
+    kms:
+      key-id: ${KMS_KEY_ID}
 
 app:
   cookie:

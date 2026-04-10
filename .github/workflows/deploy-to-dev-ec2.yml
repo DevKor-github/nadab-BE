@@ -124,10 +124,15 @@ jobs:
             KAKAO_CLIENT_SECRET="${{ secrets.KAKAO_CLIENT_SECRET }}" \
             KAKAO_REDIRECT_URI="${{ secrets.KAKAO_REDIRECT_URI }}" \
             KAKAO_APP_ID="${{ secrets.KAKAO_APP_ID }}" \
+            APPLE_CLIENT_ID="${{ secrets.APPLE_CLIENT_ID }}" \
+            APPLE_TEAM_ID="${{ secrets.APPLE_TEAM_ID }}" \
+            APPLE_KEY_ID="${{ secrets.APPLE_KEY_ID }}" \
+            APPLE_PRIVATE_KEY="${{ secrets.APPLE_PRIVATE_KEY }}" \
             IAM_ACCESS_KEY="${{ secrets.IAM_ACCESS_KEY }}" \
             IAM_SECRET_KEY="${{ secrets.IAM_SECRET_KEY }}" \
             BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
             PROFILE_IMAGE_BASE_URL="${{ secrets.PROFILE_IMAGE_BASE_URL }}" \
+            KMS_KEY_ID="${{ secrets.KMS_KEY_ID }}" \
             MAIL_ADDRESS="${{ secrets.MAIL_ADDRESS }}" \
             MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \
             OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \

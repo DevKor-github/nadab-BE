@@ -58,6 +58,9 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.39.4')
     implementation 'software.amazon.awssdk:s3'
 
+    // AWS KMS
+    implementation 'software.amazon.awssdk:kms'
+
     // BadWordFiltering 라이브러리
     implementation 'io.github.vaneproject:badwordfiltering:1.0.0'
     implementation 'com.modernmt.text:profanity-filter:1.0.1'

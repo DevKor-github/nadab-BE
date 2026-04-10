@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.domain.auth.api.dto.request.SignupRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.NaverNativeLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.GoogleNativeLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.KakaoNativeLoginRequest;
+import com.devkor.ifive.nadab.domain.auth.api.dto.request.AppleNativeLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.AuthorizationUrlResponse;
 import com.devkor.ifive.nadab.domain.auth.api.dto.request.SocialLoginRequest;
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.TokenResponse;
@@ -256,6 +257,7 @@ public class AuthController {
                             responseCode = "409",
                             description = """
                                     이메일 중복
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_APPLE - 애플 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
@@ -320,8 +322,8 @@ public class AuthController {
                     @ApiResponse(
                             responseCode = "409",
                             description = """
-                                    이메일 중복
-                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    이메일 중복 (다른 제공자로 이미 가입된 경우)
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_APPLE - 애플 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
@@ -384,9 +386,9 @@ public class AuthController {
                     @ApiResponse(
                             responseCode = "409",
                             description = """
-                                    이메일 중복
+                                    이메일 중복 (다른 제공자로 이미 가입된 경우)
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_APPLE - 애플 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
-                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
                                     """,
@@ -444,10 +446,10 @@ public class AuthController {
                     @ApiResponse(
                             responseCode = "409",
                             description = """
-                                    이메일 중복
+                                    이메일 중복 (다른 제공자로 이미 가입된 경우)
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_APPLE - 애플 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
-                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
                                     - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
                                     """,
                             content = @Content
@@ -460,6 +462,74 @@ public class AuthController {
     ) {
         // 카카오 Access Token으로 사용자 정보 조회 및 로그인
         TokenBundle tokenBundle = nativeAuthService.executeKakaoLogin(request.kakaoAccessToken());
+
+        // Refresh Token을 HttpOnly 쿠키에 저장
+        cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
+
+        return ApiResponseEntity.ok(
+                new TokenResponse(tokenBundle.accessToken(), tokenBundle.signupStatus())
+        );
+    }
+
+    @PostMapping("/apple/native-login")
+    @PermitAll
+    @Operation(
+            summary = "애플 Native SDK 로그인 (iOS 전용)",
+            description = """
+                    iOS 앱에서 Sign in with Apple SDK로 받은 Authorization Code를 사용하여 로그인을 완료합니다.<br>
+                    Access Token과 signupStatus는 응답 바디(JSON)로 반환되며, Refresh Token은 HttpOnly 쿠키로 자동 설정됩니다.<br>
+                    기존 회원은 바로 로그인 처리되며, 신규 사용자는 자동으로 회원가입 후 로그인됩니다.<br>
+                    <br>
+                    중요: iOS 클라이언트 설정<br>
+                    - request.requestedScopes = [.email] 설정 필수<br>
+                    - email scope를 포함해야 첫 로그인 시 이메일을 받을 수 있습니다<br>
+                    <br>
+                    신규 가입자(signupStatus: PROFILE_INCOMPLETE)는 온보딩 과정에서 약관 동의(POST /terms/consent) 후 닉네임을 입력해야 합니다.<br>
+                    <br>
+                    **signupStatus:**<br>
+                    - PROFILE_INCOMPLETE: 프로필 입력 필요 (신규 가입자, 약관 동의 + 닉네임 입력 필요)<br>
+                    - COMPLETED: 가입 완료 (모든 필수 정보 입력 완료)<br>
+                    - WITHDRAWN: 회원 탈퇴 (14일 내 복구 가능)
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "로그인 성공",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "ErrorCode: VALIDATION_FAILED - Authorization Code가 누락된 경우",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = """
+                                    Authorization Code 검증 실패
+                                    - ErrorCode: AUTH_OAUTH2_TOKEN_FAILED - 애플 토큰 발급 실패(유효하지 않은 코드, 만료된 코드)
+                                    - ErrorCode: AUTH_OAUTH2_USERINFO_FAILED - 애플 ID Token 파싱 실패
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = """
+                                    이메일 중복 (다른 제공자로 이미 가입된 경우)
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_NAVER - 네이버 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_GOOGLE - 구글 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_KAKAO - 카카오 계정으로 이미 가입됨
+                                    - ErrorCode: AUTH_EMAIL_ALREADY_REGISTERED_WITH_BASIC - 일반 계정으로 이미 가입됨
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<TokenResponse>> appleNativeLogin(
+            @RequestBody @Valid AppleNativeLoginRequest request,
+            HttpServletResponse response
+    ) {
+        // 애플 Authorization Code로 토큰 교환 및 로그인
+        TokenBundle tokenBundle = nativeAuthService.executeAppleLogin(request.code());
 
         // Refresh Token을 HttpOnly 쿠키에 저장
         cookieManager.addRefreshTokenCookie(response, tokenBundle.refreshToken());
