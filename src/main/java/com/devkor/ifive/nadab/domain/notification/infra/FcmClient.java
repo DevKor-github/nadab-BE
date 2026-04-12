@@ -60,6 +60,7 @@ public class FcmClient {
                     .setTitle(message.getTitle())
                     .setBody(message.getBody())
                     .build())
+                .putData("notificationId", String.valueOf(message.getNotificationId()))
                 .putData("type", message.getType().name())
                 .putData("targetId", message.getTargetId() != null ? message.getTargetId() : "")
                 .putData("inboxMessage", message.getInboxMessage())

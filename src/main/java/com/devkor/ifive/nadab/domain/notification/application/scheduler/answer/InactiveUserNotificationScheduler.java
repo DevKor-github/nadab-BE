@@ -178,6 +178,7 @@ public class InactiveUserNotificationScheduler {
 
             // 5. FCM 푸시 발송
             NotificationMessageDto messageDto = NotificationMessageDto.builder()
+                .notificationId(null)  // 알림함에 저장하지 않음
                 .type(NotificationType.INACTIVE_USER_REMINDER)
                 .title(content.title())
                 .body(content.body())
