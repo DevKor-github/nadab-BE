@@ -87,4 +87,16 @@ public class NotificationEventListener {
             transactionHelper.markAsFailed(notificationId);
         }
     }
+
+    /**
+     * 뱃지 동기화 이벤트 처리
+     * - AFTER_COMMIT: 알림 읽음/삭제 트랜잭션이 커밋된 후 실행
+     * - @Async: 비동기로 다른 기기에 뱃지 카운트 동기화
+     */
+    @Async("fcmTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleBadgeSync(BadgeSyncEvent event) {
+        log.debug("Badge sync event received: userId={}", event.getUserId());
+        fcmSender.sendSilentBadgeUpdate(event.getUserId());
+    }
 }

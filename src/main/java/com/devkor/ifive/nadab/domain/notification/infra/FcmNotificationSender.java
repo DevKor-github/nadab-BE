@@ -221,10 +221,9 @@ public class FcmNotificationSender {
 
     /**
      * Silent Badge Update (알림 없이 뱃지만 업데이트)
-     * - 알림 읽음/삭제 후 다른 기기 뱃지 동기화
-     * - 비동기로 즉시 실행 (실시간 동기화)
+     * - EventListener에서 호출 (다른 기기 뱃지 동기화)
+     * - Multicast 발송
      */
-    @Async("fcmTaskExecutor")
     public void sendSilentBadgeUpdate(Long userId) {
         // 사용자 조회
         User user = userRepository.findById(userId).orElse(null);

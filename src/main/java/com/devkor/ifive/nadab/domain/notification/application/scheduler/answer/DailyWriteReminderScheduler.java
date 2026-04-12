@@ -156,6 +156,7 @@ public class DailyWriteReminderScheduler {
 
             // 4. FCM 푸시 발송
             NotificationMessageDto messageDto = NotificationMessageDto.builder()
+                .notificationId(null)  // 알림함에 저장하지 않음
                 .type(NotificationType.DAILY_WRITE_REMINDER)
                 .title(content.title())
                 .body(content.body())

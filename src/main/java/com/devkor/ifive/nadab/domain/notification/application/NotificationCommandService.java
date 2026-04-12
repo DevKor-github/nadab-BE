@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.notification.application;
 
+import com.devkor.ifive.nadab.domain.notification.application.event.BadgeSyncEvent;
 import com.devkor.ifive.nadab.domain.notification.application.event.NotificationCreatedEvent;
 import com.devkor.ifive.nadab.domain.notification.core.entity.Notification;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationGroup;
@@ -207,9 +208,9 @@ public class NotificationCommandService {
 
     /**
      * 다른 기기로 뱃지 개수 동기화 (Silent Badge Update)
-     * - 비동기로 즉시 실행 (실시간 동기화)
+     * - 이벤트 발행 (트랜잭션 커밋 후 실행)
      */
     private void syncBadgeCount(Long userId) {
-        fcmNotificationSender.sendSilentBadgeUpdate(userId);
+        eventPublisher.publishEvent(new BadgeSyncEvent(userId));
     }
 }
