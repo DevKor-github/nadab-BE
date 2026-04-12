@@ -12,6 +12,7 @@ import lombok.Getter;
 @Builder
 public class NotificationMessageDto {
 
+    private Long notificationId;  // 푸시 알림 탭 시 읽음 처리용
     private NotificationType type;
     private String title;
     private String body;
@@ -21,6 +22,7 @@ public class NotificationMessageDto {
 
     public static NotificationMessageDto from(Notification notification, int unreadCount) {
         return NotificationMessageDto.builder()
+            .notificationId(notification.getId())
             .type(notification.getType())
             .title(notification.getTitle())
             .body(notification.getBody())
