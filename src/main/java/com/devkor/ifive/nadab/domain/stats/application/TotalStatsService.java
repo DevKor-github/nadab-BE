@@ -35,7 +35,7 @@ public class TotalStatsService {
         providerMap.put("NORMAL", normal);
 
         // 표시 순서 고정
-        List<String> providerLabels = List.of("GOOGLE", "KAKAO", "NAVER", "NORMAL");
+        List<String> providerLabels = List.of("APPLE", "GOOGLE", "KAKAO", "NAVER", "NORMAL");
         List<Long> providerCounts = providerLabels.stream()
                 .map(l -> providerMap.getOrDefault(l, 0L))
                 .toList();

@@ -287,6 +287,9 @@
      th:classappend="${activeTab} == 'monthly' ? ' active' : ''"
      th:href="@{/stats/monthly}">월간</a>
   <a class="tab-link"
+     th:classappend="${activeTab} == 'type' ? ' active' : ''"
+     th:href="@{/stats/type}">유형</a>
+  <a class="tab-link"
      th:classappend="${activeTab} == 'total' ? ' active' : ''"
      th:href="@{/stats/total}">전체</a>
 </div>
@@ -359,6 +362,17 @@
     'rgba(77,195,255,0.85)',
   ];
 
+  const providerPaletteByLabel = {
+    APPLE: 'rgba(180,120,255,0.85)',
+    GOOGLE: 'rgba(108,143,255,0.85)',
+    KAKAO: 'rgba(255,126,179,0.85)',
+    NAVER: 'rgba(77,232,194,0.85)',
+    NORMAL: 'rgba(255,196,77,0.85)',
+  };
+  const providerPalette = providerLabels.map(
+    (label, index) => providerPaletteByLabel[label] ?? PALETTE[index % PALETTE.length]
+  );
+
   const tooltipDefaults = {
     backgroundColor: '#1e2230',
     borderColor: 'rgba(255,255,255,0.1)',
@@ -378,7 +392,7 @@
       datasets: [{
         label: '유저 수',
         data: providerCounts,
-        backgroundColor: PALETTE,
+        backgroundColor: providerPalette,
         borderRadius: 6,
         borderSkipped: false,
       }]
