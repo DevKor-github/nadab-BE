@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>NADAB · Monthly Stats</title>
+  <title>NADAB - Type Stats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -14,7 +14,6 @@
       --border: #2a2f3e;
       --accent: #6c8fff;
       --accent-2: #ff7eb3;
-      --accent-3: #4de8c2;
       --text-1: #e8eaf2;
       --text-2: #8b91a8;
       --text-3: #4f556a;
@@ -105,7 +104,7 @@
       background: var(--text-3);
       transition: background .3s, box-shadow .3s;
     }
-    .health-bar.ok .health-dot { background: var(--accent-3); box-shadow: 0 0 6px rgba(77,232,194,.7); }
+    .health-bar.ok .health-dot { background: #4de8c2; box-shadow: 0 0 6px rgba(77,232,194,.7); }
     .health-bar.error .health-dot { background: var(--accent-2); box-shadow: 0 0 6px rgba(255,126,179,.7); }
 
     @keyframes pulse {
@@ -174,15 +173,6 @@
       color: var(--text-1);
     }
 
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-    }
-    @media (max-width: 800px) {
-      .charts-grid { grid-template-columns: 1fr; }
-    }
-
     .chart-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -215,21 +205,19 @@
       vertical-align: middle;
       position: relative;
       top: -1px;
+      background: var(--accent-2);
     }
-    .dot-blue { background: var(--accent); }
-    .dot-pink { background: var(--accent-2); }
-    .dot-teal { background: var(--accent-3); }
-    .dot-orange { background: #f5a524; }
   </style>
 </head>
 <body>
 
 <div class="page-header">
-  <div class="page-title">NADAB · Stats</div>
+  <div class="page-title">NADAB ·
+    Stats</div>
   <div class="header-right">
     <div id="healthBar" class="health-bar loading">
       <span class="health-dot"></span>
-      <span id="healthText" class="health-text">Checking...</span>
+      <span id="healthText" class="health-text">서버 확인 중…</span>
     </div>
     <div class="refreshed-at">
       마지막 갱신 <span th:text="${vm.refreshedAt}">-</span>
@@ -264,59 +252,24 @@
 
 <div class="kpi-card">
   <div>
-    <div class="kpi-label">현재 생성 중 월간 리포트</div>
-    <div class="kpi-value" th:text="${vm.inProgressMonthlyReportCount}">0</div>
+    <div class="kpi-label">현재 생성 중 유형 리포트</div>
+    <div class="kpi-value" th:text="${vm.inProgressTypeReportCount}">0</div>
   </div>
 </div>
 
-<div class="charts-grid">
-  <div class="chart-card">
-    <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-blue"></span>월간 가입자 수</div>
-      <div class="chart-card-subtitle">최근 5개월</div>
-    </div>
-    <div class="chart-card-body">
-      <canvas id="signupChart" height="140"></canvas>
-    </div>
+<div class="chart-card">
+  <div class="chart-card-header">
+    <div class="chart-card-title"><span class="dot"></span>관심 주제별 생성된 총 유형 리포트 수</div>
+    <div class="chart-card-subtitle">전체 누적 (COMPLETED 기준)</div>
   </div>
-
-  <div class="chart-card">
-    <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-pink"></span>월간 할당 질문 수</div>
-      <div class="chart-card-subtitle">최근 5개월</div>
-    </div>
-    <div class="chart-card-body">
-      <canvas id="assignedChart" height="140"></canvas>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-teal"></span>생성된 일간 리포트 수</div>
-      <div class="chart-card-subtitle">최근 5개월</div>
-    </div>
-    <div class="chart-card-body">
-      <canvas id="completedDailyChart" height="140"></canvas>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-orange"></span>생성된 월간 리포트 수</div>
-      <div class="chart-card-subtitle">최근 5개월</div>
-    </div>
-    <div class="chart-card-body">
-      <canvas id="completedMonthlyChart" height="140"></canvas>
-    </div>
+  <div class="chart-card-body">
+    <canvas id="typeByInterestChart" height="140"></canvas>
   </div>
 </div>
 
 <script th:inline="javascript">
-  const labels = [[${vm.labels}]];
-  const signupCounts = [[${vm.signupCounts}]].map(v => parseInt(v, 10));
-  const assignedCounts = [[${vm.assignedQuestionCounts}]].map(v => parseInt(v, 10));
-  const completedDailyCounts = [[${vm.completedDailyReportCounts}]].map(v => parseInt(v, 10));
-  const completedMonthlyCounts = [[${vm.completedMonthlyReportCounts}]].map(v => parseInt(v, 10));
+  const interestLabels = [[${vm.interestLabels}]];
+  const completedTypeReportCounts = [[${vm.completedTypeReportCounts}]].map(v => parseInt(v, 10));
 
   Chart.defaults.color = '#8b91a8';
   Chart.defaults.font.family = "'DM Mono', monospace";
@@ -324,72 +277,51 @@
 
   const gridColor = 'rgba(255,255,255,0.05)';
   const borderColor = 'rgba(255,255,255,0.08)';
-
-  function makeGradient(ctx, color) {
-    const g = ctx.createLinearGradient(0, 0, 0, 220);
-    g.addColorStop(0, color.replace('1)', '0.18)'));
-    g.addColorStop(1, color.replace('1)', '0)'));
-    return g;
-  }
-
-  const configs = [
-    { id: 'signupChart', label: '가입자 수', data: signupCounts, color: 'rgba(108,143,255,1)' },
-    { id: 'assignedChart', label: '할당 질문 수', data: assignedCounts, color: 'rgba(255,126,179,1)' },
-    { id: 'completedDailyChart', label: '일간 리포트 생성 수', data: completedDailyCounts, color: 'rgba(77,232,194,1)' },
-    { id: 'completedMonthlyChart', label: '월간 리포트 생성 수', data: completedMonthlyCounts, color: 'rgba(245,165,36,1)' },
+  const barColors = [
+    'rgba(108,143,255,0.85)',
+    'rgba(255,126,179,0.85)',
+    'rgba(77,232,194,0.85)',
+    'rgba(255,196,77,0.85)',
+    'rgba(180,120,255,0.85)',
+    'rgba(77,195,255,0.85)',
   ];
 
-  configs.forEach(({ id, label, data, color }) => {
-    const canvasEl = document.getElementById(id);
-    const ctx2d = canvasEl.getContext('2d');
-    const gradient = makeGradient(ctx2d, color);
-
-    new Chart(canvasEl, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label,
-          data,
-          tension: 0.35,
-          fill: true,
-          backgroundColor: gradient,
-          borderColor: color,
-          borderWidth: 2,
-          pointBackgroundColor: color,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        }]
-      },
-      options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1e2230',
-            borderColor: 'rgba(255,255,255,0.1)',
-            borderWidth: 1,
-            padding: 12,
-            titleColor: '#e8eaf2',
-            bodyColor: '#8b91a8',
-            titleFont: { family: "'Syne', sans-serif", weight: '700', size: 12 },
-            bodyFont: { family: "'DM Mono', monospace", size: 12 },
-          }
+  new Chart(document.getElementById('typeByInterestChart'), {
+    type: 'bar',
+    data: {
+      labels: interestLabels,
+      datasets: [{
+        label: '유형 리포트 수',
+        data: completedTypeReportCounts,
+        backgroundColor: interestLabels.map((_, index) => barColors[index % barColors.length]),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2230',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          padding: 12,
+          titleColor: '#e8eaf2',
+          bodyColor: '#8b91a8',
+          titleFont: { family: "'Syne', sans-serif", weight: '700', size: 12 },
+          bodyFont: { family: "'DM Mono', monospace", size: 12 },
         },
-        scales: {
-          x: {
-            grid: { color: gridColor, borderColor },
-            ticks: { maxRotation: 0 },
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: gridColor, borderColor },
-            ticks: { precision: 0, stepSize: 1 },
-          }
-        }
+      },
+      scales: {
+        x: { grid: { color: gridColor, borderColor } },
+        y: {
+          beginAtZero: true,
+          grid: { color: gridColor, borderColor },
+          ticks: { precision: 0, stepSize: 1 },
+        },
       }
-    });
+    }
   });
 
   async function checkHealth() {
