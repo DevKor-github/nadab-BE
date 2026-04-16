@@ -20,6 +20,7 @@ module.exports = {
             "report",
             "moderation",
             "search",
+            "stats",
             "friend",
             "notify",
             "infra",
@@ -115,6 +116,9 @@ module.exports = {
                     },
                     search: {
                         description: '🔍 검색 도메인 (예: 질문/답변 검색, 최근 검색어)'
+                    },
+                    stats: {
+                        description: '📊 통계 도메인 (예: 일간 통계 페이지)'
                     },
                     friend: {
                         description: '👥 친구 도메인 (예: 친구 신청, 수락, 목록 관리)'

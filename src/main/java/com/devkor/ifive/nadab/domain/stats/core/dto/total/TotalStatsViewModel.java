@@ -6,7 +6,7 @@ public record TotalStatsViewModel(
 
         long totalUserCount,
 
-        // provider labels: ["GOOGLE","KAKAO","NAVER","NORMAL"]
+        // provider labels: ["APPLE","GOOGLE","KAKAO","NAVER","NORMAL"]
         List<String> providerLabels,
         List<Long> providerCounts,
 
