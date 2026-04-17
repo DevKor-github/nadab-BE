@@ -3,10 +3,12 @@ package com.devkor.ifive.nadab.domain.stats.controller;
 import com.devkor.ifive.nadab.domain.stats.application.DailyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.MonthlyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TotalStatsService;
+import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.total.TotalStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -21,6 +23,7 @@ public class StatsController {
     private final WeeklyStatsService weeklyStatsService;
     private final MonthlyStatsService monthlyStatsService;
     private final TotalStatsService totalStatsService;
+    private final TypeStatsService typeStatsService;
 
 
     @GetMapping("stats/daily")
@@ -53,5 +56,13 @@ public class StatsController {
         model.addAttribute("vm", vm);
         model.addAttribute("activeTab", "total");
         return "stats/total";
+    }
+
+    @GetMapping("/stats/type")
+    public String typeStats(Model model) {
+        TypeStatsViewModel vm = typeStatsService.getTypeStats();
+        model.addAttribute("vm", vm);
+        model.addAttribute("activeTab", "type");
+        return "stats/type";
     }
 }
