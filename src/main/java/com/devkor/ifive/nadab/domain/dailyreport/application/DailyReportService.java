@@ -62,7 +62,7 @@ public class DailyReportService {
             throw new BadRequestException(ErrorCode.DAILY_QUESTION_MISMATCH);
         }
 
-        PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer(), isDayPassed);
+        PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer(), isDayPassed, request.objectKey());
 
         AnswerEntry answerEntry = prep.entry();
 

@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Nullable;
 import java.time.LocalDate;
 
 
@@ -21,24 +22,25 @@ public class AnswerEntryService {
 
 
     @Transactional
-    public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText, boolean isDayPassed) {
+    public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText, boolean isDayPassed,
+                                                   @Nullable String imageKey) {
 
         LocalDate targetDate =
                 isDayPassed ? TodayDateTimeProvider.getTodayDate().minusDays(1) : TodayDateTimeProvider.getTodayDate();
 
         return answerEntryRepository.findByUserAndDate(user, targetDate)
                 .map(existing -> {
-                    existing.updateContent(answerText);
+                    existing.updateContent(answerText, imageKey);
                     return existing;
                 })
                 .orElseGet(() -> {
                     try {
-                        return answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, targetDate));
+                        return answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, targetDate, imageKey));
                     } catch (DataIntegrityViolationException e) {
                         // 동시 요청에서 이미 누가 만들었을 수 있음 -> 재조회로 멱등 처리
                         return answerEntryRepository.findByUserAndDate(user, targetDate)
                                 .map(found -> {
-                                    found.updateContent(answerText);
+                                    found.updateContent(answerText, imageKey);
                                     return found;
                                 })
                                 .orElseThrow(() -> e);

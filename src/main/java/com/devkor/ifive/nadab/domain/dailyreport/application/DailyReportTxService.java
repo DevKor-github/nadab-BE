@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Nullable;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -42,10 +44,11 @@ public class DailyReportTxService {
 
     private static final long DAILY_REPORT_REWARD = 10L;
 
-    protected PrepareDailyResultDto prepareDaily(User user, DailyQuestion dq, String answerText, boolean isDayPassed) {
+    protected PrepareDailyResultDto prepareDaily(User user, DailyQuestion dq, String answerText, boolean isDayPassed,
+                                                 @Nullable String imageKey) {
 
         //  AnswerEntry 생성 또는 조회 (별도의 트랜잭션)
-        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(user, dq, answerText, isDayPassed);
+        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(user, dq, answerText, isDayPassed, imageKey);
 
         // DailyReport PENDING 생성 또는 조회 (별도의 트랜잭션)
         DailyReport report = pendingDailyReportService.getOrCreatePendingDailyReport(entry, isDayPassed);

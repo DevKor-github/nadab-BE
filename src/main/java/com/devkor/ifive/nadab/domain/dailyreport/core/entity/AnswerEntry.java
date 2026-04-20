@@ -43,17 +43,20 @@ public class AnswerEntry extends AuditableEntity {
     @Column(name = "image_key")
     private String imageKey;
 
-    public static AnswerEntry create(User user, DailyQuestion question, String content, LocalDate date) {
+    public static AnswerEntry create(User user, DailyQuestion question, String content, LocalDate date,
+                                     @Nullable String imageKey) {
         AnswerEntry e = new AnswerEntry();
         e.user = user;
         e.question = question;
         e.content = content;
         e.date = date;
+        e.imageKey = imageKey;
         return e;
     }
 
-    public void updateContent(String content) {
+    public void updateContent(String content, @Nullable String imageKey) {
         this.content = content;
+        this.imageKey = imageKey;
         onUpdate();
     }
 }
