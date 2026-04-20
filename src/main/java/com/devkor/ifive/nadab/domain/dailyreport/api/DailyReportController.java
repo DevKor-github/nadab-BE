@@ -1,7 +1,9 @@
 package com.devkor.ifive.nadab.domain.dailyreport.api;
 
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.CreateAnswerImageUploadUrlRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerDetailResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateAnswerImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportQueryService;
@@ -183,6 +185,48 @@ public class DailyReportController {
             @PathVariable Long reportId
     ) {
         AnswerDetailResponse response = dailyReportQueryService.getDailyReportById(principal.getId(), reportId);
+        return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/image/upload-url")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "답변 이미지 업로드 PresignedURL 생성",
+            description = """
+                    답변에 포함되는 이미지를 업로드할 수 있는 PresignedURL을 생성합니다.
+                    
+                    - HTTP Method: PUT
+                    - Headers:
+                        - Content-Type(필수): image/jpeg, image/png만 허용
+                    - Body: 이미지 파일
+                    - URL 만료 시간: 5분
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "성공",
+                            content = @Content(schema = @Schema(implementation = CreateAnswerImageUploadUrlResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    - ErrorCode: IMAGE_UNSUPPORTED_TYPE - 지원하지 않는 이미지 타입
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패 (JWT 토큰 관련)",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<CreateAnswerImageUploadUrlResponse>> createAnswerImageUploadUrl(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody CreateAnswerImageUploadUrlRequest request) {
+        CreateAnswerImageUploadUrlResponse response =
+                dailyReportService.createUploadUrl(principal.getId(), request);
         return ApiResponseEntity.ok(response);
     }
 }
