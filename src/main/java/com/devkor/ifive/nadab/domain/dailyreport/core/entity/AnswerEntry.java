@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import javax.annotation.Nullable;
 import java.time.LocalDate;
 
 @Entity
@@ -38,6 +39,9 @@ public class AnswerEntry extends AuditableEntity {
 
     @Column(name = "date", nullable = false)
     private LocalDate date;
+
+    @Column(name = "image_key")
+    private String imageKey;
 
     public static AnswerEntry create(User user, DailyQuestion question, String content, LocalDate date) {
         AnswerEntry e = new AnswerEntry();

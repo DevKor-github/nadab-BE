@@ -1,0 +1,1 @@
+ALTER TABLE answer_entries ADD COLUMN image_key varchar(255);
