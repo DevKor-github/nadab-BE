@@ -15,6 +15,7 @@ public record FeedDto(
         InterestCode interestCode,
         String questionText,
         String answerContent,
-        EmotionCode emotionCode
+        EmotionCode emotionCode,
+        String imageKey
 ) {
 }

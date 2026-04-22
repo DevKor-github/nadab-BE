@@ -9,6 +9,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepo
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
@@ -28,6 +29,8 @@ public class DailyReportQueryService {
     private final DailyReportRepository dailyReportRepository;
     private final AnswerEntryRepository answerEntryRepository;
 
+    private final ProfileImageUrlBuilder profileImageUrlBuilder;
+
     public DailyReportResponse getDailyReport(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
@@ -40,11 +43,14 @@ public class DailyReportQueryService {
         DailyReport report = dailyReportRepository.findByAnswerEntryAndDate(entry, today)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
 
+        String imageUrl = entry.getImageKey() != null ? profileImageUrlBuilder.buildUrl(entry.getImageKey()) : null;
+
         return new DailyReportResponse(
                 entry.getContent(),
                 report.getContent(),
                 report.getEmotion().getCode().toString(),
-                report.getIsShared()
+                report.getIsShared(),
+                imageUrl
         );
     }
 
@@ -56,6 +62,8 @@ public class DailyReportQueryService {
         AnswerDetailDto dto = dailyReportRepository.findDetailByReportId(user.getId(), reportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
 
-        return AnswerDetailResponse.from(dto);
+        String imageUrl = dto.imageKey() != null ? profileImageUrlBuilder.buildUrl(dto.imageKey()) : null;
+
+        return AnswerDetailResponse.from(dto, imageUrl);
     }
 }

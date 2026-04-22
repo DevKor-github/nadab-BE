@@ -14,6 +14,9 @@ public record CreateDailyReportResponse(
         String emotion,
 
         @Schema(description = "리포트 작성 후 크리스탈 잔액", example = "100")
-        Long balanceAfter
+        Long balanceAfter,
+
+        @Schema(description = "이미지 URL")
+        String imageUrl
 ) {
 }

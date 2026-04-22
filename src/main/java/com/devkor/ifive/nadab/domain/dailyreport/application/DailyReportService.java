@@ -18,6 +18,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
+import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
@@ -45,6 +46,8 @@ public class DailyReportService {
     private final DailyReportLlmClient dailyReportLlmClient;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final ProfileImageUrlBuilder profileImageUrlBuilder;
 
     @Value("${profile-image.env}")
     private String env;
@@ -92,11 +95,14 @@ public class DailyReportService {
             );
         }
 
+        String imageUrl = answerEntry.getImageKey() != null ? profileImageUrlBuilder.buildUrl(answerEntry.getImageKey()) : null;
+
         return new CreateDailyReportResponse(
                 prep.reportId(),
                 dto.message(),
                 confirmDto.emotion().getCode().toString(),
-                confirmDto.balanceAfter()
+                confirmDto.balanceAfter(),
+                imageUrl
         );
     }
 

@@ -14,6 +14,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.dto.SearchAnswerEntryDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryQueryRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.application.helper.CursorParser;
+import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
@@ -34,6 +35,8 @@ import java.util.List;
 public class AnswerQueryService {
 
     private final AnswerEntryQueryRepository answerEntryQueryRepository;
+
+    private final ProfileImageUrlBuilder profileImageUrlBuilder;
 
     private static final int PAGE_SIZE = 20;
 
@@ -129,14 +132,18 @@ public class AnswerQueryService {
         AnswerDetailDto dto = answerEntryQueryRepository.findDetailByAnswerId(userId, answerId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
 
-        return AnswerDetailResponse.from(dto);
+        String imageUrl = dto.imageKey() != null ? profileImageUrlBuilder.buildUrl(dto.imageKey()) : null;
+
+        return AnswerDetailResponse.from(dto, imageUrl);
     }
 
     public AnswerDetailResponse getAnswerDetailByDate(Long userId, LocalDate date) {
         AnswerDetailDto dto = answerEntryQueryRepository.findDetailByUserAndDate(userId, date)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ANSWER_NOT_FOUND));
 
-        return AnswerDetailResponse.from(dto);
+        String imageUrl = dto.imageKey() != null ? profileImageUrlBuilder.buildUrl(dto.imageKey()) : null;
+
+        return AnswerDetailResponse.from(dto, imageUrl);
     }
 
     /**

@@ -24,6 +24,9 @@ public record FeedResponse(
         String answer,
 
         @Schema(description = "감정 코드", example = "ACHIEVEMENT")
-        String emotionCode
+        String emotionCode,
+
+        @Schema(description = "이미지 URL")
+        String imageUrl
 ) {
 }
