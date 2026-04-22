@@ -76,7 +76,7 @@ public class DailyReportService {
 
         AiDailyReportResultDto dto;
         try {
-            dto = dailyReportLlmClient.generate(question.getQuestionText(), answerEntry.getContent());
+            dto = dailyReportLlmClient.generate(question.getQuestionText(), answerEntry);
         } catch (Exception e) {
             dailyReportTxService.failDaily(prep.reportId());
             throw e;
@@ -123,6 +123,6 @@ public class DailyReportService {
 
         String uploadUrl = profileImageService.generatePresignedUploadUrl(objectKey, contentType);
 
-        return new CreateAnswerImageUploadUrlResponse(objectKey, uploadUrl);
+        return new CreateAnswerImageUploadUrlResponse(uploadUrl, objectKey);
     }
 }
