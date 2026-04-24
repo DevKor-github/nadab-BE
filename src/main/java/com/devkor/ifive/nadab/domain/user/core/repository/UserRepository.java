@@ -74,4 +74,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("DELETE FROM User u WHERE u.deletedAt IS NOT NULL AND u.deletedAt < :expirationDate")
     int deleteOldWithdrawnUsers(@Param("expirationDate") OffsetDateTime expirationDate);
+
+    @Query("""
+        select u.id
+        from User u
+        where u.deletedAt is not null
+          and u.deletedAt < :expirationDate
+        """)
+    List<Long> findOldWithdrawnUserIds(@Param("expirationDate") OffsetDateTime expirationDate);
+
+    @Query("""
+        select u.profileImageKey
+        from User u
+        where u.id in :userIds
+          and u.profileImageKey is not null
+          and u.profileImageKey <> ''
+        """)
+    List<String> findProfileImageKeysByIdIn(@Param("userIds") List<Long> userIds);
 }
