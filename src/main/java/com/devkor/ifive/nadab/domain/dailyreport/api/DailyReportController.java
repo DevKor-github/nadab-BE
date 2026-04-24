@@ -45,6 +45,15 @@ public class DailyReportController {
                     이 때 유저의 답변은 기존의 답변으로 자동으로 사용됩니다. <br/>
                     소요 시간이 최대 3~4초밖에 안 되어 동기처리로 구현했습니다. <br/>
                     
+                    이미지 미포함의 경우 objectKey는 null로 보내주시면 됩니다. <br/>
+                    
+                    <이미지가 포함된 경우> <br/>
+                    **5MB 이하의 이미지 파일만 허용됩니다.** <br/>
+                    POST /daily-report/image/upload-url 엔드포인트로
+                    미리 발급받은 PresignedURL을 통해 이미지를 업로드한 후,
+                    해당 엔드포인트에서 반환된 objectKey를 이 요청에 포함시켜야 합니다. <br/>
+                  
+                    
                     | 응답의 emotion | 해당 감정 |
                     | :--- | :--- |
                     | `ACHIEVEMENT` | 성취 |
