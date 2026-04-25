@@ -36,18 +36,21 @@ public class UserCleanupScheduler {
         // 영구 삭제될 User의 id들
         List<Long> targetUserIds = userRepository.findOldWithdrawnUserIds(expirationDate);
 
+        if(targetUserIds.isEmpty()) {
+            log.debug("정리할 탈퇴 회원이 없습니다.");
+            return;
+        }
+
         // 삭제 대상 회원들의 프로필 이미지 키와 답변 이미지 키를 모두 수집하여 S3에서 삭제
         Set<String> imageKeysToDelete = new HashSet<>();
         imageKeysToDelete.addAll(userRepository.findProfileImageKeysByIdIn(targetUserIds));
         imageKeysToDelete.addAll(answerEntryRepository.findImageKeysByUserIds(targetUserIds));
         imageKeysToDelete.forEach(profileImageService::deleteProfileImage);
 
-        int deletedCount = userRepository.deleteOldWithdrawnUsers(expirationDate);
+        int deletedCount = userRepository.deleteWithdrawnUsersByIdIn(targetUserIds);
 
         if (deletedCount > 0) {
             log.info("회원 정리 완료: {}명의 탈퇴 회원 영구 삭제 (기준일: {})", deletedCount, expirationDate.toLocalDate());
-        } else {
-            log.debug("정리할 탈퇴 회원이 없습니다.");
         }
     }
 }

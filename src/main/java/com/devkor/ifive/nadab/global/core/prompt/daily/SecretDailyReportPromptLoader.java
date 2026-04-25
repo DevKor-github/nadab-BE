@@ -32,7 +32,7 @@ public class SecretDailyReportPromptLoader implements DailyReportPromptLoader{
 
     @Override
     public String loadWithImagePrompt() {
-        if (rawPrompt == null || rawPrompt.isBlank()) {
+        if (rawWithImagePrompt == null || rawWithImagePrompt.isBlank()) {
             log.error("환경 변수 INSIGHT_WITH_IMAGE_PROMPT가 비어있습니다.");
             throw new BadRequestException(ErrorCode.PROMPT_DAILY_ENV_VAR_NOT_SET);
         }

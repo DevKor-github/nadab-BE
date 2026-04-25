@@ -112,10 +112,6 @@ public class DailyReportService {
 
         // content type / 확장자 검증
         String contentType = request.contentType();
-        if (!"image/jpeg".equalsIgnoreCase(contentType)
-                && !"image/png".equalsIgnoreCase(contentType)) {
-            throw new BadRequestException(ErrorCode.IMAGE_UNSUPPORTED_TYPE);
-        }
 
         String extension = switch (contentType) {
             case "image/jpeg" -> "jpg";
