@@ -15,6 +15,9 @@ public record DailyReportResponse(
         String emotion,
 
         @Schema(description = "피드 공유 상태", example = "false")
-        Boolean isShared
+        Boolean isShared,
+
+        @Schema(description = "이미지 URL")
+        String imageUrl
 ) {
 }

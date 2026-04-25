@@ -1,7 +1,9 @@
 package com.devkor.ifive.nadab.domain.dailyreport.api;
 
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.CreateAnswerImageUploadUrlRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.AnswerDetailResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateAnswerImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.DailyReportQueryService;
@@ -42,6 +44,15 @@ public class DailyReportController {
                     생성 실패 시에도 이 API를 다시 호출하면 됩니다. <br/>
                     이 때 유저의 답변은 기존의 답변으로 자동으로 사용됩니다. <br/>
                     소요 시간이 최대 3~4초밖에 안 되어 동기처리로 구현했습니다. <br/>
+                    
+                    이미지 미포함의 경우 objectKey는 null로 보내주시면 됩니다. <br/>
+                    
+                    <이미지가 포함된 경우> <br/>
+                    **5MB 이하의 이미지 파일만 허용됩니다.** <br/>
+                    POST /daily-report/image/upload-url 엔드포인트로
+                    미리 발급받은 PresignedURL을 통해 이미지를 업로드한 후,
+                    해당 엔드포인트에서 반환된 objectKey를 이 요청에 포함시켜야 합니다. <br/>
+                  
                     
                     | 응답의 emotion | 해당 감정 |
                     | :--- | :--- |
@@ -183,6 +194,48 @@ public class DailyReportController {
             @PathVariable Long reportId
     ) {
         AnswerDetailResponse response = dailyReportQueryService.getDailyReportById(principal.getId(), reportId);
+        return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/image/upload-url")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "답변 이미지 업로드 PresignedURL 생성",
+            description = """
+                    답변에 포함되는 이미지를 업로드할 수 있는 PresignedURL을 생성합니다.
+                    
+                    - HTTP Method: PUT
+                    - Headers:
+                        - Content-Type(필수): image/jpeg, image/png만 허용
+                    - Body: 이미지 파일
+                    - URL 만료 시간: 5분
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "성공",
+                            content = @Content(schema = @Schema(implementation = CreateAnswerImageUploadUrlResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = """
+                                    - ErrorCode: IMAGE_UNSUPPORTED_TYPE - 지원하지 않는 이미지 타입
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "인증 실패 (JWT 토큰 관련)",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<CreateAnswerImageUploadUrlResponse>> createAnswerImageUploadUrl(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody CreateAnswerImageUploadUrlRequest request) {
+        CreateAnswerImageUploadUrlResponse response =
+                dailyReportService.createUploadUrl(principal.getId(), request);
         return ApiResponseEntity.ok(response);
     }
 }

@@ -15,6 +15,7 @@ public record AnswerDetailDto(
         LocalDate answerDate,
         String answerContent,
         String reportContent,
-        EmotionCode emotionCode
+        EmotionCode emotionCode,
+        String imageKey
 ) {
 }

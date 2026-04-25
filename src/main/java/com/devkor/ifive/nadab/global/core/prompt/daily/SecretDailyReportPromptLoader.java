@@ -17,6 +17,9 @@ public class SecretDailyReportPromptLoader implements DailyReportPromptLoader{
     @Value("${INSIGHT_PROMPT}")
     private String rawPrompt;
 
+    @Value("${INSIGHT_WITH_IMAGE_PROMPT}")
+    private String rawWithImagePrompt;
+
     @Override
     public String loadPrompt() {
         if (rawPrompt == null || rawPrompt.isBlank()) {
@@ -25,5 +28,15 @@ public class SecretDailyReportPromptLoader implements DailyReportPromptLoader{
         }
 
         return rawPrompt;
+    }
+
+    @Override
+    public String loadWithImagePrompt() {
+        if (rawWithImagePrompt == null || rawWithImagePrompt.isBlank()) {
+            log.error("환경 변수 INSIGHT_WITH_IMAGE_PROMPT가 비어있습니다.");
+            throw new BadRequestException(ErrorCode.PROMPT_DAILY_ENV_VAR_NOT_SET);
+        }
+
+        return rawWithImagePrompt;
     }
 }

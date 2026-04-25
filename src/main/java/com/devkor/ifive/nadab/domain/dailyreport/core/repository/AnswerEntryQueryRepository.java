@@ -108,7 +108,7 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
      */
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
-            ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code
+            ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code, ae.imageKey
         )
         from AnswerEntry ae
         left join DailyReport dr on dr.answerEntry = ae and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
@@ -126,7 +126,7 @@ public interface AnswerEntryQueryRepository extends Repository<AnswerEntry, Long
      */
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
-            ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code
+            ae.question.questionText, ae.question.interest.code, ae.date, ae.content, dr.content, e.code, ae.imageKey
         )
         from AnswerEntry ae
         left join DailyReport dr on dr.answerEntry = ae and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
