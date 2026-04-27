@@ -9,6 +9,7 @@ import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class NotificationSettingService {
 
     private final NotificationSettingRepository notificationSettingRepository;
@@ -65,6 +67,26 @@ public class NotificationSettingService {
         return settings.stream()
             .sorted(Comparator.comparing(s -> s.getGroup().ordinal()))
             .toList();
+    }
+
+    /**
+     * 없는 그룹의 알림 설정을 기본값으로 생성(디바이스 등록 시)
+     */
+    public void ensureSettingsExist(User user) {
+        Set<NotificationGroup> existingGroups = notificationSettingRepository.findByUser(user)
+            .stream()
+            .map(NotificationSetting::getGroup)
+            .collect(Collectors.toSet());
+
+        for (NotificationGroup group : NotificationGroup.values()) {
+            if (!existingGroups.contains(group)) {
+                try {
+                    notificationSettingRepository.save(NotificationSetting.create(user, group));
+                } catch (DataIntegrityViolationException e) {
+                    log.debug("NotificationSetting already exists (race condition): userId={}, group={}", user.getId(), group);
+                }
+            }
+        }
     }
 
     /**
