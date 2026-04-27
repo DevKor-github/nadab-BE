@@ -23,6 +23,7 @@ public class UserDeviceCommandService {
 
     private final UserDeviceRepository userDeviceRepository;
     private final UserRepository userRepository;
+    private final NotificationSettingService notificationSettingService;
 
     /**
      * FCM 토큰 등록
@@ -62,6 +63,7 @@ public class UserDeviceCommandService {
             UserDevice device = existingDevice.get();
             device.updateToken(fcmToken);
             log.debug("Device token updated: userId={}, platform={}", userId, platform);
+            notificationSettingService.ensureSettingsExist(user);
             return false; // 기존 디바이스 업데이트
         } else {
             // 새 디바이스 등록
@@ -69,6 +71,7 @@ public class UserDeviceCommandService {
                 UserDevice newDevice = UserDevice.create(user, fcmToken, deviceId, platform);
                 userDeviceRepository.save(newDevice);
                 log.debug("Device registered: userId={}, platform={}", userId, platform);
+                notificationSettingService.ensureSettingsExist(user);
                 return true; // 새 디바이스 등록
             } catch (DataIntegrityViolationException e) {
                 // 동시성으로 인해 이미 생성된 경우 (Race Condition)

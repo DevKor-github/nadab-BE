@@ -56,7 +56,7 @@ public class NotificationSetting extends AuditableEntity {
 
         // ACTIVITY_REMINDER 그룹이면 기본값 설정
         if (group == NotificationGroup.ACTIVITY_REMINDER) {
-            setting.dailyWriteTime = LocalTime.of(20, 0);
+            setting.dailyWriteTime = LocalTime.of(8, 0);
         }
 
         return setting;

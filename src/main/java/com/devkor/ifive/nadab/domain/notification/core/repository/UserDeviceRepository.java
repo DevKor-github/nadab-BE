@@ -24,6 +24,9 @@ public interface UserDeviceRepository extends JpaRepository<UserDevice, Long> {
 
     void deleteByFcmToken(String fcmToken);
 
+    @Query("SELECT DISTINCT ud.user FROM UserDevice ud WHERE ud.user.deletedAt IS NULL")
+    List<User> findDistinctActiveUsers();
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from UserDevice ud where ud.fcmToken in :fcmTokens")
     int deleteByFcmTokenIn(@Param("fcmTokens") List<String> fcmTokens);
