@@ -20,6 +20,7 @@ springdoc:
     enabled: true
   swagger-ui:
     path: /swagger-ui.html
+    tags-sorter: alpha
 
 oauth:
   naver:
