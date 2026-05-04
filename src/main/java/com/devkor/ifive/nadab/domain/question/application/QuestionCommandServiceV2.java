@@ -11,6 +11,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserInterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -82,5 +83,46 @@ public class QuestionCommandServiceV2 {
             return userDailyQuestionRepository.findByUserIdAndDate(userId, todayKst)
                     .orElseThrow(() -> e);
         }
+    }
+
+    public DailyQuestionResponseV2 rerollTodayQuestion(Long userId) {
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+
+        UserDailyQuestion udq = userDailyQuestionRepository.findByUserIdAndDate(userId, today)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_QUESTION_NOT_FOUND));
+
+        if (udq.getRerollLeft() <= 0) {
+            throw new ConflictException(ErrorCode.QUESTION_REROLL_LIMIT_EXCEEDED);
+        }
+
+        User user = udq.getUser();
+
+        boolean alreadyAnswered = answerEntryRepository.existsByUserAndDate(user, today);
+        if (alreadyAnswered) {
+            throw new ConflictException(ErrorCode.QUESTION_ALREADY_ANSWERED);
+        }
+
+        Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_INTEREST_NOT_FOUND));
+
+        DailyQuestion newQ = dailyQuestionSelector.pickReroll(
+                user.getId(),
+                userInterestId,
+                udq.getDailyQuestion().getId(),
+                null
+        );
+
+        udq.rerollTo(newQ);
+
+        return new DailyQuestionResponseV2(
+                newQ.getId(),
+                newQ.getInterest().getCode().toString(),
+                newQ.getQuestionText(),
+                newQ.getEmpathyGuide(),
+                newQ.getHintGuide(),
+                newQ.getLeadingQuestionGuide(),
+                false,
+                udq.getRerollLeft()
+        );
     }
 }

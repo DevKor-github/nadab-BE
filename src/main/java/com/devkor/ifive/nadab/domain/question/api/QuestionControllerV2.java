@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -59,6 +60,49 @@ public class QuestionControllerV2 {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         DailyQuestionResponseV2 response = questionCommandService.getOrCreateTodayQuestion(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reroll")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "새로운 질문 받기",
+            description = "오늘의 질문을 새로 받습니다. 하루에 5번까지 가능합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "성공",
+                            content = @Content(schema = @Schema(implementation = DailyQuestionResponseV2.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "사용자 인증 실패",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: DAILY_QUESTION_NOT_FOUND - 오늘의 질문이 아직 생성되지 않았습니다.
+                                    - ErrorCode: USER_INTEREST_NOT_FOUND - 유저의 관심 주제를 찾을 수 없습니다.
+                                    - ErrorCode: QUESTION_NO_ALTERNATIVE - 리롤 가능한 질문이 없습니다.
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = """
+                                    - ErrorCode: QUESTION_REROLL_LIMIT_EXCEEDED - 오늘의 질문은 하루에 5번까지만 새로 받을 수 있습니다.
+                                    - ErrorCode: QUESTION_ALREADY_ANSWERED - 오늘의 질문에 이미 답변을 작성함
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<DailyQuestionResponseV2>> rerollDailyQuestion(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        DailyQuestionResponseV2 response = questionCommandService.rerollTodayQuestion(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 }
