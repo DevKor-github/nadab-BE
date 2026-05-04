@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface UserDailyQuestionRepository extends JpaRepository<UserDailyQuestion, Long> {
 
     Optional<UserDailyQuestion> findByUserIdAndDate(Long userId, LocalDate date);
+
+    boolean existsByUserId(Long userId);
 }
