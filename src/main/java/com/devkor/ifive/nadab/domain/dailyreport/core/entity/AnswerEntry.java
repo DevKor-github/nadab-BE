@@ -59,4 +59,9 @@ public class AnswerEntry extends AuditableEntity {
         this.imageKey = imageKey;
         onUpdate();
     }
+
+    public void updateImageKey(String imageKey) {
+        this.imageKey = imageKey;
+        onUpdate();
+    }
 }

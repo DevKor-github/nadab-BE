@@ -85,7 +85,7 @@ public class DailyReportService {
             throw e;
         }
 
-        ConfirmDailyAndRewardDto confirmDto = dailyReportTxService.confirmDailyAndReward(prep, dto);
+        ConfirmDailyAndRewardDto confirmDto = dailyReportTxService.confirmDailyAndReward(prep, dto, request.webpKey());
 
         // 일일 리포트 완성 이벤트 발행 (유형 리포트 제작 가능 알림 체크용)
         if (question.getInterest() != null) {
@@ -125,6 +125,9 @@ public class DailyReportService {
 
         String uploadUrl = profileImageService.generatePresignedUploadUrl(objectKey, contentType);
 
-        return new CreateAnswerImageUploadUrlResponse(uploadUrl, objectKey);
+        String webpKey = "%s/answers/webp/%d/%s.webp"
+                .formatted(env, userId, uuid);
+
+        return new CreateAnswerImageUploadUrlResponse(uploadUrl, objectKey, webpKey);
     }
 }

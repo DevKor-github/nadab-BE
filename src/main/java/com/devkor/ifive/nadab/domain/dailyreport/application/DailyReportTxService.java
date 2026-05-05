@@ -56,7 +56,12 @@ public class DailyReportTxService {
         return new PrepareDailyResultDto(entry, report.getId(), user.getId());
     }
 
-    protected ConfirmDailyAndRewardDto confirmDailyAndReward(PrepareDailyResultDto prep, AiDailyReportResultDto aiResult) {
+    protected ConfirmDailyAndRewardDto confirmDailyAndReward(
+            PrepareDailyResultDto prep, AiDailyReportResultDto aiResult, @Nullable String webpKey) {
+
+        if(!isBlank(webpKey)) {
+            prep.entry().updateImageKey(webpKey);
+        }
 
         Emotion emotion = emotionRepository.findByName(EmotionName.valueOf(aiResult.emotion()))
                 .orElseThrow(() -> new NotFoundException(ErrorCode.EMOTION_NOT_FOUND));
@@ -98,5 +103,9 @@ public class DailyReportTxService {
     protected void failDaily(Long reportId) {
         dailyReportRepository.markFailed(reportId);
         // 무료이므로 환불/로그 없음
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

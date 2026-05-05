@@ -19,6 +19,12 @@ public record DailyReportRequest(
                 description = "이 값은 presignedURL 생성 API의 응답에서 받은 objectKey여야 합니다. ",
                 example = "dev/answers/original/12345/092f7ab2-c845-4bdf-8458-e2897135d4e7.png"
         )
-        String objectKey
+        String objectKey,
+
+        @Schema(
+                description = "이 값은 presignedURL 생성 API의 응답에서 받은 webpKey여야 합니다. ",
+                example = "dev/answers/webp/12345/092f7ab2-c845-4bdf-8458-e2897135d4e7.webp"
+        )
+        String webpKey
 ) {
 }
