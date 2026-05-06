@@ -92,6 +92,7 @@ public enum ErrorCode {
     IMAGE_UNSUPPORTED_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 이미지 타입입니다"),
     IMAGE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "이미지 크기가 제한을 초과했습니다 (최대 5MB)"),
     IMAGE_METADATA_INVALID(HttpStatus.BAD_REQUEST, "파일 메타데이터를 읽을 수 없습니다. 다시 시도해주세요."),
+    IMAGE_INVALID_KEY(HttpStatus.BAD_REQUEST, "잘못된 이미지 key입니다."),
 
     // ==================== QUESTION (질문) ====================
     // 400 Bad Request
