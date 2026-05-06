@@ -8,6 +8,9 @@ public record CreateAnswerImageUploadUrlResponse(
         String uploadUrl,
 
         @Schema(description = "답변 이미지 Object Key. 일간 리포트 생성에 사용됩니다.", example = "dev/answers/original/12345/092f7ab2-c845-4bdf-8458-e2897135d4e7.png")
-        String objectKey
+        String objectKey,
+
+        @Schema(description = "답변 이미지 Webp Key. 일간 리포트 생성에 사용됩니다.", example = "dev/answers/webp/12345/092f7ab2-c845-4bdf-8458-e2897135d4e7.webp")
+        String webpKey
 ) {
 }

@@ -4,11 +4,13 @@ import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.CreateAnswerIma
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateAnswerImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.ImageStatusResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.event.DailyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.ImageStatus;
 import com.devkor.ifive.nadab.domain.dailyreport.infra.DailyReportLlmClient;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
@@ -59,6 +61,11 @@ public class DailyReportService {
         DailyQuestion question = dailyQuestionRepository.findByIdWithInterest(request.questionId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NOT_FOUND));
 
+        // webpKey 존재 시 검증
+        if(!isBlank(request.webpKey())) {
+            validateWebpKey(request.webpKey(), userId);
+        }
+
         LocalDate today = TodayDateTimeProvider.getTodayDate();
 
         // 1. 오늘 -> 어제 순서로 조회 (없으면 예외)
@@ -85,7 +92,7 @@ public class DailyReportService {
             throw e;
         }
 
-        ConfirmDailyAndRewardDto confirmDto = dailyReportTxService.confirmDailyAndReward(prep, dto);
+        ConfirmDailyAndRewardDto confirmDto = dailyReportTxService.confirmDailyAndReward(prep, dto, request.webpKey());
 
         // 일일 리포트 완성 이벤트 발행 (유형 리포트 제작 가능 알림 체크용)
         if (question.getInterest() != null) {
@@ -125,6 +132,43 @@ public class DailyReportService {
 
         String uploadUrl = profileImageService.generatePresignedUploadUrl(objectKey, contentType);
 
-        return new CreateAnswerImageUploadUrlResponse(uploadUrl, objectKey);
+        String webpKey = "%s/answers/webp/%d/%s.webp"
+                .formatted(env, userId, uuid);
+
+        return new CreateAnswerImageUploadUrlResponse(uploadUrl, objectKey, webpKey);
+    }
+
+    public ImageStatusResponse getImageStatus(String key, Long userId) {
+        validateWebpKey(key, userId);
+
+        boolean exists = profileImageService.exists(key);
+
+        ImageStatus imageStatus = exists ? ImageStatus.READY : ImageStatus.PROCESSING;
+
+        return new ImageStatusResponse(imageStatus.name());
+    }
+
+    private void validateWebpKey(String key, Long userId) {
+        if (key == null || key.isBlank()) {
+            throw new BadRequestException(ErrorCode.IMAGE_INVALID_KEY);
+        }
+
+        String expectedPrefix = "%s/answers/webp/%d/".formatted(env, userId);
+
+        if (!key.startsWith(expectedPrefix)) {
+            throw new BadRequestException(ErrorCode.IMAGE_INVALID_KEY);
+        }
+
+        if (!key.endsWith(".webp")) {
+            throw new BadRequestException(ErrorCode.IMAGE_INVALID_KEY);
+        }
+
+        if (key.contains("..")) {
+            throw new BadRequestException(ErrorCode.IMAGE_INVALID_KEY);
+        }
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }
