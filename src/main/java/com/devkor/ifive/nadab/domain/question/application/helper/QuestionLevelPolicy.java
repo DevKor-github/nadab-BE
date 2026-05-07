@@ -22,4 +22,8 @@ public class QuestionLevelPolicy {
         boolean isNewbie = registeredAt.isAfter(now.minusDays(NEWBIE_DAYS));
         return isNewbie ? NEWBIE_LEVEL_ONLY : null;
     }
+
+    public Integer levelOnlyForFirstTime(boolean isFirstQuestion) {
+        return isFirstQuestion ? NEWBIE_LEVEL_ONLY : null;
+    }
 }

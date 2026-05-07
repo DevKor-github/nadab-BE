@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Nullable;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -42,10 +44,11 @@ public class DailyReportTxService {
 
     private static final long DAILY_REPORT_REWARD = 10L;
 
-    protected PrepareDailyResultDto prepareDaily(User user, DailyQuestion dq, String answerText, boolean isDayPassed) {
+    protected PrepareDailyResultDto prepareDaily(User user, DailyQuestion dq, String answerText, boolean isDayPassed,
+                                                 @Nullable String imageKey) {
 
         //  AnswerEntry 생성 또는 조회 (별도의 트랜잭션)
-        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(user, dq, answerText, isDayPassed);
+        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(user, dq, answerText, isDayPassed, imageKey);
 
         // DailyReport PENDING 생성 또는 조회 (별도의 트랜잭션)
         DailyReport report = pendingDailyReportService.getOrCreatePendingDailyReport(entry, isDayPassed);
@@ -53,7 +56,12 @@ public class DailyReportTxService {
         return new PrepareDailyResultDto(entry, report.getId(), user.getId());
     }
 
-    protected ConfirmDailyAndRewardDto confirmDailyAndReward(PrepareDailyResultDto prep, AiDailyReportResultDto aiResult) {
+    protected ConfirmDailyAndRewardDto confirmDailyAndReward(
+            PrepareDailyResultDto prep, AiDailyReportResultDto aiResult, @Nullable String webpKey) {
+
+        if(!isBlank(webpKey)) {
+            prep.entry().updateImageKey(webpKey);
+        }
 
         Emotion emotion = emotionRepository.findByName(EmotionName.valueOf(aiResult.emotion()))
                 .orElseThrow(() -> new NotFoundException(ErrorCode.EMOTION_NOT_FOUND));
@@ -95,5 +103,9 @@ public class DailyReportTxService {
     protected void failDaily(Long reportId) {
         dailyReportRepository.markFailed(reportId);
         // 무료이므로 환불/로그 없음
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

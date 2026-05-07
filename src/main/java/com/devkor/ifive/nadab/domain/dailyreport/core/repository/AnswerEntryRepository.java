@@ -88,4 +88,13 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
             @Param("userIds") List<Long> userIds,
             @Param("date") LocalDate date
     );
+
+    @Query("""
+        select a.imageKey
+        from AnswerEntry a
+        where a.user.id in :userIds
+          and a.imageKey is not null
+          and a.imageKey <> ''
+        """)
+    List<String> findImageKeysByUserIds(@Param("userIds") List<Long> userIds);
 }

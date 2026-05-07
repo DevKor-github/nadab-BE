@@ -88,5 +88,26 @@ public class ProfileImageService {
             throw new BadRequestException(ErrorCode.IMAGE_SIZE_EXCEEDED);
         }
     }
+
+    /**
+     * S3에 해당 키의 객체가 존재하는지 확인하는 메소드
+     */
+    public boolean exists(String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                return false;
+            }
+            throw e;
+        }
+    }
 }
 

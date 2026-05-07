@@ -24,16 +24,20 @@ public record AnswerDetailResponse(
         String content,
 
         @Schema(description = "리포트 감정 상태", example = "ACHIEVEMENT")
-        String emotion
+        String emotion,
+
+        @Schema(description = "이미지 URL")
+        String imageUrl
 ) {
-    public static AnswerDetailResponse from(AnswerDetailDto dto) {
+    public static AnswerDetailResponse from(AnswerDetailDto dto, String imageUrl) {
         return new AnswerDetailResponse(
                 dto.questionText(),
                 dto.interestCode() != null ? dto.interestCode().name() : null,
                 dto.answerDate(),
                 dto.answerContent(),
                 dto.reportContent(),
-                dto.emotionCode() != null ? dto.emotionCode().name() : null
+                dto.emotionCode() != null ? dto.emotionCode().name() : null,
+                imageUrl
         );
     }
 }

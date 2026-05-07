@@ -79,6 +79,7 @@ public class FeedQueryService {
                 .filter(dto -> !reportedIds.contains(dto.dailyReportId()))
                 .map(dto -> {
                     String profileUrl = buildProfileUrl(dto.profileImageKey(), dto.defaultProfileType());
+                    String imageUrl = dto.imageKey() != null ? profileImageUrlBuilder.buildUrl(dto.imageKey()) : null;
 
                     return new FeedResponse(
                             dto.dailyReportId(),
@@ -87,7 +88,8 @@ public class FeedQueryService {
                             dto.interestCode() != null ? dto.interestCode().name() : null,
                             dto.questionText(),
                             dto.answerContent(),
-                            dto.emotionCode() != null ? dto.emotionCode().name() : null
+                            dto.emotionCode() != null ? dto.emotionCode().name() : null,
+                            imageUrl
                     );
                 })
                 .toList();

@@ -38,12 +38,16 @@ public class UserDailyQuestion extends AuditableEntity {
     @Column(name = "reroll_used", nullable = false)
     private boolean rerollUsed = false;
 
+    @Column(name = "reroll_left", nullable = false)
+    private int rerollLeft = 5;
+
     public static UserDailyQuestion create(User user, LocalDate date, DailyQuestion dailyQuestion) {
         UserDailyQuestion udq = new UserDailyQuestion();
         udq.user = user;
         udq.date = date;
         udq.dailyQuestion = dailyQuestion;
         udq.rerollUsed = false;
+        udq.rerollLeft = 5;
         return udq;
     }
 
@@ -51,5 +55,6 @@ public class UserDailyQuestion extends AuditableEntity {
     public void rerollTo(DailyQuestion newQuestion) {
         this.dailyQuestion = newQuestion;
         this.rerollUsed = true;
+        this.rerollLeft = Math.max(0, this.rerollLeft - 1);
     }
 }

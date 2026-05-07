@@ -49,7 +49,8 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
             ae.date,
             ae.content,
             dr.content,
-            e.code
+            e.code,
+            ae.imageKey
         )
         from DailyReport dr
         join dr.answerEntry ae
@@ -129,7 +130,8 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
             ae.question.interest.code,
             ae.question.questionText,
             ae.content,
-            dr.emotion.code
+            dr.emotion.code,
+            ae.imageKey
         )
         from DailyReport dr
         join AnswerEntry ae on dr.answerEntry = ae

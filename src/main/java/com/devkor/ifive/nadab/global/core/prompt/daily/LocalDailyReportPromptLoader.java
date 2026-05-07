@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 public class LocalDailyReportPromptLoader implements DailyReportPromptLoader {
 
     private static final String PROMPT_PATH = "secret/daily-prompt-local.txt";
+    private static final String WITH_IMAGE_PROMPT_PATH = "secret/daily-with-image-prompt-local.txt";
 
     @Override
     public String loadPrompt() {
@@ -32,6 +33,25 @@ public class LocalDailyReportPromptLoader implements DailyReportPromptLoader {
 
         } catch (IOException e) {
             log.error("로컬 일간 리포트 프롬프트 파일 읽기 실패: {}", PROMPT_PATH, e);
+            throw new BadRequestException(ErrorCode.PROMPT_DAILY_FILE_READ_FAILED);
+        }
+    }
+
+    @Override
+    public String loadWithImagePrompt() {
+        try {
+            ClassPathResource resource = new ClassPathResource(WITH_IMAGE_PROMPT_PATH);
+
+            if (!resource.exists()) {
+                log.error("일간 리포트(이미지 포함) 프롬프트 파일이 존재하지 않습니다: {}", WITH_IMAGE_PROMPT_PATH);
+                throw new BadRequestException(ErrorCode.PROMPT_DAILY_FILE_NOT_FOUND);
+            }
+
+            byte[] bytes = resource.getContentAsByteArray();
+            return new String(bytes, StandardCharsets.UTF_8);
+
+        } catch (IOException e) {
+            log.error("로컬 일간 리포트(이미지 포함) 프롬프트 파일 읽기 실패: {}", WITH_IMAGE_PROMPT_PATH, e);
             throw new BadRequestException(ErrorCode.PROMPT_DAILY_FILE_READ_FAILED);
         }
     }
