@@ -25,8 +25,7 @@ public class MonthlyStatsRepository {
         List<Object[]> rows = em.createQuery("""
             select function('date', u.registeredAt), count(u.id)
             from User u
-            where u.deletedAt is null
-              and u.signupStatus = com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType.COMPLETED
+            where u.signupStatus = com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType.COMPLETED
               and u.registeredAt is not null
               and u.registeredAt >= :start
               and u.registeredAt < :endExclusive
