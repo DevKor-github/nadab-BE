@@ -59,11 +59,15 @@ public class MonthlyStatsService {
         Map<YearMonth, Long> completedDailyMap = aggregateByMonth(
                 repo.findCompletedDailyReportCountsByDateBetween(startDate, endDateInclusive)
         );
+        Map<YearMonth, Long> mauMap = aggregateByMonth(
+                repo.findMonthlyActiveUserCountsByDateBetween(startDate, endDateInclusive)
+        );
 
         List<Long> signupCounts = months.stream().map(m -> signupMap.getOrDefault(m, 0L)).toList();
         List<Long> assignedCounts = months.stream().map(m -> assignedMap.getOrDefault(m, 0L)).toList();
         List<Long> completedDailyCounts = months.stream().map(m -> completedDailyMap.getOrDefault(m, 0L)).toList();
         List<Long> completedCounts = months.stream().map(m -> completedMap.getOrDefault(m, 0L)).toList();
+        List<Long> mauCounts = months.stream().map(m -> mauMap.getOrDefault(m, 0L)).toList();
 
         long inProgressNow = repo.countInProgressMonthlyReportsNow();
 
@@ -73,6 +77,7 @@ public class MonthlyStatsService {
                 assignedCounts,
                 completedDailyCounts,
                 completedCounts,
+                mauCounts,
                 inProgressNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );

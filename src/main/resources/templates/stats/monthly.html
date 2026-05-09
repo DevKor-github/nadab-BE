@@ -309,6 +309,15 @@
       <canvas id="completedMonthlyChart" height="140"></canvas>
     </div>
   </div>
+<div class="chart-card">
+  <div class="chart-card-header">
+    <div class="chart-card-title"><span class="dot dot-blue"></span>MAU</div>
+    <div class="chart-card-subtitle">활성 사용자 기준 : 일간 리포트를 작성한 고유 사용자 수</div>
+  </div>
+  <div class="chart-card-body">
+    <canvas id="mauChart" height="140"></canvas>
+  </div>
+</div>
 </div>
 
 <script th:inline="javascript">
@@ -317,6 +326,7 @@
   const assignedCounts = [[${vm.assignedQuestionCounts}]].map(v => parseInt(v, 10));
   const completedDailyCounts = [[${vm.completedDailyReportCounts}]].map(v => parseInt(v, 10));
   const completedMonthlyCounts = [[${vm.completedMonthlyReportCounts}]].map(v => parseInt(v, 10));
+  const mauCounts = [[${vm.mauCounts}]].map(v => parseInt(v, 10));
 
   Chart.defaults.color = '#8b91a8';
   Chart.defaults.font.family = "'DM Mono', monospace";
@@ -333,6 +343,7 @@
   }
 
   const configs = [
+    { id: 'mauChart', label: 'MAU', data: mauCounts, color: 'rgba(108,143,255,1)' },
     { id: 'signupChart', label: '가입자 수', data: signupCounts, color: 'rgba(108,143,255,1)' },
     { id: 'assignedChart', label: '할당 질문 수', data: assignedCounts, color: 'rgba(255,126,179,1)' },
     { id: 'completedDailyChart', label: '일간 리포트 생성 수', data: completedDailyCounts, color: 'rgba(77,232,194,1)' },
