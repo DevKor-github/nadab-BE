@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -25,8 +26,7 @@ public class WeeklyStatsRepository {
         List<Object[]> rows = em.createQuery("""
             select function('date', u.registeredAt), count(u.id)
             from User u
-            where u.deletedAt is null
-              and u.signupStatus = com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType.COMPLETED
+            where u.signupStatus = com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType.COMPLETED
               and u.registeredAt is not null
               and u.registeredAt >= :start
               and u.registeredAt < :endExclusive
@@ -98,8 +98,39 @@ public class WeeklyStatsRepository {
                 .getSingleResult();
     }
 
+    public List<DateCountDto> findWeeklyActiveUserCountsByDateBetween(LocalDate startDate, LocalDate endDateInclusive) {
+        List<Object[]> rows = em.createQuery("""
+                select function('date_trunc', 'week', dr.date), count(distinct dr.answerEntry.user.id)
+                from DailyReport dr
+                where dr.date between :startDate and :endDate
+                  and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+                group by function('date_trunc', 'week', dr.date)
+                order by function('date_trunc', 'week', dr.date)
+                """, Object[].class)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDateInclusive)
+                .getResultList();
+
+        return rows.stream()
+                .map(WeeklyStatsRepository::toDateCountDtoFromDateTrunc)
+                .toList();
+    }
+
     private static DateCountDto toDateCountDto(Object[] row) {
         LocalDate date = ((Date) row[0]).toLocalDate();
+        long count = (Long) row[1];
+        return new DateCountDto(date, count);
+    }
+
+    private static DateCountDto toDateCountDtoFromDateTrunc(Object[] row) {
+        LocalDate date;
+        if (row[0] instanceof Timestamp timestamp) {
+            date = timestamp.toLocalDateTime().toLocalDate();
+        } else if (row[0] instanceof Date sqlDate) {
+            date = sqlDate.toLocalDate();
+        } else {
+            date = LocalDate.parse(row[0].toString().substring(0, 10));
+        }
         long count = (Long) row[1];
         return new DateCountDto(date, count);
     }

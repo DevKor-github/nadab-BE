@@ -61,9 +61,12 @@ public class DailyReportService {
         DailyQuestion question = dailyQuestionRepository.findByIdWithInterest(request.questionId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.QUESTION_NOT_FOUND));
 
-        // webpKey 존재 시 검증
-        if(!isBlank(request.webpKey())) {
-            validateWebpKey(request.webpKey(), userId);
+        // objectKey, webpKey 존재 시 검증
+        if(!isBlank(request.objectKey())) {
+            if(isBlank(request.webpKey())) {
+                throw new BadRequestException(ErrorCode.IMAGE_WEBP_KEY_REQUIRED);
+            }
+             validateWebpKey(request.webpKey(), userId);
         }
 
         LocalDate today = TodayDateTimeProvider.getTodayDate();

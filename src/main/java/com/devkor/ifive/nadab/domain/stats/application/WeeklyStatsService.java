@@ -58,11 +58,15 @@ public class WeeklyStatsService {
         Map<LocalDate, Long> completedDailyMap = aggregateByWeekStart(
                 repo.findCompletedDailyReportCountsByDateBetween(startWeekStart, endDateInclusive)
         );
+        Map<LocalDate, Long> wauMap = toMapByDate(
+                repo.findWeeklyActiveUserCountsByDateBetween(startWeekStart, endDateInclusive)
+        );
 
         List<Long> signupCounts = weekStarts.stream().map(d -> signupMap.getOrDefault(d, 0L)).toList();
         List<Long> assignedCounts = weekStarts.stream().map(d -> assignedMap.getOrDefault(d, 0L)).toList();
         List<Long> completedDailyCounts = weekStarts.stream().map(d -> completedDailyMap.getOrDefault(d, 0L)).toList();
         List<Long> completedCounts = weekStarts.stream().map(d -> completedMap.getOrDefault(d, 0L)).toList();
+        List<Long> wauCounts = weekStarts.stream().map(d -> wauMap.getOrDefault(d, 0L)).toList();
 
         long inProgressNow = repo.countInProgressWeeklyReportsNow();
 
@@ -72,6 +76,7 @@ public class WeeklyStatsService {
                 assignedCounts,
                 completedDailyCounts,
                 completedCounts,
+                wauCounts,
                 inProgressNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );
@@ -82,6 +87,14 @@ public class WeeklyStatsService {
         for (DateCountDto dto : dailyCounts) {
             LocalDate weekStart = dto.date().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             map.merge(weekStart, dto.count(), Long::sum);
+        }
+        return map;
+    }
+
+    private Map<LocalDate, Long> toMapByDate(List<DateCountDto> counts) {
+        Map<LocalDate, Long> map = new HashMap<>();
+        for (DateCountDto dto : counts) {
+            map.put(dto.date(), dto.count());
         }
         return map;
     }

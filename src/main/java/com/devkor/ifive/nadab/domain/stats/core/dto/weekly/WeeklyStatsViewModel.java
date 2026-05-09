@@ -8,6 +8,7 @@ public record WeeklyStatsViewModel(
         List<Long> assignedQuestionCounts,
         List<Long> completedDailyReportCounts,
         List<Long> completedWeeklyReportCounts,
+        List<Long> wauCounts,
         long inProgressWeeklyReportCount,
         String refreshedAt
 ) {}

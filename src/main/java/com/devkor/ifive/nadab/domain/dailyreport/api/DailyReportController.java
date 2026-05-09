@@ -77,6 +77,7 @@ public class DailyReportController {
                             description = """
                                     - ErrorCode: DAILY_QUESTION_MISMATCH - 요청한 질문이 사용자에게 할당된 오늘의 질문과 일치하지 않음
                                     - ErrorCode: IMAGE_INVALID_KEY - 유효하지 않은 이미지 키
+                                    - ErrorCode: IMAGE_WEBP_KEY_REQUIRED - objectKey는 존재하지만 webpKey가 누락됨
                                     """,
                             content = @Content
                     ),
