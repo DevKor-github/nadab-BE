@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.entity;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyReportV2ContentFactory;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -83,4 +85,40 @@ public class MonthlyReportV2 extends CreatableEntity {
 
     @Column(name = "analyzed_at")
     private OffsetDateTime analyzedAt;
+
+    public static MonthlyReportV2 create(
+            User user, LocalDate monthStartDate, LocalDate monthEndDate,
+            MonthlyReportV2Content content,
+            LocalDate date, MonthlyReportStatus status,
+            MonthlyReportImageStatus imageStatus,
+            MonthlyReportComparisonType comparisonType
+    ) {
+        MonthlyReportV2 mr = new MonthlyReportV2();
+        mr.user = user;
+        mr.monthStartDate = monthStartDate;
+        mr.monthEndDate = monthEndDate;
+
+        MonthlyReportV2Content normalized = (content == null) ? MonthlyReportV2ContentFactory.empty() : content.normalized();
+        mr.content = normalized;
+
+        mr.summary = normalized.summary();
+        mr.commentSummary = normalized.commentSummary();
+        mr.dominantKeyword = normalized.dominantKeyword();
+
+        mr.emotionSummaryContent = TypeContentFactory.emptyText().normalized();
+        mr.emotionStats = TypeContentFactory.emptyEmotionStats();
+
+        mr.comparisonType = comparisonType;
+        mr.date = date;
+        mr.imageStatus = imageStatus;
+        mr.status = status;
+        return mr;
+    }
+
+    public static MonthlyReportV2 createPending(
+            User user, LocalDate monthStartDate, LocalDate monthEndDate, LocalDate date, MonthlyReportComparisonType comparisonType
+    ) {
+        return create(user, monthStartDate, monthEndDate, MonthlyReportV2ContentFactory.empty(), date,
+                MonthlyReportStatus.PENDING, MonthlyReportImageStatus.PENDING, comparisonType);
+    }
 }
