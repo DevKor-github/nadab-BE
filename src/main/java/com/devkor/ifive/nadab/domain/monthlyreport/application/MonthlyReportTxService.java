@@ -4,8 +4,11 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReserveResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportComparisonType;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportRepository;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.PendingMonthlyReportService;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
@@ -32,6 +35,7 @@ public class MonthlyReportTxService {
     private final PendingMonthlyReportService pendingMonthlyReportService;
 
     private final MonthlyReportRepository monthlyReportRepository;
+    private final MonthlyReportV2Repository monthlyReportV2Repository;
     private final UserWalletRepository userWalletRepository;
     private final CrystalLogRepository crystalLogRepository;
 
@@ -45,10 +49,10 @@ public class MonthlyReportTxService {
      * (Tx) MonthlyReport(PENDING) + reserve consume + CrystalLog(PENDING)
      * 커밋되면 리포트 생성 작업을 시작할 준비가 완료됨
      */
-    public MonthlyReserveResultDto reserveMonthly(User user) {
+    public MonthlyReserveResultDto reserveMonthly(User user, boolean exists) {
 
         // Report: 있으면 기존 사용, 없으면 새로 PENDING 생성
-        MonthlyReport report = pendingMonthlyReportService.getOrCreatePendingMonthlyReport(user);
+        MonthlyReportV2 report = pendingMonthlyReportService.getOrCreatePendingMonthlyReport(user, exists);
 
         // 선차감(원자적) + balanceAfter 확보
         int updated = userWalletRepository.tryConsume(user.getId(), MONTHLY_REPORT_COST);
@@ -77,9 +81,12 @@ public class MonthlyReportTxService {
     }
 
     public MonthlyReserveResultDto reserveMonthlyAndPublish(User user) {
-        MonthlyReserveResultDto reserve = this.reserveMonthly(user);
 
-        monthlyReportRepository.updateStatus(reserve.reportId(), MonthlyReportStatus.IN_PROGRESS);
+        boolean exists = monthlyReportV2Repository.existsByUserId(user.getId());
+
+        MonthlyReserveResultDto reserve = this.reserveMonthly(user, exists);
+
+        monthlyReportV2Repository.updateStatus(reserve.reportId(), MonthlyReportStatus.IN_PROGRESS);
 
         // 트랜잭션 안에서 publish (AFTER_COMMIT 트리거 보장)
         eventPublisher.publishEvent(new MonthlyReportGenerationRequestedEventDto(
