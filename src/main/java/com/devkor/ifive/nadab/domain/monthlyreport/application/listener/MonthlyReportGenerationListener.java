@@ -1,15 +1,18 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application.listener;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxService;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClient;
+import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeEmotionStatsCalculator;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
-import com.devkor.ifive.nadab.global.shared.reportcontent.AiReportResultDto;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +37,7 @@ public class MonthlyReportGenerationListener {
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final int MAX_LEN = 245;
+    private static final int MAX_LEN = 400;
 
     @Async("monthlyReportTaskExecutor")
     @TransactionalEventListener(phase =
@@ -51,11 +54,38 @@ public class MonthlyReportGenerationListener {
         // 2. 주간 리포트 선택
         String weeklySummaries = monthlyWeeklySummariesService.buildWeeklySummaries(event.userId(), range);
 
-        AiReportResultDto dto;
+        // 3. 해당 월(COMPLETED DailyReport) 감정 통계 집계
+        TypeEmotionStatsContent emotionStats;
+        try {
+            emotionStats = TypeEmotionStatsCalculator.calculate(
+                    monthlyQueryRepository.countCompletedEmotionStatsByRange(
+                            event.userId(),
+                            DailyReportStatus.COMPLETED,
+                            range.monthStartDate(),
+                            range.monthEndDate()
+                    )
+            );
+        } catch (Exception e) {
+            log.error("[MONTHLY_REPORT][EMOTION_STATS_FAILED] userId={}, reportId={}",
+                    event.userId(), event.reportId(), e);
+            monthlyReportTxService.failAndRefundMonthly(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+            return;
+        }
+
+        AiMonthlyReportResultDto dto;
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
             dto = monthlyReportLlmClient.generate(
-                    range.monthStartDate().toString(), range.monthEndDate().toString(), weeklySummaries, representativeEntries);
+                    range.monthStartDate().toString(),
+                    range.monthEndDate().toString(),
+                    weeklySummaries,
+                    representativeEntries,
+                    emotionStats,
+                    event.exists());
         } catch (Exception e) {
             log.error("[MONTHLY_REPORT][LLM_FAILED] userId={}, reportId={}",
                     event.userId(), event.reportId(), e);
@@ -69,13 +99,21 @@ public class MonthlyReportGenerationListener {
             return;
         }
 
-        // 성공 확정(별도 트랜잭션)
+        // 텍스트 생성 성공 확정(별도 트랜잭션)
         try {
+            monthlyReportTxService.confirmMonthlyText(
+                    event.reportId(),
+                    dto.content(),
+                    dto.emotionSummaryContent(),
+                    emotionStats
+            );
+
+            /*
             monthlyReportTxService.confirmMonthly(
                     event.reportId(),
                     event.crystalLogId(),
                     dto.content()
-            );
+            ); */
 
             // 월간 리포트 완성 이벤트 발행
             eventPublisher.publishEvent(

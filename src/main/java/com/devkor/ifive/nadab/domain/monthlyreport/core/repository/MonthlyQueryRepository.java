@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.repository;
 
+import com.devkor.ifive.nadab.domain.dailyreport.core.dto.EmotionStatsCountDto;
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,6 +36,27 @@ public interface MonthlyQueryRepository extends JpaRepository<AnswerEntry, Long>
 """)
     List<DailyEntryDto> findMonthlyInputs(
             @Param("userId") Long userId,
+            @Param("monthStart") LocalDate monthStart,
+            @Param("monthEnd") LocalDate monthEnd
+    );
+
+    @Query("""
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.EmotionStatsCountDto(
+            e.code,
+            e.name,
+            count(dr.id)
+        )
+          from Emotion e
+          left join DailyReport dr
+            on dr.emotion = e
+           and dr.answerEntry.user.id = :userId
+           and dr.status = :status
+           and dr.date between :monthStart and :monthEnd
+         group by e.code, e.name
+    """)
+    List<EmotionStatsCountDto> countCompletedEmotionStatsByRange(
+            @Param("userId") Long userId,
+            @Param("status") DailyReportStatus status,
             @Param("monthStart") LocalDate monthStart,
             @Param("monthEnd") LocalDate monthEnd
     );

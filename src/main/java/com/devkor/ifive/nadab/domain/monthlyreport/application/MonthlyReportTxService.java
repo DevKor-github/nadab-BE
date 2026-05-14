@@ -3,13 +3,12 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReserveResultDto;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportComparisonType;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.*;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.PendingMonthlyReportService;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
@@ -82,7 +81,7 @@ public class MonthlyReportTxService {
 
     public MonthlyReserveResultDto reserveMonthlyAndPublish(User user) {
 
-        boolean exists = monthlyReportV2Repository.existsByUserId(user.getId());
+        boolean exists = monthlyReportV2Repository.existsByUserIdAndStatus(user.getId(), MonthlyReportStatus.COMPLETED);
 
         MonthlyReserveResultDto reserve = this.reserveMonthly(user, exists);
 
@@ -92,7 +91,8 @@ public class MonthlyReportTxService {
         eventPublisher.publishEvent(new MonthlyReportGenerationRequestedEventDto(
                 reserve.reportId(),
                 user.getId(),
-                reserve.crystalLogId()
+                reserve.crystalLogId(),
+                exists
         ));
 
         return reserve;
@@ -119,8 +119,33 @@ public class MonthlyReportTxService {
         crystalLogRepository.markConfirmed(logId);
     }
 
+    public void confirmMonthlyText(
+            Long reportId, MonthlyReportV2Content content, TypeTextContent emotionSummaryContent, TypeEmotionStatsContent emotionStats) {
+        MonthlyReportV2Content contentNormalized = content.normalized();
+        TypeTextContent emotionSummaryContentNormalized = emotionSummaryContent.normalized();
+
+        String summary = contentNormalized.summary();
+        String commentSummary = contentNormalized.commentSummary();
+        String dominantKeyword = contentNormalized.dominantKeyword();
+
+        String contentJson;
+        String emotionSummaryContentJson;
+        String emotionStatsJson;
+
+        try {
+            contentJson = objectMapper.writeValueAsString(contentNormalized);
+            emotionSummaryContentJson = objectMapper.writeValueAsString(emotionSummaryContentNormalized);
+            emotionStatsJson = objectMapper.writeValueAsString(emotionStats.normalized());
+        } catch (Exception e) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+        monthlyReportV2Repository.updateContent(
+                reportId, contentJson, emotionSummaryContentJson, summary, commentSummary, dominantKeyword, emotionStatsJson, MonthlyReportStatus.TEXT_COMPLETED.name()
+        );
+    }
+
     public void failAndRefundMonthly(Long userId, Long reportId, Long logId) {
-        monthlyReportRepository.markFailed(reportId, MonthlyReportStatus.FAILED);
+        monthlyReportV2Repository.markFailed(reportId, MonthlyReportStatus.FAILED);
 
         // 환불(+cost)
         int updated = userWalletRepository.refund(userId, MONTHLY_REPORT_COST);

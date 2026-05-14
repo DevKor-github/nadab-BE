@@ -14,7 +14,7 @@ public final class MonthlyReportV2ContentFactory {
         StyledText oneEmpty = new StyledText(
                 List.of(new Segment("", List.of()))
         );
-        return new MonthlyReportV2Content("", "", "", oneEmpty, oneEmpty);
+        return new MonthlyReportV2Content("", "", "", "", oneEmpty, oneEmpty);
     }
 
     public static StyledText fromPlain(String text) {
