@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.monthlyreport.core.repository;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportImageStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -66,5 +67,31 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
             @Param("dominantKeyword") String dominantKeyword,
             @Param("emotionStatsJson") String emotionStatsJson,
             @Param("status") String status
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE MonthlyReportV2 mr
+       SET mr.imageStatus = :imageStatus
+     WHERE mr.id = :reportId
+""")
+    int updateImageStatus(
+            @Param("reportId") Long reportId,
+            @Param("imageStatus") MonthlyReportImageStatus imageStatus
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    UPDATE MonthlyReportV2 mr
+       SET mr.imageKey = :imageKey,
+           mr.imageStatus = :imageStatus,
+           mr.status = :status
+     WHERE mr.id = :reportId
+""")
+    int completeWithImage(
+            @Param("reportId") Long reportId,
+            @Param("imageKey") String imageKey,
+            @Param("imageStatus") MonthlyReportImageStatus imageStatus,
+            @Param("status") MonthlyReportStatus status
     );
 }

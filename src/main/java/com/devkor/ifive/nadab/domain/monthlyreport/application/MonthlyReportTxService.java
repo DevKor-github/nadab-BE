@@ -98,22 +98,13 @@ public class MonthlyReportTxService {
         return reserve;
     }
 
-    public void confirmMonthly(Long reportId, Long logId, ReportContent content) {
-        ReportContent normalized = content.normalized();
-
-        String summary = normalized.summary();
-        String discovered = normalized.discovered().plainText();
-        String improve = normalized.improve().plainText();
-
-        // report를 COMPLETED로
-        String contentJson;
-        try {
-            contentJson = objectMapper.writeValueAsString(normalized);
-        } catch (Exception e) {
-            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
-        }
-        monthlyReportRepository.markCompleted(
-                reportId, MonthlyReportStatus.COMPLETED.name(), contentJson, discovered, improve, summary);
+    public void confirmMonthly(Long reportId, Long logId, String imageKey) {
+        monthlyReportV2Repository.completeWithImage(
+                reportId,
+                imageKey,
+                MonthlyReportImageStatus.COMPLETED,
+                MonthlyReportStatus.COMPLETED
+        );
 
         // log를 CONFIRMED로
         crystalLogRepository.markConfirmed(logId);
@@ -156,5 +147,18 @@ public class MonthlyReportTxService {
 
         // log를 REFUNDED로
         crystalLogRepository.markRefunded(logId);
+    }
+
+    public void markMonthlyImageProcessing(Long reportId) {
+        monthlyReportV2Repository.updateImageStatus(reportId, MonthlyReportImageStatus.PROCESSING);
+    }
+
+    public void failMonthlyImage(Long reportId) {
+        monthlyReportV2Repository.updateImageStatus(reportId, MonthlyReportImageStatus.FAILED);
+    }
+
+    public void failAndRefundMonthlyWithImage(Long userId, Long reportId, Long logId) {
+        this.failAndRefundMonthly(userId, reportId, logId);
+        this.failMonthlyImage(reportId);
     }
 }

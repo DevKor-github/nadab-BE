@@ -8,7 +8,9 @@ import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResul
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
+import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportImageStorage;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClient;
+import com.devkor.ifive.nadab.domain.monthlyreport.infra.OpenAiImageClient;
 import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeEmotionStatsCalculator;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
@@ -33,6 +35,9 @@ public class MonthlyReportGenerationListener {
     private final MonthlyQueryRepository monthlyQueryRepository;
 
     private final MonthlyReportLlmClient monthlyReportLlmClient;
+    private final OpenAiImageClient openAiImageClient;
+    private final MonthlyReportImageStorage monthlyReportImageStorage;
+
     private final MonthlyReportTxService monthlyReportTxService;
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
     private final ApplicationEventPublisher eventPublisher;
@@ -108,16 +113,50 @@ public class MonthlyReportGenerationListener {
                     emotionStats
             );
 
-            /*
+        } catch (Exception e) {
+            log.error("[MONTHLY_REPORT][TEXT_CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
+                    event.userId(), event.reportId(), event.crystalLogId(), e);
+
+            // 저장 실패면 결과를 못 주는 거니까 "실패 확정 + 환불"로 처리
+            monthlyReportTxService.failAndRefundMonthly(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+            return;
+        }
+
+        String imageKey = "";
+        try {
+            String base64Image = openAiImageClient.generateBase64Image(event.userId(), dto, range);
+            imageKey = monthlyReportImageStorage.uploadBase64Webp(
+                    event.userId(),
+                    event.reportId(),
+                    base64Image
+            );
+
+        } catch (Exception e) {
+            log.error("[MONTHLY_REPORT][IMAGE_FAILED] userId={}, reportId={}, crystalLogId={}",
+                    event.userId(), event.reportId(), event.crystalLogId(), e);
+
+            monthlyReportTxService.failAndRefundMonthlyWithImage(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+            return;
+        }
+
+        try {
             monthlyReportTxService.confirmMonthly(
                     event.reportId(),
                     event.crystalLogId(),
-                    dto.content()
-            ); */
+                    imageKey
+            );
 
             // 월간 리포트 완성 이벤트 발행
             eventPublisher.publishEvent(
-                new MonthlyReportCompletedEvent(event.reportId(), event.userId())
+                    new MonthlyReportCompletedEvent(event.reportId(), event.userId())
             );
 
         } catch (Exception e) {
@@ -131,14 +170,6 @@ public class MonthlyReportGenerationListener {
                     event.crystalLogId()
             );
         }
-
-    }
-
-    // 최대 길이 자르기
-    private String cut(String s) {
-        if (s == null) return null;
-        s = s.trim();
-        return (s.length() <= MAX_LEN) ? s : s.substring(0, MAX_LEN);
     }
 }
 
