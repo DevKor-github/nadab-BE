@@ -22,6 +22,7 @@ module.exports = {
             "search",
             "stats",
             "friend",
+            "social",
             "notify",
             "infra",
             "db",
@@ -122,6 +123,9 @@ module.exports = {
                     },
                     friend: {
                         description: '👥 친구 도메인 (예: 친구 신청, 수락, 목록 관리)'
+                    },
+                    social: {
+                        description: '💬 소셜 도메인 (예: 댓글, 좋아요, 피드 공유)'
                     },
                     notify: {
                         description: '📧 알림/이메일 전송 (예: 질문 알림, 인증 이메일 전송)'
