@@ -50,7 +50,8 @@ public class NotificationMessageFactory {
             "senderName", "테스트",
             "categoryName", "테스트",
             "daysInactive", "5",
-            "milestone", "30"
+            "milestone", "30",
+            "commentContent", "테스트 댓글 내용"
         );
 
         for (NotificationType type : NotificationType.values()) {
