@@ -1,8 +1,9 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.repository;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.EmotionStatsCountDto;
-import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
+import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.InterestStatsCountDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -55,6 +56,32 @@ public interface MonthlyQueryRepository extends JpaRepository<AnswerEntry, Long>
          group by e.code, e.name
     """)
     List<EmotionStatsCountDto> countCompletedEmotionStatsByRange(
+            @Param("userId") Long userId,
+            @Param("status") DailyReportStatus status,
+            @Param("monthStart") LocalDate monthStart,
+            @Param("monthEnd") LocalDate monthEnd
+    );
+
+    @Query("""
+        select new com.devkor.ifive.nadab.domain.monthlyreport.core.dto.InterestStatsCountDto(
+            i.code,
+            i.name,
+            count(dr.id)
+        )
+          from Interest i
+          left join DailyQuestion dq
+            on dq.interest = i
+          left join AnswerEntry ae
+            on ae.question = dq
+           and ae.user.id = :userId
+           and ae.date between :monthStart and :monthEnd
+          left join DailyReport dr
+            on dr.answerEntry = ae
+           and dr.status = :status
+           and dr.date between :monthStart and :monthEnd
+         group by i.code, i.name
+    """)
+    List<InterestStatsCountDto> countCompletedInterestStatsByRange(
             @Param("userId") Long userId,
             @Param("status") DailyReportStatus status,
             @Param("monthStart") LocalDate monthStart,

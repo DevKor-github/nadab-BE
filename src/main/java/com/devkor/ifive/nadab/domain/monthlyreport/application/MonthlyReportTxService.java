@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReserveResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.*;
@@ -19,7 +20,6 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
-import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -111,9 +111,15 @@ public class MonthlyReportTxService {
     }
 
     public void confirmMonthlyText(
-            Long reportId, MonthlyReportV2Content content, TypeTextContent emotionSummaryContent, TypeEmotionStatsContent emotionStats) {
+            Long reportId,
+            MonthlyReportV2Content content,
+            TypeTextContent emotionSummaryContent,
+            TypeEmotionStatsContent emotionStats,
+            InterestStatsContent interestStats
+    ) {
         MonthlyReportV2Content contentNormalized = content.normalized();
         TypeTextContent emotionSummaryContentNormalized = emotionSummaryContent.normalized();
+        InterestStatsContent interestStatsNormalized = interestStats.normalized();
 
         String summary = contentNormalized.summary();
         String commentSummary = contentNormalized.commentSummary();
@@ -122,16 +128,26 @@ public class MonthlyReportTxService {
         String contentJson;
         String emotionSummaryContentJson;
         String emotionStatsJson;
+        String interestStatsJson;
 
         try {
             contentJson = objectMapper.writeValueAsString(contentNormalized);
             emotionSummaryContentJson = objectMapper.writeValueAsString(emotionSummaryContentNormalized);
             emotionStatsJson = objectMapper.writeValueAsString(emotionStats.normalized());
+            interestStatsJson = objectMapper.writeValueAsString(interestStatsNormalized);
         } catch (Exception e) {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
         monthlyReportV2Repository.updateContent(
-                reportId, contentJson, emotionSummaryContentJson, summary, commentSummary, dominantKeyword, emotionStatsJson, MonthlyReportStatus.TEXT_COMPLETED.name()
+                reportId,
+                contentJson,
+                emotionSummaryContentJson,
+                summary,
+                commentSummary,
+                dominantKeyword,
+                emotionStatsJson,
+                interestStatsJson,
+                MonthlyReportStatus.TEXT_COMPLETED.name()
         );
     }
 

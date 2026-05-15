@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.entity;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyContentFactory;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyReportV2ContentFactory;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
@@ -66,6 +68,10 @@ public class MonthlyReportV2 extends CreatableEntity {
     @Column(name = "emotion_stats", columnDefinition = "jsonb", nullable = false)
     private TypeEmotionStatsContent emotionStats;
 
+    @Type(JsonType.class)
+    @Column(name = "interest_stats", columnDefinition = "jsonb", nullable = false)
+    private InterestStatsContent interestStats;
+
     @Column(name = "summary", nullable = false, length = 80)
     private String summary;
 
@@ -107,6 +113,7 @@ public class MonthlyReportV2 extends CreatableEntity {
 
         mr.emotionSummaryContent = TypeContentFactory.emptyText().normalized();
         mr.emotionStats = TypeContentFactory.emptyEmotionStats();
+        mr.interestStats = MonthlyContentFactory.emptyInterestStats();
 
         mr.comparisonType = comparisonType;
         mr.date = date;

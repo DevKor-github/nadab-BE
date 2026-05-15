@@ -3,7 +3,9 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application.listener;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxService;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyReportCompletedEvent;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyInterestStatsCalculator;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
@@ -42,8 +44,6 @@ public class MonthlyReportGenerationListener {
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final int MAX_LEN = 400;
-
     @Async("monthlyReportTaskExecutor")
     @TransactionalEventListener(phase =
             TransactionPhase.AFTER_COMMIT)
@@ -72,6 +72,27 @@ public class MonthlyReportGenerationListener {
             );
         } catch (Exception e) {
             log.error("[MONTHLY_REPORT][EMOTION_STATS_FAILED] userId={}, reportId={}",
+                    event.userId(), event.reportId(), e);
+            monthlyReportTxService.failAndRefundMonthly(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+            return;
+        }
+
+        InterestStatsContent interestStats;
+        try {
+            interestStats = MonthlyInterestStatsCalculator.calculate(
+                    monthlyQueryRepository.countCompletedInterestStatsByRange(
+                            event.userId(),
+                            DailyReportStatus.COMPLETED,
+                            range.monthStartDate(),
+                            range.monthEndDate()
+                    )
+            );
+        } catch (Exception e) {
+            log.error("[MONTHLY_REPORT][INTEREST_STATS_FAILED] userId={}, reportId={}",
                     event.userId(), event.reportId(), e);
             monthlyReportTxService.failAndRefundMonthly(
                     event.userId(),
@@ -110,7 +131,8 @@ public class MonthlyReportGenerationListener {
                     event.reportId(),
                     dto.content(),
                     dto.emotionSummaryContent(),
-                    emotionStats
+                    emotionStats,
+                    interestStats
             );
 
         } catch (Exception e) {
