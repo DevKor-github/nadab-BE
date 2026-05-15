@@ -160,6 +160,35 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
         @Param("date") LocalDate date
     );
 
+    @Query("select ae.user.id from DailyReport dr join dr.answerEntry ae where dr.id = :reportId")
+    Optional<Long> findReportOwnerIdById(@Param("reportId") Long reportId);
+
+    boolean existsByIdAndIsSharedTrue(Long id);
+
+    @Query("""
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto(
+            dr.id,
+            ae.user.nickname,
+            ae.user.profileImageKey,
+            ae.user.defaultProfileType,
+            ae.question.interest.code,
+            ae.question.questionText,
+            ae.content,
+            dr.emotion.code,
+            ae.imageKey
+        )
+        from DailyReport dr
+        join dr.answerEntry ae
+        where ae.user.id = :userId
+          and dr.date = :date
+          and dr.isShared = true
+          and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+    """)
+    Optional<FeedDto> findMySharedFeedByDate(
+        @Param("userId") Long userId,
+        @Param("date") LocalDate date
+    );
+
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.InterestCompletedCountDto(
             i.code,

@@ -21,6 +21,16 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
     boolean existsByUserIds(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
     @Query("""
+        select case when exists (
+            select 1 from Friendship f
+            where f.user1.id = :userId1 and f.user2.id = :userId2
+              and f.status = 'ACCEPTED'
+              and f.user1.deletedAt is null and f.user2.deletedAt is null
+        ) then true else false end
+        """)
+    boolean existsAcceptedByUserIds(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+
+    @Query("""
         select count(f) from Friendship f
         where (f.user1.id = :userId or f.user2.id = :userId)
         and f.status = :status
