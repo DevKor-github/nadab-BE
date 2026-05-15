@@ -6,7 +6,10 @@ import java.util.List;
 @Schema(description = "피드 목록 응답")
 public record FeedListResponse(
 
-        @Schema(description = "피드 목록")
+        @Schema(description = "오늘 내 공유 리포트 (미공유 시 null)")
+        FeedResponse myReport,
+
+        @Schema(description = "친구 피드 목록")
         List<FeedResponse> feeds
 ) {
 }
