@@ -1,9 +1,8 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.api;
 
-import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponse;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
-import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportResponse;
-import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportQueryService;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportQueryServiceV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportService;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
@@ -21,20 +20,18 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "월간 리포트 API", description = "월간 리포트 생성 및 조회 관련 API")
+@Tag(name = "월간 리포트 API V2", description = "월간 리포트 생성 및 조회 관련 API V2")
 @RestController
-@RequestMapping("${api_prefix}/monthly-report")
+@RequestMapping("/api/v2/monthly-report")
 @RequiredArgsConstructor
-public class MonthlyReportController {
+public class MonthlyReportControllerV2 {
 
     private final MonthlyReportService monthlyReportService;
-    private final MonthlyReportQueryService monthlyReportQueryService;
+    private final MonthlyReportQueryServiceV2 monthlyReportQueryServiceV2;
 
-    @Deprecated(since = "2026-05-15", forRemoval = true)
     @PostMapping("/start")
     @PreAuthorize("isAuthenticated()")
     @Operation(
-            deprecated = true,
             summary = "월간 리포트 생성 시작",
             description = """
                     사용자의 (지난 달에 대한) 월간 리포트 생성을 시작합니다. </br>
@@ -85,16 +82,12 @@ public class MonthlyReportController {
         return ApiResponseEntity.ok(response);
     }
 
-    @Deprecated(since = "2026-05-15", forRemoval = true)
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(
-            deprecated = true,
-            summary = "나의 월간 리포트 조회",
+            summary = "나의 월간 리포트 조회 V2",
             description = """
-                    사용자의 (지난 달에 대한) 월간 리포트와 이전 월간 리포트를 조회합니다. </br>
-                    이때 ```report```혹은 ```previousReport```가 ```null```인 경우 해당 주간 리포트가 존재하지 않음을 의미합니다. </br>
-                    ```previousReport```가 ```null```이 아닌 경우 ```status```필드는 항상 ```COMPLETED```입니다. </br>
+                    사용자의 (지난 달에 대한) 월간 리포트 V2와 이전 월간 리포트 V2를 조회합니다. </br>
                     **<```report```의 state>** </br>
                     생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
                     생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
@@ -116,7 +109,7 @@ public class MonthlyReportController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "나의 월간 리포트 조회 성공",
-                            content = @Content(schema = @Schema(implementation = MyMonthlyReportResponse.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = MonthlyReportResponseV2.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -132,10 +125,10 @@ public class MonthlyReportController {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<MyMonthlyReportResponse>> getMyMonthlyReport(
+    public ResponseEntity<ApiResponseDto<MonthlyReportResponseV2>> getMyMonthlyReport(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        MyMonthlyReportResponse response = monthlyReportQueryService.getMyMonthlyReport(principal.getId());
+        MonthlyReportResponseV2 response = monthlyReportQueryServiceV2.getMyMonthlyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 
@@ -144,7 +137,7 @@ public class MonthlyReportController {
     @Operation(
             summary = "id로 월간 리포트 조회",
             description = """
-                    월간 리포트를 id로 조회합니다. </br>
+                    월간 리포트 V2를 id로 조회합니다. </br>
                     생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
                     생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
                     생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
@@ -164,7 +157,7 @@ public class MonthlyReportController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "월간 리포트 조회 성공",
-                            content = @Content(schema = @Schema(implementation = MonthlyReportResponse.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = MonthlyReportResponseV2.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "404",
@@ -173,10 +166,10 @@ public class MonthlyReportController {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<MonthlyReportResponse>> getMonthlyReportById(
+    public ResponseEntity<ApiResponseDto<MonthlyReportResponseV2>> getMonthlyReportById(
             @PathVariable Long id
     ) {
-        MonthlyReportResponse response = monthlyReportQueryService.getMonthlyReportById(id);
+        MonthlyReportResponseV2 response = monthlyReportQueryServiceV2.getMonthlyReportById(id);
         return ApiResponseEntity.ok(response);
     }
 }
