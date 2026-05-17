@@ -1,6 +1,8 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupItemV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.ReportListTypeV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyContentFactory;
@@ -112,15 +114,17 @@ public class MonthlyReportQueryServiceV2 {
                 .toList();
     }
 
-    public MonthlyReportResponseV2 getMyMonthlyReport(Long userId) {
+    public MyMonthlyReportLookupResponseV2 getMyMonthlyReport(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
         }
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
         return monthlyReportV2Repository.findByUserIdAndMonthStartDate(userId, range.monthStartDate())
-                .map(this::toResponse)
-                .orElse(null);
+                .map(this::toLookupResponse)
+                .or(() -> monthlyReportRepository.findByUserIdAndMonthStartDate(userId, range.monthStartDate())
+                        .map(this::toLookupResponse))
+                .orElseGet(() -> new MyMonthlyReportLookupResponseV2(null));
     }
 
     public MonthlyReportResponseV2 getMonthlyReportById(Long userId, Long id) {
@@ -153,6 +157,28 @@ public class MonthlyReportQueryServiceV2 {
                 content.comment(),
                 content.commentSummary(),
                 report.getInterestStats() == null ? MonthlyContentFactory.emptyInterestStats() : report.getInterestStats().normalized()
+        );
+    }
+
+    private MyMonthlyReportLookupResponseV2 toLookupResponse(MonthlyReportV2 report) {
+        return new MyMonthlyReportLookupResponseV2(
+                new MyMonthlyReportLookupItemV2(
+                        report.getId(),
+                        2,
+                        report.getMonthStartDate().getMonthValue(),
+                        report.getStatus() == null ? MonthlyReportStatus.PENDING : report.getStatus()
+                )
+        );
+    }
+
+    private MyMonthlyReportLookupResponseV2 toLookupResponse(MonthlyReport report) {
+        return new MyMonthlyReportLookupResponseV2(
+                new MyMonthlyReportLookupItemV2(
+                        report.getId(),
+                        1,
+                        report.getMonthStartDate().getMonthValue(),
+                        report.getStatus() == null ? MonthlyReportStatus.PENDING : report.getStatus()
+                )
         );
     }
 

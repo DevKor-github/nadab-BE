@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.api;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.ReportListTypeV2;
@@ -136,47 +137,20 @@ public class MonthlyReportControllerV2 {
     @Operation(
             summary = "나의 월간 리포트 조회 V2",
             description = """
-                    사용자의 (지난 달에 대한) 월간 리포트 V2와 이전 월간 리포트 V2를 조회합니다. </br>
-                    **<```report```의 state>** </br>
-                    생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
-                    생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
-                    생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
-                    생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
+                    사용자의 (지난 달에 대한) 월간 리포트를 조회합니다. </br>
                     
-                    **<텍스트 스타일(styled) 지원>** </br>
-                    월간 리포트 본문은 강조 표현을 위해 해당 필드에 구조화된 형태로 함께 제공됩니다. </br>
-                    각 필드는 ```segments``` 배열을 가지며, </br>
-                    각 segment는 ```text```와 ```marks```를 포함합니다. </br>
-                    ```marks```에는 ```BOLD```, ```HIGHLIGHT```만 포함될 수 있습니다. </br>
-                    클라이언트는 ```segments```를 순서대로 이어 붙여 렌더링하고, ```marks```에 따라 볼드/하이라이트를 적용하면 됩니다. </br>
+                    report: 존재하지 않으면 null, 존재하면 id와 version을 반환합니다. </br>
                     
-                    다음은 각 페이지에서 활용되는 필드의 값에 대한 설명입니다. </br>
-                    comparisonType: 최초 생성인지 이전 리포트가 존재하는지 여부입니다. </br>
-                    현재는 모두 최초 생성이기 때문에 "BASELINE"으로 고정되어 있고, 이전 리포트가 존재하는 경우에는 "COMPARISON"으로 반환될 예정입니다. </br>
-                    
-                    **<페이지 1>** </br>
-                    summary : 월간 기록 요약 </br>
-                    imageUrl : AI 생성 이미지 </br>
-                    discovered.segments : 월간 분석 텍스트 </br>
-                    
-                    **<페이지 2>** </br>
-                    dominantKeyword : 이번 달 요약 단어 </br>
-                    emotionStats.emotions : 감정에 대한 통계가 빈도 기준 내림차순으로 정렬되어 있습니다. </br>
-                    emotionSummaryContent.styledText.segments : 감정 분석 텍스트 </br>
-                   
-                    emotionTrend : "NOT_SUPPORTED" (현재는 고정. 변동 양상은 최초 생성 월간 리포트에서는 지원되지 않음. 이후 업데이트 예정) </br>
-                    
-                    **<페이지 3>** </br>
-                    commentSummary : 나답의 한 마디 요약 </br>
-                    comment.segments : 나답의 한 마디 텍스트 </br>
-                    interestStats.interests : 카테고리(관심사)에 대한 통계가 빈도 기준 내림차순으로 정렬되어 있습니다. </br>
+                    version 규칙:
+                    - monthly_reports - 1인 경우 : GET /api/v1/monthly-report/{id}로 조회 (기존의 레거시 버전)
+                    - monthly_reports - 2인 경우 : GET /api/v2/monthly-report/{id}로 조회 (새로운 V2 버전)
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
                             description = "나의 월간 리포트 조회 성공",
-                            content = @Content(schema = @Schema(implementation = MonthlyReportResponseV2.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = MyMonthlyReportLookupResponseV2.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -192,10 +166,10 @@ public class MonthlyReportControllerV2 {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<MonthlyReportResponseV2>> getMyMonthlyReport(
+    public ResponseEntity<ApiResponseDto<MyMonthlyReportLookupResponseV2>> getMyMonthlyReport(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        MonthlyReportResponseV2 response = monthlyReportQueryServiceV2.getMyMonthlyReport(principal.getId());
+        MyMonthlyReportLookupResponseV2 response = monthlyReportQueryServiceV2.getMyMonthlyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 
