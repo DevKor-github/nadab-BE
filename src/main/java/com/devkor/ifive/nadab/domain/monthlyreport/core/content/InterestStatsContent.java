@@ -22,7 +22,7 @@ public record InterestStatsContent(
                 continue;
             }
             out.add(new InterestStat(
-                    trimToNull(stat.intersetCode()),
+                    trimToNull(stat.interestCode()),
                     trimToNull(stat.interestName()),
                     normalizeNonNegative(stat.count())
             ));
@@ -45,7 +45,7 @@ public record InterestStatsContent(
     }
 
     public record InterestStat(
-            String intersetCode,
+            String interestCode,
             String interestName,
             Integer count
     ) {

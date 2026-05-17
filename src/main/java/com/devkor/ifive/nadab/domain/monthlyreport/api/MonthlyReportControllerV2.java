@@ -253,9 +253,10 @@ public class MonthlyReportControllerV2 {
             }
     )
     public ResponseEntity<ApiResponseDto<MonthlyReportResponseV2>> getMonthlyReportById(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id
     ) {
-        MonthlyReportResponseV2 response = monthlyReportQueryServiceV2.getMonthlyReportById(id);
+        MonthlyReportResponseV2 response = monthlyReportQueryServiceV2.getMonthlyReportById(principal.getId(), id);
         return ApiResponseEntity.ok(response);
     }
 }

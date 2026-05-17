@@ -17,6 +17,7 @@ import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
@@ -122,9 +123,12 @@ public class MonthlyReportQueryServiceV2 {
                 .orElse(null);
     }
 
-    public MonthlyReportResponseV2 getMonthlyReportById(Long id) {
+    public MonthlyReportResponseV2 getMonthlyReportById(Long userId, Long id) {
         MonthlyReportV2 report = monthlyReportV2Repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
+        if (report.getUser() == null || report.getUser().getId() == null || !report.getUser().getId().equals(userId)) {
+            throw new ForbiddenException(ErrorCode.MONTHLY_REPORT_ACCESS_FORBIDDEN);
+        }
         return toResponse(report);
     }
 
