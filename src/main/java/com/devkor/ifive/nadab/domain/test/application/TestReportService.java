@@ -14,6 +14,7 @@ import com.devkor.ifive.nadab.domain.typereport.core.repository.TypeReportReposi
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogStatus;
@@ -58,6 +59,8 @@ public class TestReportService {
     private final TypeReportRepository typeReportRepository;
     private final TestCrystalLogRepository testCrystalLogRepository;
     private final UserWalletRepository userWalletRepository;
+
+    private final ProfileImageService profileImageService;
 
     private static final long WEEKLY_REPORT_COST = 20L;
     private static final long MONTHLY_REPORT_COST = 40L;
@@ -211,6 +214,8 @@ public class TestReportService {
         if (report.getStatus() != MonthlyReportStatus.COMPLETED) {
             throw new BadRequestException(ErrorCode.MONTHLY_REPORT_NOT_COMPLETED);
         }
+
+        profileImageService.deleteProfileImage(report.getImageKey());
 
         CrystalLog purchaseLog = testCrystalLogRepository
                 .findByUserIdAndRefTypeAndRefIdAndReasonAndStatus(
