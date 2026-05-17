@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2, Long> {
@@ -22,6 +23,8 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
             LocalDate monthStartDate,
             MonthlyReportStatus status
     );
+
+    List<MonthlyReportV2> findAllByUserIdAndStatus(Long userId, MonthlyReportStatus status);
 
     /**
      * PENDING -> FAILED 확정
