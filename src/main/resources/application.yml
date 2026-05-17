@@ -88,3 +88,11 @@ api_prefix: /api/v1
 firebase:
   admin:
     key-base64: ${FIREBASE_ADMIN_KEY}
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+  image:
+    model: gpt-image-1.5
+    size: 1024x1024
+    quality: low
+    output-format: webp

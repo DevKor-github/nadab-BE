@@ -165,6 +165,7 @@ public enum ErrorCode {
     // 404 Not Found
     MONTHLY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "월간 리포트를 찾을 수 없습니다"),
     MONTHLY_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 월간 리포트가 아직 생성 완료되지 않았습니다"),
+    MONTHLY_REPORT_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인 월간 리포트만 조회할 수 있습니다"),
 
     // 409 Conflict
     MONTHLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 월간 리포트가 존재합니다"),

@@ -1,5 +1,10 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.infra;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2Content;
+import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeReportInputAssembler;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.global.core.prompt.monthly.MonthlyReportPromptLoader;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
@@ -33,26 +38,28 @@ public class MonthlyReportLlmClient {
     private final LlmProvider provider = LlmProvider.GEMINI;
     private static final LlmProvider REWRITE_PROVIDER = LlmProvider.GEMINI;
 
-    private static final int MAX_DISCOVERED = 220;
-    private static final int MIN_DISCOVERED = 140;
+    private static final int MAX_DISCOVERED = 400;
+    private static final int MIN_DISCOVERED = 150;
 
-    private static final int MAX_IMPROVE = 120;
-    private static final int MIN_IMPROVE = 60;
-
-    private static final int MAX_HL_DISCOVERED = 2;
-    private static final int MAX_HL_IMPROVE = 1;
-    private static final int MAX_HL_SEG_LEN = 30;
+    private static final int MAX_EMOTION = 200;
+    private static final int MIN_EMOTION = 50;
 
     private static final int MIN_SUMMARY = 8;
     private static final int MAX_SUMMARY = 30;
 
-    public AiReportResultDto generate(
-            String monthStartDate, String monthEndDate, String weeklySummaries, String representativeEntries) {
+    public AiMonthlyReportResultDto generate(
+            String monthStartDate,
+            String monthEndDate,
+            String weeklySummaries,
+            String representativeEntries,
+            TypeEmotionStatsContent emotionStats,
+            boolean exists) {
         String prompt = monthlyReportPromptLoader.loadPrompt()
                 .replace("{monthStartDate}", monthStartDate)
                 .replace("{monthEndDate}", monthEndDate)
                 .replace("{weeklySummaries}", weeklySummaries)
-                .replace("{representativeEntries}", representativeEntries == null ? "" : representativeEntries);
+                .replace("{representativeEntries}", representativeEntries == null ? "" : representativeEntries)
+                .replace("{emotionStats}", TypeReportInputAssembler.assembleEmotionStats(emotionStats));
 
         ChatClient client = llmRouter.route(provider);
 
@@ -67,40 +74,48 @@ public class MonthlyReportLlmClient {
         }
 
         try {
-            LlmResultDto result;
+            AiMonthlyReportResultDto result;
             try {
-                result = objectMapper.readValue(content, LlmResultDto.class);
+                result = objectMapper.readValue(content, AiMonthlyReportResultDto.class);
             } catch (Exception e) {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MAPPING_FAILED);
             }
 
-            StyledText discoveredStyled = result.discovered();
-            StyledText improveStyled = result.improve();
-            String summary = result.summary();
+            MonthlyReportV2Content monthlyReportContent = result.content();
 
-            if (discoveredStyled == null || improveStyled == null || isBlank(summary)) {
+            StyledText discoveredStyled = monthlyReportContent.discovered();
+            StyledText commentStyled = monthlyReportContent.comment();
+            String summary = monthlyReportContent.summary();
+            String commentSummary = monthlyReportContent.commentSummary();
+            String dominantKeyword = monthlyReportContent.dominantKeyword();
+            String emotionTrend = monthlyReportContent.emotionTrend();
+
+            TypeTextContent emotionStatsContent = result.emotionSummaryContent();
+            StyledText styledText = emotionStatsContent.styledText();
+
+            if (discoveredStyled == null || commentStyled == null || styledText == null
+                    || isBlank(summary) || isBlank(commentSummary) || isBlank(dominantKeyword) || isBlank(emotionTrend)) {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
             }
 
             validateSummary(summary);
+            validateSummary(commentSummary);
 
             validateStyledText(discoveredStyled, true);
-            validateStyledText(improveStyled, false);
+            validateStyledText(commentStyled, true);
+            validateStyledText(styledText, false);
 
-            ReportContent reportContent = new ReportContent(summary.trim(), discoveredStyled, improveStyled);
+            String discovered = monthlyReportContent.discovered().plainText();
+            String comment = monthlyReportContent.comment().plainText();
+            String emotion = emotionStatsContent.styledText().plainText();
 
-            String discovered = reportContent.discovered().plainText();
-            String improve = reportContent.improve().plainText();
-
-            if (isBlank(discovered) || isBlank(improve)) {
+            if (isBlank(discovered) || isBlank(comment)  || isBlank(emotion)) {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
             }
 
-            AiReportResultDto dto = enforceLength(new AiReportResultDto(reportContent, discovered, improve));
+            validateLength(discovered, comment, emotion);
 
-            validateLength(dto);
-
-            return dto;
+            return result;
 
         } catch (AiResponseParseException e) {
             throw e;
@@ -150,6 +165,7 @@ public class MonthlyReportLlmClient {
                 .content();
     }
 
+    /*
     private AiReportResultDto enforceLength(AiReportResultDto dto) {
         ReportContent c = dto.content();
 
@@ -235,6 +251,8 @@ public class MonthlyReportLlmClient {
         }
     }
 
+     */
+
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
@@ -243,8 +261,6 @@ public class MonthlyReportLlmClient {
         if (st.segments() == null || st.segments().isEmpty()) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
         }
-
-        int highlightCount = 0;
 
         for (Segment seg : st.segments()) {
             if (seg == null || seg.text() == null || seg.text().isBlank()) {
@@ -271,27 +287,22 @@ public class MonthlyReportLlmClient {
                 if (!set.contains(Mark.BOLD)) {
                     throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_HIGHLIGHT_WITHOUT_BOLD);
                 }
-                highlightCount++;
-                if (t.length() > MAX_HL_SEG_LEN) {
-                    throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_HIGHLIGHT_SEGMENT_TOO_LONG);
-                }
             }
-        }
-
-        int maxHl = isDiscovered ? MAX_HL_DISCOVERED : MAX_HL_IMPROVE;
-        if (highlightCount > maxHl) {
-            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_HIGHLIGHT_COUNT_EXCEEDED);
         }
     }
 
-    private void validateLength(AiReportResultDto dto) {
-        int dLen = dto.discovered().length();
-        int iLen = dto.improve().length();
+    private void validateLength(String discovered, String comment, String emotion) {
+        int dLen = discovered.length();
+        int cLen = comment.length();
+        int eLen = emotion.length();
 
         if (dLen < MIN_DISCOVERED || dLen > MAX_DISCOVERED) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID);
         }
-        if (iLen < MIN_IMPROVE || iLen > MAX_IMPROVE) {
+        if (cLen < MIN_DISCOVERED || cLen > MAX_DISCOVERED) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID);
+        }
+        if (eLen < MIN_EMOTION || eLen > MAX_EMOTION) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_IMPROVE_LENGTH_INVALID);
         }
     }

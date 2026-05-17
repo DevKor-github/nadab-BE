@@ -1,9 +1,8 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.entity;
 
-public enum MonthlyReportStatus {
+public enum MonthlyReportImageStatus {
     PENDING,
-    TEXT_COMPLETED,
+    PROCESSING,
     COMPLETED,
-    FAILED,
-    IN_PROGRESS
+    FAILED
 }

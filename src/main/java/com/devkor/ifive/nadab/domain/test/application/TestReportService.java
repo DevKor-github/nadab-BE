@@ -1,8 +1,8 @@
 package com.devkor.ifive.nadab.domain.test.application;
 
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportRepository;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.PromptTestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.TestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.response.TestDailyReportResponse;
@@ -54,7 +54,7 @@ public class TestReportService {
 
     private final UserRepository userRepository;
     private final WeeklyReportRepository weeklyReportRepository;
-    private final MonthlyReportRepository monthlyReportRepository;
+    private final MonthlyReportV2Repository monthlyReportV2Repository;
     private final TypeReportRepository typeReportRepository;
     private final TestCrystalLogRepository testCrystalLogRepository;
     private final UserWalletRepository userWalletRepository;
@@ -205,7 +205,7 @@ public class TestReportService {
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
 
-        MonthlyReport report = monthlyReportRepository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate())
+        MonthlyReportV2 report = monthlyReportV2Repository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
 
         if (report.getStatus() != MonthlyReportStatus.COMPLETED) {
@@ -238,7 +238,7 @@ public class TestReportService {
 
         testCrystalLogRepository.markRefunded(purchaseLog.getId());
 
-        monthlyReportRepository.delete(report);
+        monthlyReportV2Repository.delete(report);
     }
 
     @Transactional
