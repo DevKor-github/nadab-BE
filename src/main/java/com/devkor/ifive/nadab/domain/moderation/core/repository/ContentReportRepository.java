@@ -5,42 +5,58 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface ContentReportRepository extends JpaRepository<ContentReport, Long> {
 
-    /**
-     * 중복 신고 체크
-     */
     boolean existsByReporterIdAndDailyReportId(Long reporterId, Long dailyReportId);
 
-    /**
-     * 특정 유저에 대한 신고 건수 조회
-     */
-    long countByReportedUserId(Long reportedUserId);
+    boolean existsByReporterIdAndCommentId(Long reporterId, Long commentId);
 
     /**
-     * 특정 유저를 신고한 사람 수 (중복 제거)
+     * reportedUser를 신고한 전체 누적 건수
+     */
+    @Query("""
+        SELECT COUNT(cr.id)
+        FROM ContentReport cr
+        WHERE cr.reportedUser.id = :reportedUserId
+        """)
+    long countAllReports(@Param("reportedUserId") Long reportedUserId);
+
+    /**
+     * reportedUser를 신고한 전체 누적 distinct 신고자 수
      */
     @Query("""
         SELECT COUNT(DISTINCT cr.reporter.id)
         FROM ContentReport cr
         WHERE cr.reportedUser.id = :reportedUserId
         """)
-    long countDistinctReportersByReportedUserId(@Param("reportedUserId") Long reportedUserId);
+    long countAllDistinctReporters(@Param("reportedUserId") Long reportedUserId);
 
     /**
-     * 공유 활동 중지 대상 유저 ID 조회 (신고 10건 이상 && 신고자 2명 이상)
+     * reportedUser를 신고한 건수 (since 이후 누적)
      */
     @Query("""
-        SELECT cr.reportedUser.id
+        SELECT COUNT(cr.id)
         FROM ContentReport cr
-        WHERE cr.reportedUser.id IN :userIds
-        GROUP BY cr.reportedUser.id
-        HAVING COUNT(cr.id) >= 10
-           AND COUNT(DISTINCT cr.reporter.id) >= 2
+        WHERE cr.reportedUser.id = :reportedUserId
+          AND cr.createdAt > :since
         """)
-    List<Long> findSharingSuspendedUserIds(@Param("userIds") List<Long> userIds);
+    long countReportsSince(@Param("reportedUserId") Long reportedUserId,
+                           @Param("since") OffsetDateTime since);
+
+    /**
+     * reportedUser를 신고한 distinct 신고자 수 (since 이후 누적)
+     */
+    @Query("""
+        SELECT COUNT(DISTINCT cr.reporter.id)
+        FROM ContentReport cr
+        WHERE cr.reportedUser.id = :reportedUserId
+          AND cr.createdAt > :since
+        """)
+    long countDistinctReportersSince(@Param("reportedUserId") Long reportedUserId,
+                                     @Param("since") OffsetDateTime since);
 
     /**
      * 내가 신고한 DailyReport ID 목록 조회

@@ -392,7 +392,31 @@ public enum ErrorCode {
     CONTENT_REPORT_SELF_REPORT_FORBIDDEN(HttpStatus.BAD_REQUEST, "자신의 게시글은 신고할 수 없습니다"),
 
     // 409 Conflict
-    CONTENT_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 게시글입니다");
+    CONTENT_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 게시글입니다"),
+
+    // ==================== MODERATION (소셜 정지) ====================
+    // 400 Bad Request
+    SOCIAL_SUSPENDED(HttpStatus.BAD_REQUEST, "소셜 활동이 정지된 상태입니다"),
+
+    // ==================== COMMENT (댓글) ====================
+    // 400 Bad Request
+    COMMENT_NOT_TOP_LEVEL(HttpStatus.BAD_REQUEST, "대댓글에는 답글을 달 수 없습니다"),
+
+    // 404 Not Found
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다"),
+
+    // 409 Conflict
+    COMMENT_DELETED(HttpStatus.CONFLICT, "이미 삭제된 댓글입니다"),
+
+    // ==================== LIKE (좋아요) ====================
+    // 400 Bad Request
+    CANNOT_LIKE_OWN_CONTENT(HttpStatus.BAD_REQUEST, "본인의 게시글/댓글에는 좋아요를 누를 수 없습니다"),
+
+    // 403 Forbidden
+    DAILY_REPORT_LIKE_LIST_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 게시글 좋아요 리스트만 조회할 수 있습니다"),
+
+    // 404 Not Found
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요를 찾을 수 없습니다");
 
 
     private final HttpStatus httpStatus;

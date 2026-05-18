@@ -1,4 +1,4 @@
-package com.devkor.ifive.nadab.domain.notification.application.event.friend;
+package com.devkor.ifive.nadab.domain.notification.application.event.social;
 
 import com.devkor.ifive.nadab.domain.friend.application.event.FriendRequestAcceptedEvent;
 import com.devkor.ifive.nadab.domain.friend.application.event.FriendRequestReceivedEvent;

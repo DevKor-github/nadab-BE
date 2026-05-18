@@ -22,7 +22,10 @@ public enum NotificationType {
 
     // 소셜 알림
     FRIEND_REQUEST_RECEIVED("친구 요청", NotificationGroup.SOCIAL),
-    FRIEND_REQUEST_ACCEPTED("친구 수락", NotificationGroup.SOCIAL);
+    FRIEND_REQUEST_ACCEPTED("친구 수락", NotificationGroup.SOCIAL),
+    COMMENT_ON_MY_REPORT("내 리포트에 댓글/대댓글", NotificationGroup.SOCIAL),
+    REPLY_ON_MY_COMMENT("내 댓글에 대댓글", NotificationGroup.SOCIAL),
+    REPLY_ON_PARTICIPATED_COMMENT("참여 댓글에 대댓글", NotificationGroup.SOCIAL);
 
     private final String description;
     private final NotificationGroup group;

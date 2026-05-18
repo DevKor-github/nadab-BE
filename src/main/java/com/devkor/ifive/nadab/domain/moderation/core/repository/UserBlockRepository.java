@@ -33,4 +33,12 @@ public interface UserBlockRepository extends JpaRepository<UserBlock, Long> {
         ) then true else false end
     """)
     boolean existsAnyBlockBetweenUsers(@Param("userId") Long userId, @Param("otherUserId") Long otherUserId);
+
+    @Query("""
+        select case when ub.blocker.id = :userId then ub.blocked.id
+                    else ub.blocker.id end
+        from UserBlock ub
+        where ub.blocker.id = :userId or ub.blocked.id = :userId
+    """)
+    List<Long> findBlockedUserIdsBidirectional(@Param("userId") Long userId);
 }
