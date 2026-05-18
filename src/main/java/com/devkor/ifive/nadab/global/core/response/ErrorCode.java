@@ -394,6 +394,10 @@ public enum ErrorCode {
     // 409 Conflict
     CONTENT_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 게시글입니다"),
 
+    // ==================== MODERATION (소셜 정지) ====================
+    // 400 Bad Request
+    SOCIAL_SUSPENDED(HttpStatus.BAD_REQUEST, "소셜 활동이 정지된 상태입니다"),
+
     // ==================== COMMENT (댓글) ====================
     // 400 Bad Request
     COMMENT_NOT_TOP_LEVEL(HttpStatus.BAD_REQUEST, "대댓글에는 답글을 달 수 없습니다"),

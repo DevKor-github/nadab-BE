@@ -5,42 +5,38 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface ContentReportRepository extends JpaRepository<ContentReport, Long> {
 
-    /**
-     * 중복 신고 체크
-     */
     boolean existsByReporterIdAndDailyReportId(Long reporterId, Long dailyReportId);
 
-    /**
-     * 특정 유저에 대한 신고 건수 조회
-     */
-    long countByReportedUserId(Long reportedUserId);
+    boolean existsByReporterIdAndCommentId(Long reporterId, Long commentId);
 
     /**
-     * 특정 유저를 신고한 사람 수 (중복 제거)
+     * reportedUser를 신고한 건수 (since 이후 누적, since가 null이면 전체 누적)
+     */
+    @Query("""
+        SELECT COUNT(cr.id)
+        FROM ContentReport cr
+        WHERE cr.reportedUser.id = :reportedUserId
+          AND (:since IS NULL OR cr.createdAt > :since)
+        """)
+    long countReportsSince(@Param("reportedUserId") Long reportedUserId,
+                           @Param("since") OffsetDateTime since);
+
+    /**
+     * reportedUser를 신고한 distinct 신고자 수 (since 이후 누적)
      */
     @Query("""
         SELECT COUNT(DISTINCT cr.reporter.id)
         FROM ContentReport cr
         WHERE cr.reportedUser.id = :reportedUserId
+          AND (:since IS NULL OR cr.createdAt > :since)
         """)
-    long countDistinctReportersByReportedUserId(@Param("reportedUserId") Long reportedUserId);
-
-    /**
-     * 공유 활동 중지 대상 유저 ID 조회 (신고 10건 이상 && 신고자 2명 이상)
-     */
-    @Query("""
-        SELECT cr.reportedUser.id
-        FROM ContentReport cr
-        WHERE cr.reportedUser.id IN :userIds
-        GROUP BY cr.reportedUser.id
-        HAVING COUNT(cr.id) >= 10
-           AND COUNT(DISTINCT cr.reporter.id) >= 2
-        """)
-    List<Long> findSharingSuspendedUserIds(@Param("userIds") List<Long> userIds);
+    long countDistinctReportersSince(@Param("reportedUserId") Long reportedUserId,
+                                     @Param("since") OffsetDateTime since);
 
     /**
      * 내가 신고한 DailyReport ID 목록 조회

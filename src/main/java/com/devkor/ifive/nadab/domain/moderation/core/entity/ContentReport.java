@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.moderation.core.entity;
 
+import com.devkor.ifive.nadab.domain.comment.core.entity.Comment;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.entity.CreatableEntity;
@@ -26,9 +27,13 @@ public class ContentReport extends CreatableEntity {
     @JoinColumn(name = "reported_user_id", nullable = false)
     private User reportedUser;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "daily_report_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "daily_report_id")
     private DailyReport dailyReport;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
+    private Comment comment;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reason", nullable = false, length = 50)
@@ -37,7 +42,7 @@ public class ContentReport extends CreatableEntity {
     @Column(name = "custom_reason", length = 200)
     private String customReason;
 
-    public static ContentReport create(
+    public static ContentReport createForDailyReport(
             User reporter,
             DailyReport dailyReport,
             User reportedUser,
@@ -49,7 +54,23 @@ public class ContentReport extends CreatableEntity {
         report.dailyReport = dailyReport;
         report.reportedUser = reportedUser;
         report.reason = reason;
-        report.customReason = customReason; // 기타 사유 (OTHER일 때만)
+        report.customReason = customReason;
+        return report;
+    }
+
+    public static ContentReport createForComment(
+            User reporter,
+            Comment comment,
+            User reportedUser,
+            ReportReason reason,
+            String customReason
+    ) {
+        ContentReport report = new ContentReport();
+        report.reporter = reporter;
+        report.comment = comment;
+        report.reportedUser = reportedUser;
+        report.reason = reason;
+        report.customReason = customReason;
         return report;
     }
 }

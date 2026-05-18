@@ -206,4 +206,8 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
             @Param("userId") Long userId,
             @Param("status") DailyReportStatus status
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE DailyReport r SET r.isShared = false WHERE r.answerEntry.user.id = :userId AND r.date = :date AND r.isShared = true")
+    int stopSharingByUserIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
 }
