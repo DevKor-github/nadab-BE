@@ -163,6 +163,6 @@ public class CommentNotificationEventListener {
 
     private String truncate(String content) {
         if (content == null) return "";
-        return content.length() > 20 ? content.substring(0, 20) + "..." : content;
+        return content.length() > 20 ? content.substring(0, 20).stripTrailing() + "..." : content;
     }
 }
