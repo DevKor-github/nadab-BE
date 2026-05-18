@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto;
 import com.devkor.ifive.nadab.domain.friend.core.entity.Friendship;
 import com.devkor.ifive.nadab.domain.friend.core.entity.FriendshipStatus;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
+import com.devkor.ifive.nadab.domain.like.core.repository.DailyReportLikeRepository;
 import com.devkor.ifive.nadab.domain.moderation.application.SharingSuspensionService;
 import com.devkor.ifive.nadab.domain.moderation.core.repository.ContentReportRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
@@ -20,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class FeedQueryService {
 
     private final FriendshipRepository friendshipRepository;
     private final DailyReportRepository dailyReportRepository;
+    private final DailyReportLikeRepository dailyReportLikeRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
     private final ContentReportRepository contentReportRepository;
     private final SharingSuspensionService sharingSuspensionService;
@@ -36,26 +40,24 @@ public class FeedQueryService {
     public FeedListResponse getFeeds(Long userId) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
 
-        // 내 공유 리포트 조회 (미공유 시 null)
-        FeedResponse myReport = dailyReportRepository.findMySharedFeedByDate(userId, today)
-                .map(this::toFeedResponse)
-                .orElse(null);
+        // 1. 내 공유 리포트 조회
+        Optional<FeedDto> myFeedDto = dailyReportRepository.findMySharedFeedByDate(userId, today);
 
-        // 1. ACCEPTED 상태의 친구 관계 조회
+        // 2. ACCEPTED 상태의 친구 관계 조회
         List<Friendship> friendships = friendshipRepository
                 .findByUserIdAndStatusWithUsers(userId, FriendshipStatus.ACCEPTED);
 
-        // 2. 친구 ID 리스트 추출
+        // 3. 친구 ID 리스트 추출
         List<Long> friendIds = friendships.stream()
                 .map(f -> f.getOtherUserId(userId))
                 .toList();
 
-        // 3. 친구가 없으면 빈 피드 반환
+        // 4. 친구가 없으면 myReport만 매핑 후 반환
         if (friendIds.isEmpty()) {
-            return new FeedListResponse(myReport, List.of());
+            return toFeedListResponse(userId, myFeedDto, List.of());
         }
 
-        // 4. 공유 활동 중지된 유저 제외
+        // 5. 공유 활동 중지된 유저 제외
         Set<Long> suspendedUserIds = new HashSet<>(
                 sharingSuspensionService.getSharingSuspendedUserIds(friendIds)
         );
@@ -63,27 +65,47 @@ public class FeedQueryService {
                 .filter(id -> !suspendedUserIds.contains(id))
                 .toList();
 
-        // 5. 공유 가능한 친구가 없으면 빈 피드 반환
+        // 6. 공유 가능한 친구가 없으면 myReport만 반환
         if (activeFriendIds.isEmpty()) {
-            return new FeedListResponse(myReport, List.of());
+            return toFeedListResponse(userId, myFeedDto, List.of());
         }
 
-        // 6. 당일 공유된 피드 조회
+        // 7. 당일 공유된 피드 조회
         List<FeedDto> feedDtos = dailyReportRepository.findSharedFeedsByFriendIds(today, activeFriendIds);
 
-        // 7. 내가 신고한 글 제외
-        List<Long> dailyReportIds = feedDtos.stream()
+        // 8. 내가 신고한 글 제외
+        List<Long> friendReportIds = feedDtos.stream().map(FeedDto::dailyReportId).toList();
+        Set<Long> reportedIds = friendReportIds.isEmpty() ? Set.of()
+                : new HashSet<>(contentReportRepository.findReportedDailyReportIdsByReporter(userId, friendReportIds));
+        List<FeedDto> filteredFeedDtos = feedDtos.stream()
+                .filter(dto -> !reportedIds.contains(dto.dailyReportId()))
+                .toList();
+
+        return toFeedListResponse(userId, myFeedDto, filteredFeedDtos);
+    }
+
+    private FeedListResponse toFeedListResponse(Long userId, Optional<FeedDto> myFeedDto, List<FeedDto> feedDtos) {
+        // 전체 reportId 수집 후 좋아요 정보 벌크 조회
+        List<Long> allReportIds = Stream.concat(myFeedDto.stream(), feedDtos.stream())
                 .map(FeedDto::dailyReportId)
                 .toList();
 
-        Set<Long> reportedIds = new HashSet<>(
-                contentReportRepository.findReportedDailyReportIdsByReporter(userId, dailyReportIds)
-        );
+        Set<Long> likedReportIds;
+        Set<Long> reportIdsWithLikes;
+        if (allReportIds.isEmpty()) {
+            likedReportIds = Set.of();
+            reportIdsWithLikes = Set.of();
+        } else {
+            likedReportIds = new HashSet<>(dailyReportLikeRepository.findLikedReportIds(allReportIds, userId));
+            reportIdsWithLikes = new HashSet<>(dailyReportLikeRepository.findReportIdsWithLikes(allReportIds));
+        }
 
-        // 8. 필터링 및 응답 DTO 변환
+        FeedResponse myReport = myFeedDto
+                .map(dto -> toFeedResponse(dto, likedReportIds, reportIdsWithLikes))
+                .orElse(null);
+
         List<FeedResponse> feeds = feedDtos.stream()
-                .filter(dto -> !reportedIds.contains(dto.dailyReportId()))
-                .map(this::toFeedResponse)
+                .map(dto -> toFeedResponse(dto, likedReportIds, reportIdsWithLikes))
                 .toList();
 
         return new FeedListResponse(myReport, feeds);
@@ -96,7 +118,7 @@ public class FeedQueryService {
                 .orElse(new ShareStatusResponse(false));
     }
 
-    private FeedResponse toFeedResponse(FeedDto dto) {
+    private FeedResponse toFeedResponse(FeedDto dto, Set<Long> likedReportIds, Set<Long> reportIdsWithLikes) {
         String profileUrl = buildProfileUrl(dto.profileImageKey(), dto.defaultProfileType());
         String imageUrl = dto.imageKey() != null ? profileImageUrlBuilder.buildUrl(dto.imageKey()) : null;
         return new FeedResponse(
@@ -107,7 +129,9 @@ public class FeedQueryService {
                 dto.questionText(),
                 dto.answerContent(),
                 dto.emotionCode() != null ? dto.emotionCode().name() : null,
-                imageUrl
+                imageUrl,
+                likedReportIds.contains(dto.dailyReportId()),
+                reportIdsWithLikes.contains(dto.dailyReportId())
         );
     }
 

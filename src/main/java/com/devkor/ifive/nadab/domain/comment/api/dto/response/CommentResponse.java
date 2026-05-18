@@ -49,6 +49,8 @@ public record CommentResponse(
             String authorNickname,
             String content,
             OffsetDateTime createdAt,
+            boolean isLiked,
+            boolean hasLikes,
             Integer visibleSubCommentCount,
             boolean isSecret,
             boolean canViewContent,
@@ -61,8 +63,8 @@ public record CommentResponse(
                 authorNickname,
                 content,
                 createdAt,
-                false, // TODO: 좋아요 구현 시 isLiked 실제 값으로 교체
-                false, // TODO: 좋아요 구현 시 hasLikes 실제 값으로 교체
+                isLiked,
+                hasLikes,
                 visibleSubCommentCount,
                 isSecret,
                 canViewContent,

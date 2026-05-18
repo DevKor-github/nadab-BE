@@ -7,10 +7,12 @@ import com.devkor.ifive.nadab.domain.comment.core.entity.Comment;
 import com.devkor.ifive.nadab.domain.comment.core.repository.CommentRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
+import com.devkor.ifive.nadab.domain.like.core.repository.CommentLikeRepository;
 import com.devkor.ifive.nadab.domain.moderation.core.repository.UserBlockRepository;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
+import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +20,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +37,7 @@ public class CommentQueryService {
     private final DailyReportRepository dailyReportRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserBlockRepository userBlockRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
 
     public CommentListResponse getComments(Long dailyReportId, Long currentUserId, Long cursor) {
@@ -52,6 +57,12 @@ public class CommentQueryService {
 
         Map<Long, Long> subCountMap = buildSubCountMap(comments, excludedUserIds, currentUserId, reportOwnerId);
 
+        List<Long> commentIds = comments.stream().map(Comment::getId).toList();
+        Set<Long> likedCommentIds = commentIds.isEmpty() ? Set.of()
+                : new HashSet<>(commentLikeRepository.findLikedCommentIds(commentIds, currentUserId));
+        Set<Long> commentIdsWithLikes = commentIds.isEmpty() ? Set.of()
+                : new HashSet<>(commentLikeRepository.findCommentIdsWithLikes(commentIds));
+
         List<CommentResponse> responses = comments.stream()
                 .map(c -> {
                     boolean isMine = c.getAuthor().getId().equals(currentUserId);
@@ -63,6 +74,8 @@ public class CommentQueryService {
                             canViewContent ? c.getAuthor().getNickname() : null,
                             canViewContent ? c.getContent() : null,
                             c.getCreatedAt(),
+                            canViewContent && likedCommentIds.contains(c.getId()),
+                            canViewContent && commentIdsWithLikes.contains(c.getId()),
                             canViewContent ? subCountMap.getOrDefault(c.getId(), 0L).intValue() : null,
                             c.isSecret(),
                             canViewContent,
@@ -77,7 +90,9 @@ public class CommentQueryService {
 
     public CommentListResponse getSubComments(Long parentCommentId, Long currentUserId, Long cursor) {
         Comment parentComment = commentRepository.findByIdWithAuthorAndDailyReport(parentCommentId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> commentRepository.existsById(parentCommentId)
+                        ? new ConflictException(ErrorCode.COMMENT_DELETED)
+                        : new NotFoundException(ErrorCode.COMMENT_NOT_FOUND));
 
         if (!parentComment.isTopLevel()) {
             throw new BadRequestException(ErrorCode.COMMENT_NOT_TOP_LEVEL);
@@ -108,6 +123,12 @@ public class CommentQueryService {
         }
         Long nextCursor = hasNext ? subComments.get(subComments.size() - 1).getId() : null;
 
+        List<Long> subCommentIds = subComments.stream().map(Comment::getId).toList();
+        Set<Long> likedSubCommentIds = subCommentIds.isEmpty() ? Set.of()
+                : new HashSet<>(commentLikeRepository.findLikedCommentIds(subCommentIds, currentUserId));
+        Set<Long> subCommentIdsWithLikes = subCommentIds.isEmpty() ? Set.of()
+                : new HashSet<>(commentLikeRepository.findCommentIdsWithLikes(subCommentIds));
+
         List<CommentResponse> responses = subComments.stream()
                 .map(c -> {
                     boolean isMine = c.getAuthor().getId().equals(currentUserId);
@@ -122,6 +143,8 @@ public class CommentQueryService {
                             canViewContent ? c.getAuthor().getNickname() : null,
                             canViewContent ? c.getContent() : null,
                             c.getCreatedAt(),
+                            canViewContent && likedSubCommentIds.contains(c.getId()),
+                            canViewContent && subCommentIdsWithLikes.contains(c.getId()),
                             null,
                             c.isSecret(),
                             canViewContent,

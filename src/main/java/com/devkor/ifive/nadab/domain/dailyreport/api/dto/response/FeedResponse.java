@@ -27,6 +27,12 @@ public record FeedResponse(
         String emotionCode,
 
         @Schema(description = "이미지 URL")
-        String imageUrl
+        String imageUrl,
+
+        @Schema(description = "내가 좋아요 눌렀는지 여부")
+        boolean isLiked,
+
+        @Schema(description = "좋아요가 1개 이상인지 여부")
+        boolean hasLikes
 ) {
 }
