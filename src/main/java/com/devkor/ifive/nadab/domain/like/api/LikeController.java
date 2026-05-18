@@ -40,7 +40,10 @@ public class LikeController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "좋아요 성공", content = @Content),
-                    @ApiResponse(responseCode = "400", description = "ErrorCode: CANNOT_LIKE_OWN_CONTENT", content = @Content),
+                    @ApiResponse(responseCode = "400", description = """
+                            - ErrorCode: CANNOT_LIKE_OWN_CONTENT - 본인 게시글 좋아요 불가
+                            - ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중
+                            """, content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "403", description = "ErrorCode: AUTH_ACCESS_DENIED - 공유되지 않은 게시글이거나 친구가 아닌 경우", content = @Content),
                     @ApiResponse(responseCode = "404", description = "ErrorCode: DAILY_REPORT_NOT_FOUND", content = @Content)
@@ -61,6 +64,7 @@ public class LikeController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "취소 성공", content = @Content),
+                    @ApiResponse(responseCode = "400", description = "ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중", content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "404", description = "ErrorCode: LIKE_NOT_FOUND", content = @Content)
             }
@@ -115,7 +119,10 @@ public class LikeController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "좋아요 성공", content = @Content),
-                    @ApiResponse(responseCode = "400", description = "ErrorCode: CANNOT_LIKE_OWN_CONTENT", content = @Content),
+                    @ApiResponse(responseCode = "400", description = """
+                            - ErrorCode: CANNOT_LIKE_OWN_CONTENT - 본인 댓글 좋아요 불가
+                            - ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중
+                            """, content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "403", description = "ErrorCode: AUTH_ACCESS_DENIED", content = @Content),
                     @ApiResponse(responseCode = "404", description = "ErrorCode: COMMENT_NOT_FOUND", content = @Content),
@@ -137,6 +144,7 @@ public class LikeController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "취소 성공", content = @Content),
+                    @ApiResponse(responseCode = "400", description = "ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중", content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "404", description = "ErrorCode: LIKE_NOT_FOUND", content = @Content)
             }

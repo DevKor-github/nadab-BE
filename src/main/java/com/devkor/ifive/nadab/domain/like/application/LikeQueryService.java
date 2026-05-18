@@ -10,6 +10,7 @@ import com.devkor.ifive.nadab.domain.like.api.dto.response.LikeListResponse;
 import com.devkor.ifive.nadab.domain.like.api.dto.response.LikerResponse;
 import com.devkor.ifive.nadab.domain.like.core.repository.CommentLikeRepository;
 import com.devkor.ifive.nadab.domain.like.core.repository.DailyReportLikeRepository;
+import com.devkor.ifive.nadab.domain.moderation.application.SharingSuspensionService;
 import com.devkor.ifive.nadab.domain.moderation.core.repository.UserBlockRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
@@ -21,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +40,7 @@ public class LikeQueryService {
     private final FriendshipRepository friendshipRepository;
     private final UserBlockRepository userBlockRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final SharingSuspensionService sharingSuspensionService;
 
     public LikeListResponse getReportLikers(Long dailyReportId, Long currentUserId) {
         Long reportOwnerId = dailyReportRepository.findReportOwnerIdById(dailyReportId)
@@ -122,8 +126,13 @@ public class LikeQueryService {
     }
 
     private List<Long> getExcludedUserIds(Long userId) {
-        // TODO: 소셜 정지 중인 유저 ID도 포함
         List<Long> blocked = userBlockRepository.findBlockedUserIdsBidirectional(userId);
-        return blocked.isEmpty() ? List.of(-1L) : blocked;
+        List<Long> suspended = sharingSuspensionService.getAllActiveSuspendedUserIds();
+
+        Set<Long> combined = new HashSet<>(blocked);
+        combined.addAll(suspended);
+        combined.remove(userId);
+
+        return combined.isEmpty() ? List.of(-1L) : new ArrayList<>(combined);
     }
 }

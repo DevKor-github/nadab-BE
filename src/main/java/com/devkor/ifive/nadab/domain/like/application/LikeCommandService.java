@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.comment.core.repository.CommentRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
+import com.devkor.ifive.nadab.domain.moderation.application.SharingSuspensionService;
 import com.devkor.ifive.nadab.domain.like.core.entity.CommentLike;
 import com.devkor.ifive.nadab.domain.like.core.entity.DailyReportLike;
 import com.devkor.ifive.nadab.domain.like.core.repository.CommentLikeRepository;
@@ -31,9 +32,10 @@ public class LikeCommandService {
     private final CommentRepository commentRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final SharingSuspensionService sharingSuspensionService;
 
     public void likeReport(Long dailyReportId, Long userId) {
-        // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
+        checkNotSuspended(userId);
         Long reportOwnerId = dailyReportRepository.findReportOwnerIdById(dailyReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
 
@@ -53,13 +55,14 @@ public class LikeCommandService {
     }
 
     public void unlikeReport(Long dailyReportId, Long userId) {
+        checkNotSuspended(userId);
         DailyReportLike like = dailyReportLikeRepository.findByUserIdAndDailyReportId(userId, dailyReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.LIKE_NOT_FOUND));
         dailyReportLikeRepository.delete(like);
     }
 
     public void likeComment(Long commentId, Long userId) {
-        // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
+        checkNotSuspended(userId);
         Comment comment = commentRepository.findByIdWithAuthorAndDailyReport(commentId)
                 .orElseThrow(() -> commentRepository.existsById(commentId)
                         ? new ConflictException(ErrorCode.COMMENT_DELETED)
@@ -96,9 +99,16 @@ public class LikeCommandService {
     }
 
     public void unlikeComment(Long commentId, Long userId) {
+        checkNotSuspended(userId);
         CommentLike like = commentLikeRepository.findByUserIdAndCommentId(userId, commentId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.LIKE_NOT_FOUND));
         commentLikeRepository.delete(like);
+    }
+
+    private void checkNotSuspended(Long userId) {
+        if (sharingSuspensionService.isSharingSuspended(userId)) {
+            throw new BadRequestException(ErrorCode.SOCIAL_SUSPENDED);
+        }
     }
 
     private void checkReportLikeAccess(Long dailyReportId, Long reportOwnerId, Long currentUserId) {

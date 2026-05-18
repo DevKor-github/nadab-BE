@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.domain.comment.core.repository.CommentRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
 import com.devkor.ifive.nadab.domain.like.core.repository.CommentLikeRepository;
+import com.devkor.ifive.nadab.domain.moderation.application.SharingSuspensionService;
 import com.devkor.ifive.nadab.domain.moderation.core.repository.UserBlockRepository;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -20,10 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +37,7 @@ public class CommentQueryService {
     private final UserBlockRepository userBlockRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final SharingSuspensionService sharingSuspensionService;
 
     public CommentListResponse getComments(Long dailyReportId, Long currentUserId, Long cursor) {
         Long reportOwnerId = dailyReportRepository.findReportOwnerIdById(dailyReportId)
@@ -47,7 +46,7 @@ public class CommentQueryService {
         List<Long> excludedUserIds = getExcludedUserIds(currentUserId);
 
         List<Comment> comments = commentRepository.findTopLevelComments(
-                dailyReportId, cursor, excludedUserIds, PageRequest.of(0, DEFAULT_PAGE_SIZE + 1));
+                dailyReportId, cursor, excludedUserIds, currentUserId, PageRequest.of(0, DEFAULT_PAGE_SIZE + 1));
 
         boolean hasNext = comments.size() > DEFAULT_PAGE_SIZE;
         if (hasNext) {
@@ -115,7 +114,7 @@ public class CommentQueryService {
         List<Long> excludedUserIds = getExcludedUserIds(currentUserId);
 
         List<Comment> subComments = commentRepository.findSubComments(
-                parentCommentId, cursor, excludedUserIds, PageRequest.of(0, DEFAULT_PAGE_SIZE + 1));
+                parentCommentId, cursor, excludedUserIds, currentUserId, PageRequest.of(0, DEFAULT_PAGE_SIZE + 1));
 
         boolean hasNext = subComments.size() > DEFAULT_PAGE_SIZE;
         if (hasNext) {
@@ -198,11 +197,15 @@ public class CommentQueryService {
         }
     }
 
-    // TODO: 소셜 정지 중인 유저 ID도 포함
     private List<Long> getExcludedUserIds(Long userId) {
         List<Long> blocked = userBlockRepository.findBlockedUserIdsBidirectional(userId);
-        // JPQL NOT IN 절에 빈 리스트 전달 방지
-        return blocked.isEmpty() ? List.of(-1L) : blocked;
+        List<Long> suspended = sharingSuspensionService.getAllActiveSuspendedUserIds();
+
+        Set<Long> combined = new HashSet<>(blocked);
+        combined.addAll(suspended);
+        combined.remove(userId);
+
+        return combined.isEmpty() ? List.of(-1L) : new ArrayList<>(combined);
     }
 
 }

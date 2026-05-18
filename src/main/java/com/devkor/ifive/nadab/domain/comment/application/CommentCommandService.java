@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.comment.core.repository.CommentRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
+import com.devkor.ifive.nadab.domain.moderation.application.SharingSuspensionService;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -31,9 +32,10 @@ public class CommentCommandService {
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final SharingSuspensionService sharingSuspensionService;
 
     public Long createComment(Long dailyReportId, Long authorId, String content, boolean isSecret) {
-        // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
+        checkNotSuspended(authorId);
         Long reportOwnerId = dailyReportRepository.findReportOwnerIdById(dailyReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.DAILY_REPORT_NOT_FOUND));
         checkCommentWriteAccess(dailyReportId, reportOwnerId, authorId);
@@ -51,7 +53,7 @@ public class CommentCommandService {
     }
 
     public Long createSubComment(Long parentCommentId, Long authorId, String content, boolean isSecret) {
-        // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
+        checkNotSuspended(authorId);
         Comment parentComment = findActiveCommentOrThrow(parentCommentId);
 
         if (!parentComment.isTopLevel()) {
@@ -91,6 +93,12 @@ public class CommentCommandService {
         return subComment.getId();
     }
 
+    private void checkNotSuspended(Long userId) {
+        if (sharingSuspensionService.isSharingSuspended(userId)) {
+            throw new BadRequestException(ErrorCode.SOCIAL_SUSPENDED);
+        }
+    }
+
     private void checkCommentWriteAccess(Long dailyReportId, Long reportOwnerId, Long currentUserId) {
         if (currentUserId.equals(reportOwnerId)) return;
         if (!dailyReportRepository.existsByIdAndIsSharedTrue(dailyReportId)) {
@@ -104,7 +112,7 @@ public class CommentCommandService {
     }
 
     public void updateComment(Long commentId, Long userId, String content) {
-        // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
+        checkNotSuspended(userId);
         Comment comment = findActiveCommentOrThrow(commentId);
 
         if (!comment.getAuthor().getId().equals(userId)) {
@@ -115,7 +123,7 @@ public class CommentCommandService {
     }
 
     public void deleteComment(Long commentId, Long userId) {
-        // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
+        checkNotSuspended(userId);
         Comment comment = findActiveCommentOrThrow(commentId);
 
         Long authorId = comment.getAuthor().getId();

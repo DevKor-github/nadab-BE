@@ -106,7 +106,10 @@ public class CommentController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "작성 성공", content = @Content),
-                    @ApiResponse(responseCode = "400", description = "ErrorCode: VALIDATION_FAILED - 내용 누락 또는 500자 초과", content = @Content),
+                    @ApiResponse(responseCode = "400", description = """
+                            - ErrorCode: VALIDATION_FAILED - 내용 누락 또는 500자 초과
+                            - ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중
+                            """, content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "403", description = "ErrorCode: AUTH_ACCESS_DENIED - 본인 피드 게시글이 아니거나 친구의 공유 게시글이 아닌 경우", content = @Content),
                     @ApiResponse(responseCode = "404", description = "ErrorCode: DAILY_REPORT_NOT_FOUND", content = @Content)
@@ -204,7 +207,11 @@ public class CommentController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "작성 성공", content = @Content),
-                    @ApiResponse(responseCode = "400", description = "ErrorCode: VALIDATION_FAILED - 내용 누락 또는 500자 초과 / COMMENT_NOT_TOP_LEVEL - 대댓글에 대댓글 시도", content = @Content),
+                    @ApiResponse(responseCode = "400", description = """
+                            - ErrorCode: VALIDATION_FAILED - 내용 누락 또는 500자 초과
+                            - ErrorCode: COMMENT_NOT_TOP_LEVEL - 대댓글에 대댓글 시도
+                            - ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중
+                            """, content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "403", description = "ErrorCode: AUTH_ACCESS_DENIED - 본인 피드 게시글이 아니거나 친구의 공유 게시글이 아닌 경우", content = @Content),
                     @ApiResponse(responseCode = "409", description = "ErrorCode: COMMENT_DELETED - 이미 삭제된 댓글에 대댓글 시도", content = @Content)
@@ -234,7 +241,10 @@ public class CommentController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "수정 성공", content = @Content),
-                    @ApiResponse(responseCode = "400", description = "ErrorCode: VALIDATION_FAILED - 내용 누락 또는 500자 초과", content = @Content),
+                    @ApiResponse(responseCode = "400", description = """
+                            - ErrorCode: VALIDATION_FAILED - 내용 누락 또는 500자 초과
+                            - ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중
+                            """, content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "403", description = "ErrorCode: AUTH_ACCESS_DENIED - 본인 댓글만 수정 가능", content = @Content),
                     @ApiResponse(responseCode = "404", description = "ErrorCode: COMMENT_NOT_FOUND", content = @Content)
@@ -267,6 +277,7 @@ public class CommentController {
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "204", description = "삭제 성공", content = @Content),
+                    @ApiResponse(responseCode = "400", description = "ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중", content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "403", description = "ErrorCode: AUTH_ACCESS_DENIED - 삭제 권한 없음", content = @Content),
                     @ApiResponse(responseCode = "404", description = "ErrorCode: COMMENT_NOT_FOUND", content = @Content)

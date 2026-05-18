@@ -39,12 +39,17 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
           and a.deletedAt is null
           and (:cursor is null or c.id < :cursor)
           and a.id not in :excludedUserIds
+          and not exists (
+              select 1 from ContentReport cr
+              where cr.reporter.id = :currentUserId and cr.comment = c
+          )
         order by c.id desc
     """)
     List<Comment> findTopLevelComments(
             @Param("dailyReportId") Long dailyReportId,
             @Param("cursor") Long cursor,
             @Param("excludedUserIds") List<Long> excludedUserIds,
+            @Param("currentUserId") Long currentUserId,
             Pageable pageable
     );
 
@@ -56,12 +61,17 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
           and a.deletedAt is null
           and (:cursor is null or c.id < :cursor)
           and a.id not in :excludedUserIds
+          and not exists (
+              select 1 from ContentReport cr
+              where cr.reporter.id = :currentUserId and cr.comment = c
+          )
         order by c.id desc
     """)
     List<Comment> findSubComments(
             @Param("parentCommentId") Long parentCommentId,
             @Param("cursor") Long cursor,
             @Param("excludedUserIds") List<Long> excludedUserIds,
+            @Param("currentUserId") Long currentUserId,
             Pageable pageable
     );
 
@@ -74,6 +84,10 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
           and c.deletedAt is null
           and c.author.deletedAt is null
           and c.author.id not in :excludedUserIds
+          and not exists (
+              select 1 from ContentReport cr
+              where cr.reporter.id = :currentUserId and cr.comment = c
+          )
           and (
             c.secret = false
             or c.author.id = :currentUserId
