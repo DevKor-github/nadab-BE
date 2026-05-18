@@ -7,6 +7,7 @@ CREATE TABLE comments (
     is_secret         BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at        TIMESTAMPTZ,
 
     CONSTRAINT fk_comments_daily_report    FOREIGN KEY (daily_report_id)   REFERENCES daily_reports(id) ON DELETE CASCADE,
     CONSTRAINT fk_comments_author          FOREIGN KEY (author_id)          REFERENCES users(id) ON DELETE CASCADE,

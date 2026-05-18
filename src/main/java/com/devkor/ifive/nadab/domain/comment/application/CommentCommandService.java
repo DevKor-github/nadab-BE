@@ -19,6 +19,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -50,8 +52,7 @@ public class CommentCommandService {
 
     public Long createSubComment(Long parentCommentId, Long authorId, String content, boolean isSecret) {
         // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
-        Comment parentComment = commentRepository.findByIdWithAuthorAndDailyReport(parentCommentId)
-                .orElseThrow(() -> new ConflictException(ErrorCode.COMMENT_DELETED));
+        Comment parentComment = findActiveCommentOrThrow(parentCommentId);
 
         if (!parentComment.isTopLevel()) {
             throw new BadRequestException(ErrorCode.COMMENT_NOT_TOP_LEVEL);
@@ -104,8 +105,7 @@ public class CommentCommandService {
 
     public void updateComment(Long commentId, Long userId, String content) {
         // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
-        Comment comment = commentRepository.findByIdWithAuthorAndDailyReport(commentId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.COMMENT_NOT_FOUND));
+        Comment comment = findActiveCommentOrThrow(commentId);
 
         if (!comment.getAuthor().getId().equals(userId)) {
             throw new ForbiddenException(ErrorCode.AUTH_ACCESS_DENIED);
@@ -116,8 +116,7 @@ public class CommentCommandService {
 
     public void deleteComment(Long commentId, Long userId) {
         // TODO: 소셜 정지 중이면 SOCIAL_SUSPENDED 에러 응답
-        Comment comment = commentRepository.findByIdWithAuthorAndDailyReport(commentId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.COMMENT_NOT_FOUND));
+        Comment comment = findActiveCommentOrThrow(commentId);
 
         Long authorId = comment.getAuthor().getId();
         Long reportOwnerId = dailyReportRepository.findReportOwnerIdById(comment.getDailyReport().getId())
@@ -127,6 +126,17 @@ public class CommentCommandService {
             throw new ForbiddenException(ErrorCode.AUTH_ACCESS_DENIED);
         }
 
-        commentRepository.delete(comment);
+        OffsetDateTime now = OffsetDateTime.now();
+        if (comment.isTopLevel()) {
+            commentRepository.softDeleteSubCommentsByParentId(commentId, now);
+        }
+        comment.softDelete();
+    }
+
+    private Comment findActiveCommentOrThrow(Long commentId) {
+        return commentRepository.findByIdWithAuthorAndDailyReport(commentId)
+                .orElseThrow(() -> commentRepository.existsById(commentId)
+                        ? new ConflictException(ErrorCode.COMMENT_DELETED)
+                        : new NotFoundException(ErrorCode.COMMENT_NOT_FOUND));
     }
 }

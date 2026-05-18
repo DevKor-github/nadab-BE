@@ -2,7 +2,7 @@ package com.devkor.ifive.nadab.domain.comment.core.entity;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReport;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.global.shared.entity.AuditableEntity;
+import com.devkor.ifive.nadab.global.shared.entity.SoftDeletableEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "comments")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Comment extends AuditableEntity {
+public class Comment extends SoftDeletableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
