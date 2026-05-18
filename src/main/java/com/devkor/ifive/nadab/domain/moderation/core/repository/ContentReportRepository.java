@@ -15,13 +15,33 @@ public interface ContentReportRepository extends JpaRepository<ContentReport, Lo
     boolean existsByReporterIdAndCommentId(Long reporterId, Long commentId);
 
     /**
-     * reportedUser를 신고한 건수 (since 이후 누적, since가 null이면 전체 누적)
+     * reportedUser를 신고한 전체 누적 건수
      */
     @Query("""
         SELECT COUNT(cr.id)
         FROM ContentReport cr
         WHERE cr.reportedUser.id = :reportedUserId
-          AND (:since IS NULL OR cr.createdAt > :since)
+        """)
+    long countAllReports(@Param("reportedUserId") Long reportedUserId);
+
+    /**
+     * reportedUser를 신고한 전체 누적 distinct 신고자 수
+     */
+    @Query("""
+        SELECT COUNT(DISTINCT cr.reporter.id)
+        FROM ContentReport cr
+        WHERE cr.reportedUser.id = :reportedUserId
+        """)
+    long countAllDistinctReporters(@Param("reportedUserId") Long reportedUserId);
+
+    /**
+     * reportedUser를 신고한 건수 (since 이후 누적)
+     */
+    @Query("""
+        SELECT COUNT(cr.id)
+        FROM ContentReport cr
+        WHERE cr.reportedUser.id = :reportedUserId
+          AND cr.createdAt > :since
         """)
     long countReportsSince(@Param("reportedUserId") Long reportedUserId,
                            @Param("since") OffsetDateTime since);
@@ -33,7 +53,7 @@ public interface ContentReportRepository extends JpaRepository<ContentReport, Lo
         SELECT COUNT(DISTINCT cr.reporter.id)
         FROM ContentReport cr
         WHERE cr.reportedUser.id = :reportedUserId
-          AND (:since IS NULL OR cr.createdAt > :since)
+          AND cr.createdAt > :since
         """)
     long countDistinctReportersSince(@Param("reportedUserId") Long reportedUserId,
                                      @Param("since") OffsetDateTime since);

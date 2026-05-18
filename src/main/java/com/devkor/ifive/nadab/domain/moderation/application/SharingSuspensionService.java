@@ -62,18 +62,22 @@ public class SharingSuspensionService {
             return;
         }
 
-        // 가장 최근 정지의 expires_at을 기준점으로 사용 (null이면 전체 누적)
+        // 가장 최근 정지의 expires_at을 기준점으로 사용 (없으면 전체 누적)
         OffsetDateTime since = socialSuspensionRepository
                 .findFirstByUserIdOrderByStartedAtDesc(reportedUserId)
                 .map(SocialSuspension::getExpiresAt)
                 .orElse(null);
 
-        long reportCount = contentReportRepository.countReportsSince(reportedUserId, since);
+        long reportCount = since == null
+                ? contentReportRepository.countAllReports(reportedUserId)
+                : contentReportRepository.countReportsSince(reportedUserId, since);
         if (reportCount < REPORT_COUNT_THRESHOLD) {
             return;
         }
 
-        long reporterCount = contentReportRepository.countDistinctReportersSince(reportedUserId, since);
+        long reporterCount = since == null
+                ? contentReportRepository.countAllDistinctReporters(reportedUserId)
+                : contentReportRepository.countDistinctReportersSince(reportedUserId, since);
         if (reporterCount < REPORTER_COUNT_THRESHOLD) {
             return;
         }

@@ -280,7 +280,8 @@ public class CommentController {
                     @ApiResponse(responseCode = "400", description = "ErrorCode: SOCIAL_SUSPENDED - 소셜 정지 중", content = @Content),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "403", description = "ErrorCode: AUTH_ACCESS_DENIED - 삭제 권한 없음", content = @Content),
-                    @ApiResponse(responseCode = "404", description = "ErrorCode: COMMENT_NOT_FOUND", content = @Content)
+                    @ApiResponse(responseCode = "404", description = "ErrorCode: COMMENT_NOT_FOUND", content = @Content),
+                    @ApiResponse(responseCode = "409", description = "ErrorCode: COMMENT_DELETED - 이미 삭제된 댓글", content = @Content)
             }
     )
     public ResponseEntity<ApiResponseDto<Void>> deleteComment(
