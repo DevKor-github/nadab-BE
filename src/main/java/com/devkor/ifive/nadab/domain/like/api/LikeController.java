@@ -86,7 +86,12 @@ public class LikeController {
 
                     - 리포트 당사자(본인 게시글)만 조회 가능합니다.
                     - 최신순 정렬, 차단 관계 양방향 제외합니다.
-                    - isFriend=true인 경우 친구 삭제·차단 버튼 제공, false인 경우 친구 신청 버튼 제공합니다.
+                    - relationshipStatus
+                      - FRIEND: 이미 친구, 친구 삭제·차단 버튼 표시
+                      - REQUEST_SENT: 내가 신청 보낸 상태, 신청 취소 버튼 표시
+                      - REQUEST_RECEIVED: 상대가 나에게 신청 보낸 상태, 수락·거절 버튼 표시
+                      - NONE: 아무 관계 없음, 친구 신청 버튼 표시
+                    - friendshipId: NONE 상태일 땐 null, 그 외 친구 관계 ID
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -165,7 +170,12 @@ public class LikeController {
                     댓글 또는 대댓글에 좋아요를 누른 사용자 목록을 조회합니다.
 
                     - 최신순 정렬, 차단 관계 양방향 제외합니다.
-                    - isFriend=true인 경우 친구 삭제·차단 버튼 제공, false인 경우 친구 신청 버튼 제공합니다.
+                    - relationshipStatus
+                      - FRIEND: 이미 친구, 친구 삭제·차단 버튼 표시
+                      - REQUEST_SENT: 내가 신청 보낸 상태, 신청 취소 버튼 표시
+                      - REQUEST_RECEIVED: 상대가 나에게 신청 보낸 상태, 수락·거절 버튼 표시
+                      - NONE: 아무 관계 없음, 친구 신청 버튼 표시
+                    - friendshipId: NONE 상태일 땐 null, 그 외 친구 관계 ID
                     - 비밀 댓글은 열람 권한자(작성자·리포트 당사자)만 조회 가능합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),

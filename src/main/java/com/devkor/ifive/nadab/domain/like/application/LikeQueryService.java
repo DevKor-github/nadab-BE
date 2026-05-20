@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.like.application;
 import com.devkor.ifive.nadab.domain.comment.core.entity.Comment;
 import com.devkor.ifive.nadab.domain.comment.core.repository.CommentRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.DailyReportRepository;
+import com.devkor.ifive.nadab.domain.friend.api.dto.response.RelationshipStatus;
 import com.devkor.ifive.nadab.domain.friend.core.entity.Friendship;
 import com.devkor.ifive.nadab.domain.friend.core.entity.FriendshipStatus;
 import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,14 +55,9 @@ public class LikeQueryService {
         List<Long> excludedUserIds = getExcludedUserIds(currentUserId);
         List<User> likers = dailyReportLikeRepository.findLikersByReportId(dailyReportId, excludedUserIds);
 
-        Set<Long> friendIds = getAcceptedFriendIds(currentUserId);
+        Map<Long, FriendshipInfo> friendshipInfoMap = buildFriendshipInfoMap(likers, currentUserId);
         List<LikerResponse> responses = likers.stream()
-                .map(u -> new LikerResponse(
-                        u.getId(),
-                        profileImageUrlBuilder.buildUserProfileUrl(u),
-                        u.getNickname(),
-                        friendIds.contains(u.getId())
-                ))
+                .map(u -> toLikerResponse(u, friendshipInfoMap))
                 .toList();
 
         return new LikeListResponse(responses);
@@ -93,14 +90,9 @@ public class LikeQueryService {
         List<Long> excludedUserIds = getExcludedUserIds(currentUserId);
         List<User> likers = commentLikeRepository.findLikersByCommentId(commentId, excludedUserIds);
 
-        Set<Long> friendIds = getAcceptedFriendIds(currentUserId);
+        Map<Long, FriendshipInfo> friendshipInfoMap = buildFriendshipInfoMap(likers, currentUserId);
         List<LikerResponse> responses = likers.stream()
-                .map(u -> new LikerResponse(
-                        u.getId(),
-                        profileImageUrlBuilder.buildUserProfileUrl(u),
-                        u.getNickname(),
-                        friendIds.contains(u.getId())
-                ))
+                .map(u -> toLikerResponse(u, friendshipInfoMap))
                 .toList();
 
         return new LikeListResponse(responses);
@@ -118,11 +110,32 @@ public class LikeQueryService {
         }
     }
 
-    private Set<Long> getAcceptedFriendIds(Long userId) {
-        return friendshipRepository.findByUserIdAndStatusWithUsers(userId, FriendshipStatus.ACCEPTED)
-                .stream()
-                .map(f -> f.getOtherUserId(userId))
-                .collect(Collectors.toSet());
+    private record FriendshipInfo(Long friendshipId, RelationshipStatus status) {}
+
+    private Map<Long, FriendshipInfo> buildFriendshipInfoMap(List<User> likers, Long currentUserId) {
+        if (likers.isEmpty()) return Map.of();
+        List<Long> likerIds = likers.stream().map(User::getId).toList();
+        List<Friendship> friendships = friendshipRepository.findByUserIdAndOtherUserIds(currentUserId, likerIds);
+        return friendships.stream().collect(Collectors.toMap(
+                f -> f.getOtherUserId(currentUserId),
+                f -> new FriendshipInfo(
+                        f.getId(),
+                        f.getStatus() == FriendshipStatus.ACCEPTED ? RelationshipStatus.FRIEND
+                                : f.isRequester(currentUserId) ? RelationshipStatus.REQUEST_SENT
+                                : RelationshipStatus.REQUEST_RECEIVED
+                )
+        ));
+    }
+
+    private LikerResponse toLikerResponse(User user, Map<Long, FriendshipInfo> friendshipInfoMap) {
+        FriendshipInfo info = friendshipInfoMap.get(user.getId());
+        return new LikerResponse(
+                user.getId(),
+                profileImageUrlBuilder.buildUserProfileUrl(user),
+                user.getNickname(),
+                info != null ? info.friendshipId() : null,
+                info != null ? info.status() : RelationshipStatus.NONE
+        );
     }
 
     private List<Long> getExcludedUserIds(Long userId) {
