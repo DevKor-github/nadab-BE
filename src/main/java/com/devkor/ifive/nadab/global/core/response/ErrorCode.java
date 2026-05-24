@@ -28,6 +28,12 @@ public enum ErrorCode {
     AUTH_SOCIAL_ACCOUNT_RESTORE_FORBIDDEN(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 일반 계정 복구를 사용할 수 없습니다"),
     AUTH_UNSUPPORTED_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth2 제공자입니다"),
 
+    AUTH_WITHDRAWAL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "탈퇴 사유는 최소 1개 이상 선택해야 합니다"),
+    AUTH_WITHDRAWAL_REASON_DUPLICATED(HttpStatus.BAD_REQUEST, "탈퇴 사유는 중복 선택할 수 없습니다"),
+    AUTH_WITHDRAWAL_OTHER_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "기타 사유를 선택한 경우 직접 입력이 필요합니다"),
+    AUTH_WITHDRAWAL_OTHER_REASON_TOO_LONG(HttpStatus.BAD_REQUEST, "기타 사유는 200자 이하로 입력해야 합니다"),
+    AUTH_WITHDRAWAL_OTHER_REASON_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "기타 사유는 OTHER 선택 시에만 입력할 수 있습니다"),
+
     // 401 Unauthorized
     AUTH_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다"),
     AUTH_INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않거나 만료된 Refresh Token입니다"),
