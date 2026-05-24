@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.notification.application.event.social;
 import com.devkor.ifive.nadab.domain.comment.application.event.CommentCreatedEvent;
 import com.devkor.ifive.nadab.domain.comment.application.event.SubCommentCreatedEvent;
 import com.devkor.ifive.nadab.domain.comment.core.repository.CommentRepository;
+import com.devkor.ifive.nadab.domain.moderation.core.repository.UserBlockRepository;
 import com.devkor.ifive.nadab.domain.notification.application.NotificationCommandService;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ public class CommentNotificationEventListener {
 
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final UserBlockRepository userBlockRepository;
     private final NotificationMessageFactory messageFactory;
     private final NotificationCommandService notificationCommandService;
 
@@ -87,8 +90,12 @@ public class CommentNotificationEventListener {
                     "commentContent", truncate(event.getContent())
             );
 
-            // 1. 부모 댓글 작성자 알림 (author 제외, 역할 무관 최우선)
-            if (!event.getAuthorId().equals(event.getParentCommentAuthorId())) {
+            Set<Long> blockedByAuthor = Set.copyOf(
+                    userBlockRepository.findBlockedUserIdsBidirectional(event.getAuthorId()));
+
+            // 1. 부모 댓글 작성자 알림 (author 제외, 역할 무관 최우선,차단 관계이면 skip)
+            if (!event.getAuthorId().equals(event.getParentCommentAuthorId())
+                    && !blockedByAuthor.contains(event.getParentCommentAuthorId())) {
                 User parentCommentAuthor = userRepository.findById(event.getParentCommentAuthorId()).orElse(null);
                 if (parentCommentAuthor == null || parentCommentAuthor.getDeletedAt() != null) {
                     log.debug("Parent comment author not found or deleted, skip notification: parentCommentAuthorId={}", event.getParentCommentAuthorId());
@@ -141,20 +148,49 @@ public class CommentNotificationEventListener {
                 }
             }
 
-            NotificationContent participantContent = messageFactory.createMessage(
-                    NotificationType.REPLY_ON_PARTICIPATED_COMMENT, params);
-            for (Long participantId : participantIds) {
-                notificationCommandService.sendNotification(
-                        participantId,
-                        NotificationType.REPLY_ON_PARTICIPATED_COMMENT,
-                        participantContent.title(),
-                        participantContent.body(),
-                        participantContent.inboxMessage(),
-                        event.getDailyReportId().toString(),
-                        String.format("COMMENT_%d_PARTICIPANT_%d", event.getSubCommentId(), participantId)
-                );
+            // 4. 참여자 알림
+            if (!participantIds.isEmpty()) {
+                if (!event.isSecret() || event.isParentSecret()) {
+                    // 공개 대댓글 or 비밀 부모 아래 대댓글: 참여자들 열람 가능 — 차단 관계 제외
+                    List<Long> notifiableParticipantIds = participantIds.stream()
+                            .filter(id -> !blockedByAuthor.contains(id))
+                            .toList();
+                    if (!notifiableParticipantIds.isEmpty()) {
+                        NotificationContent participantContent = messageFactory.createMessage(
+                                NotificationType.REPLY_ON_PARTICIPATED_COMMENT, params);
+                        for (Long participantId : notifiableParticipantIds) {
+                            notificationCommandService.sendNotification(
+                                    participantId,
+                                    NotificationType.REPLY_ON_PARTICIPATED_COMMENT,
+                                    participantContent.title(),
+                                    participantContent.body(),
+                                    participantContent.inboxMessage(),
+                                    event.getDailyReportId().toString(),
+                                    String.format("COMMENT_%d_PARTICIPANT_%d", event.getSubCommentId(), participantId)
+                            );
+                        }
+                        log.debug("Sub-comment notifications sent: subCommentId={}, participantCount={}", event.getSubCommentId(), notifiableParticipantIds.size());
+                    }
+                } else if (reportOwnerIsParticipant && !reportOwnerIsAuthor
+                        && !blockedByAuthor.contains(event.getReportOwnerId())) {
+                    // 공개 부모 댓글에 달린 비밀 대댓글 : 일반 참여자는 열람 불가하지만 리포트 당사자는 가능
+                    User reportOwner = userRepository.findById(event.getReportOwnerId()).orElse(null);
+                    if (reportOwner != null && reportOwner.getDeletedAt() == null) {
+                        NotificationContent participantContent = messageFactory.createMessage(
+                                NotificationType.REPLY_ON_PARTICIPATED_COMMENT, params);
+                        notificationCommandService.sendNotification(
+                                event.getReportOwnerId(),
+                                NotificationType.REPLY_ON_PARTICIPATED_COMMENT,
+                                participantContent.title(),
+                                participantContent.body(),
+                                participantContent.inboxMessage(),
+                                event.getDailyReportId().toString(),
+                                String.format("COMMENT_%d_PARTICIPANT_%d", event.getSubCommentId(), event.getReportOwnerId())
+                        );
+                        log.debug("Sub-comment notification sent to report owner (participant): subCommentId={}", event.getSubCommentId());
+                    }
+                }
             }
-            log.debug("Sub-comment notifications sent: subCommentId={}, participantCount={}", event.getSubCommentId(), participantIds.size());
         } catch (Exception e) {
             log.error("Failed to handle SubCommentCreatedEvent: subCommentId={}, error={}",
                     event.getSubCommentId(), e.getMessage(), e);

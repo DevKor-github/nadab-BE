@@ -14,4 +14,6 @@ public class SubCommentCreatedEvent {
     private final Long parentCommentAuthorId;
     private final Long reportOwnerId;
     private final String content;
+    private final boolean secret;
+    private final boolean parentSecret;
 }
