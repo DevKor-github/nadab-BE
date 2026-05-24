@@ -87,7 +87,9 @@ public class CommentCommandService {
                 parentCommentId,
                 parentComment.getAuthor().getId(),
                 reportOwnerId,
-                content
+                content,
+                finalIsSecret,
+                parentComment.isSecret()
         ));
 
         return subComment.getId();
