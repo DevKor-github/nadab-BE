@@ -115,7 +115,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             @Param("excludeUserIds") List<Long> excludeUserIds
     );
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("""
         update Comment c
         set c.deletedAt = :now, c.updatedAt = :now
