@@ -713,9 +713,11 @@ public class AuthController {
         );
     }
 
+    @Deprecated
     @PostMapping("/withdrawal")
     @PreAuthorize("isAuthenticated()")
     @Operation(
+            deprecated = true,
             summary = "회원 탈퇴",
             description = """
                     회원 탈퇴를 진행합니다.<br>

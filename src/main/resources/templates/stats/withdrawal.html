@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>NADAB - Type Stats</title>
+  <title>NADAB · Stats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -14,6 +14,7 @@
       --border: #2a2f3e;
       --accent: #6c8fff;
       --accent-2: #ff7eb3;
+      --accent-3: #4de8c2;
       --text-1: #e8eaf2;
       --text-2: #8b91a8;
       --text-3: #4f556a;
@@ -93,20 +94,24 @@
       color: var(--text-2);
       transition: border-color .3s;
     }
-    .health-bar.ok { border-color: rgba(77,232,194,.45); }
+    .health-bar.ok    { border-color: rgba(77,232,194,.45); }
     .health-bar.error { border-color: rgba(255,126,179,.45); }
 
     .health-dot {
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
       background: var(--text-3);
       transition: background .3s, box-shadow .3s;
     }
-    .health-bar.ok .health-dot { background: #4de8c2; box-shadow: 0 0 6px rgba(77,232,194,.7); }
-    .health-bar.error .health-dot { background: var(--accent-2); box-shadow: 0 0 6px rgba(255,126,179,.7); }
-
+    .health-bar.ok .health-dot {
+      background: var(--accent-3);
+      box-shadow: 0 0 6px rgba(77,232,194,.7);
+    }
+    .health-bar.error .health-dot {
+      background: var(--accent-2);
+      box-shadow: 0 0 6px rgba(255,126,179,.7);
+    }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: .25; }
@@ -124,7 +129,6 @@
       width: fit-content;
       margin-bottom: 28px;
     }
-
     .tab-link {
       text-decoration: none;
       padding: 7px 22px;
@@ -140,80 +144,63 @@
       color: #fff;
     }
 
-    .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px 28px;
-      margin-bottom: 20px;
-      position: relative;
-      overflow: hidden;
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
     }
-    .kpi-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(108,143,255,.06) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    .kpi-label {
-      font-size: .78rem;
-      color: var(--text-2);
-      margin-bottom: 8px;
-      font-weight: 600;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-    .kpi-value {
-      font-family: 'DM Mono', monospace;
-      font-size: 2.8rem;
-      font-weight: 500;
-      line-height: 1;
-      color: var(--text-1);
-    }
-
-    .chart-card {
+    .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
     }
-
-    .chart-card-header {
+    .card-header {
       padding: 18px 22px 14px;
       border-bottom: 1px solid var(--border);
     }
-    .chart-card-title {
+    .card-title {
       font-size: .9rem;
       font-weight: 700;
       color: var(--text-1);
     }
-    .chart-card-subtitle {
-      font-size: .8rem;
+    .card-sub {
+      margin-top: 6px;
+      font-size: .78rem;
       color: var(--text-2);
-      margin-top: 5px;
     }
-    .chart-card-body { padding: 20px 20px 16px; }
+    .card-body { padding: 22px; }
 
-    .dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 8px;
-      vertical-align: middle;
-      position: relative;
-      top: -1px;
-      background: var(--accent-2);
+    .table-wrap { overflow: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: .82rem;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: var(--text-2);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    td { color: var(--text-1); }
+    .mono { font-family: 'DM Mono', monospace; }
+    .empty {
+      color: var(--text-2);
+      font-size: .82rem;
+      padding: 8px 0;
     }
   </style>
 </head>
 <body>
-
 <div class="page-header">
-  <div class="page-title">NADAB ·
-    Stats</div>
+  <div class="page-title">NADAB · Stats</div>
   <div class="header-right">
     <div id="healthBar" class="health-bar loading">
       <span class="health-dot"></span>
@@ -233,96 +220,79 @@
 </div>
 
 <div class="tabs">
-  <a class="tab-link"
-     th:classappend="${activeTab} == 'daily' ? ' active' : ''"
-     th:href="@{/stats/daily}">일간</a>
-  <a class="tab-link"
-     th:classappend="${activeTab} == 'weekly' ? ' active' : ''"
-     th:href="@{/stats/weekly}">주간</a>
-  <a class="tab-link"
-     th:classappend="${activeTab} == 'monthly' ? ' active' : ''"
-     th:href="@{/stats/monthly}">월간</a>
-  <a class="tab-link"
-     th:classappend="${activeTab} == 'type' ? ' active' : ''"
-     th:href="@{/stats/type}">유형</a>
-  <a class="tab-link"
-     th:classappend="${activeTab} == 'withdrawal' ? ' active' : ''"
-     th:href="@{/stats/withdrawal}">탈퇴</a>
-  <a class="tab-link"
-     th:classappend="${activeTab} == 'total' ? ' active' : ''"
-     th:href="@{/stats/total}">전체</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'daily' ? ' active' : ''" th:href="@{/stats/daily}">일간</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'weekly' ? ' active' : ''" th:href="@{/stats/weekly}">주간</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'monthly' ? ' active' : ''" th:href="@{/stats/monthly}">월간</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'type' ? ' active' : ''" th:href="@{/stats/type}">유형</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'withdrawal' ? ' active' : ''" th:href="@{/stats/withdrawal}">탈퇴</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'total' ? ' active' : ''" th:href="@{/stats/total}">전체</a>
 </div>
 
-<div class="kpi-card">
-  <div>
-    <div class="kpi-label">현재 생성 중 유형 리포트</div>
-    <div class="kpi-value" th:text="${vm.inProgressTypeReportCount}">0</div>
+<div class="grid">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">탈퇴 사유 분포</div>
+      <div class="card-sub">전체 탈퇴 사유 집계</div>
+    </div>
+    <div class="card-body">
+      <canvas id="reasonChart" height="120"></canvas>
+    </div>
   </div>
-</div>
 
-<div class="chart-card">
-  <div class="chart-card-header">
-    <div class="chart-card-title"><span class="dot"></span>관심 주제별 생성된 총 유형 리포트 수</div>
-    <div class="chart-card-subtitle">전체 누적 (COMPLETED 기준)</div>
-  </div>
-  <div class="chart-card-body">
-    <canvas id="typeByInterestChart" height="140"></canvas>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">탈퇴 이벤트 목록 (최신순)</div>
+      <div class="card-sub">표는 최신 <span class="mono" th:text="${vm.recentEventLimit}">100</span>개 이벤트를 표시합니다.</div>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap" th:if="${!#lists.isEmpty(vm.rows)}">
+        <table>
+          <thead>
+          <tr>
+            <th>탈퇴 시각</th>
+            <th>선택 사유</th>
+            <th>기타 사유</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="row : ${vm.rows}">
+            <td class="mono" th:text="${row.withdrawnAt}"></td>
+            <td th:text="${row.reasons}"></td>
+            <td th:text="${row.customReason}"></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${#lists.isEmpty(vm.rows)}">표시할 탈퇴 이벤트가 없습니다.</div>
+    </div>
   </div>
 </div>
 
 <script th:inline="javascript">
-  const interestLabels = [[${vm.interestLabels}]];
-  const completedTypeReportCounts = [[${vm.completedTypeReportCounts}]].map(v => parseInt(v, 10));
+  const labels = [[${vm.reasonLabels}]];
+  const counts = [[${vm.reasonCounts}]].map(v => parseInt(v, 10));
 
   Chart.defaults.color = '#8b91a8';
   Chart.defaults.font.family = "'DM Mono', monospace";
-  Chart.defaults.font.size = 11;
 
-  const gridColor = 'rgba(255,255,255,0.05)';
-  const borderColor = 'rgba(255,255,255,0.08)';
-  const barColors = [
-    'rgba(108,143,255,0.85)',
-    'rgba(255,126,179,0.85)',
-    'rgba(77,232,194,0.85)',
-    'rgba(255,196,77,0.85)',
-    'rgba(180,120,255,0.85)',
-    'rgba(77,195,255,0.85)',
-  ];
-
-  new Chart(document.getElementById('typeByInterestChart'), {
+  new Chart(document.getElementById('reasonChart'), {
     type: 'bar',
     data: {
-      labels: interestLabels,
+      labels,
       datasets: [{
-        label: '유형 리포트 수',
-        data: completedTypeReportCounts,
-        backgroundColor: interestLabels.map((_, index) => barColors[index % barColors.length]),
+        label: '선택 횟수',
+        data: counts,
+        backgroundColor: 'rgba(108,143,255,0.8)',
         borderRadius: 6,
-        borderSkipped: false,
+        borderSkipped: false
       }]
     },
     options: {
       responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1e2230',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          padding: 12,
-          titleColor: '#e8eaf2',
-          bodyColor: '#8b91a8',
-          titleFont: { family: "'Syne', sans-serif", weight: '700', size: 12 },
-          bodyFont: { family: "'DM Mono', monospace", size: 12 },
-        },
-      },
+      plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { color: gridColor, borderColor } },
-        y: {
-          beginAtZero: true,
-          grid: { color: gridColor, borderColor },
-          ticks: { precision: 0, stepSize: 1 },
-        },
+        x: { grid: { color: 'rgba(255,255,255,0.06)' } },
+        y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.06)' } }
       }
     }
   });
@@ -348,6 +318,5 @@
   checkHealth();
   setInterval(checkHealth, 30_000);
 </script>
-
 </body>
 </html>

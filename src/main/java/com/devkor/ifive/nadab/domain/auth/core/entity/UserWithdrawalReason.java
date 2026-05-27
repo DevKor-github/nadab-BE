@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
+
 @Entity
 @Table(name = "user_withdrawal_reasons")
 @Getter
@@ -28,11 +30,20 @@ public class UserWithdrawalReason extends CreatableEntity {
     @Column(name = "custom_reason", length = 200)
     private String customReason;
 
-    public static UserWithdrawalReason create(User user, WithdrawalReasonType reason, String customReason) {
+    @Column(name = "withdrawn_at", nullable = false)
+    private OffsetDateTime withdrawnAt;
+
+    public static UserWithdrawalReason create(
+            User user,
+            WithdrawalReasonType reason,
+            String customReason,
+            OffsetDateTime withdrawnAt
+    ) {
         UserWithdrawalReason userWithdrawalReason = new UserWithdrawalReason();
         userWithdrawalReason.user = user;
         userWithdrawalReason.reason = reason;
         userWithdrawalReason.customReason = customReason;
+        userWithdrawalReason.withdrawnAt = withdrawnAt;
         return userWithdrawalReason;
     }
 }

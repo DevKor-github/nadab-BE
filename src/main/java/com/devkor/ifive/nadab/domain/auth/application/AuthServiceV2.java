@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -37,10 +38,18 @@ public class AuthServiceV2 {
 
         // 탈퇴 사유 저장(집계용)
         User user = userRepository.getReferenceById(userId);
+        OffsetDateTime effectiveWithdrawnAt = user.getDeletedAt() != null
+                ? user.getDeletedAt()
+                : OffsetDateTime.now();
         List<UserWithdrawalReason> entities = new ArrayList<>(validatedReasons.size());
         for (WithdrawalReasonType reason : validatedReasons) {
             String detail = reason == WithdrawalReasonType.OTHER ? normalizedCustomReason : null;
-            entities.add(UserWithdrawalReason.create(user, reason, detail));
+            entities.add(UserWithdrawalReason.create(
+                    user,
+                    reason,
+                    detail,
+                    effectiveWithdrawnAt
+            ));
         }
         userWithdrawalReasonRepository.saveAll(entities);
     }
