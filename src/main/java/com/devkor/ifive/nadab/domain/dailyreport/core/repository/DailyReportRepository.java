@@ -44,6 +44,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
      */
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
+            dr.id,
             q.questionText,
             i.code,
             ae.date,
