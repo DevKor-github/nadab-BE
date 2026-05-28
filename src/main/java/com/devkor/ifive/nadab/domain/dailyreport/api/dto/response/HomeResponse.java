@@ -20,6 +20,9 @@ public record HomeResponse(
         List<String> answeredFriendProfiles,
 
         @Schema(description = "나와 같은 오늘의 질문에 답변한 친구의 총 수", example = "8")
-        int answeredFriendCount
+        int answeredFriendCount,
+
+        @Schema(description = "플랫폼별 최신 앱 버전")
+        HomeLatestVersionResponse latestVersion
 ) {
 }
