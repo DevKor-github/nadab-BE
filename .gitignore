@@ -44,3 +44,5 @@ node_modules
 
 # 오늘의 리포트 프롬프트
 /src/main/resources/secret/
+
+AGENTS.md
