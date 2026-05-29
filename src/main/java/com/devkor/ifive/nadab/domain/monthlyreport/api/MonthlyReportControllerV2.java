@@ -6,7 +6,7 @@ import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyRepor
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.ReportListTypeV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportQueryServiceV2;
-import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportService;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportServiceV2;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
@@ -31,7 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MonthlyReportControllerV2 {
 
-    private final MonthlyReportService monthlyReportService;
+    private final MonthlyReportServiceV2 monthlyReportServiceV2;
     private final MonthlyReportQueryServiceV2 monthlyReportQueryServiceV2;
 
     @PostMapping("/start")
@@ -83,7 +83,7 @@ public class MonthlyReportControllerV2 {
     public ResponseEntity<ApiResponseDto<MonthlyReportStartResponse>> startMonthlyReport(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        MonthlyReportStartResponse response = monthlyReportService.startMonthlyReport(principal.getId());
+        MonthlyReportStartResponse response = monthlyReportServiceV2.startMonthlyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 
@@ -181,6 +181,7 @@ public class MonthlyReportControllerV2 {
                     월간 리포트 V2를 id로 조회합니다. </br>
                     생성 대기 중인 경우 ```status = "PENDING"``` 으로 반환됩니다. </br>
                     생성 진행 중인 경우 ```status = "IN_PROGRESS"``` 로 반환됩니다. </br>
+                    텍스트만 생성 완료한 경우 ```status = "TEXT_COMPLETED"```로 반환됩니다. </br>
                     생성에 성공한 경우 ```status = "COMPLETED"``` 로 반환됩니다. </br>
                     생성에 실패한 경우 ```status = "FAILED"``` 로 반환됩니다. 이때 크리스탈이 환불되기 때문에 잔액 조회를 해야합니다.
                     

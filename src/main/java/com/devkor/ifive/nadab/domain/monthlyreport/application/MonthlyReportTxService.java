@@ -1,15 +1,12 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 
-import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReserveResultDto;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.*;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportRepository;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.PendingMonthlyReportService;
-import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
-import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLogReason;
@@ -20,6 +17,7 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,7 +32,6 @@ public class MonthlyReportTxService {
     private final PendingMonthlyReportService pendingMonthlyReportService;
 
     private final MonthlyReportRepository monthlyReportRepository;
-    private final MonthlyReportV2Repository monthlyReportV2Repository;
     private final UserWalletRepository userWalletRepository;
     private final CrystalLogRepository crystalLogRepository;
 
@@ -48,10 +45,10 @@ public class MonthlyReportTxService {
      * (Tx) MonthlyReport(PENDING) + reserve consume + CrystalLog(PENDING)
      * 커밋되면 리포트 생성 작업을 시작할 준비가 완료됨
      */
-    public MonthlyReserveResultDto reserveMonthly(User user, boolean exists) {
+    public MonthlyReserveResultDto reserveMonthly(User user) {
 
         // Report: 있으면 기존 사용, 없으면 새로 PENDING 생성
-        MonthlyReportV2 report = pendingMonthlyReportService.getOrCreatePendingMonthlyReport(user, exists);
+        MonthlyReport report = pendingMonthlyReportService.getOrCreatePendingMonthlyReport(user);
 
         // 선차감(원자적) + balanceAfter 확보
         int updated = userWalletRepository.tryConsume(user.getId(), MONTHLY_REPORT_COST);
@@ -80,79 +77,43 @@ public class MonthlyReportTxService {
     }
 
     public MonthlyReserveResultDto reserveMonthlyAndPublish(User user) {
+        MonthlyReserveResultDto reserve = this.reserveMonthly(user);
 
-        boolean exists = monthlyReportV2Repository.existsByUserIdAndStatus(user.getId(), MonthlyReportStatus.COMPLETED);
-
-        MonthlyReserveResultDto reserve = this.reserveMonthly(user, exists);
-
-        monthlyReportV2Repository.updateStatus(reserve.reportId(), MonthlyReportStatus.IN_PROGRESS);
+        monthlyReportRepository.updateStatus(reserve.reportId(), MonthlyReportStatus.IN_PROGRESS);
 
         // 트랜잭션 안에서 publish (AFTER_COMMIT 트리거 보장)
         eventPublisher.publishEvent(new MonthlyReportGenerationRequestedEventDto(
                 reserve.reportId(),
                 user.getId(),
-                reserve.crystalLogId(),
-                exists
+                reserve.crystalLogId()
         ));
 
         return reserve;
     }
 
-    public void confirmMonthly(Long reportId, Long logId, String imageKey) {
-        monthlyReportV2Repository.completeWithImage(
-                reportId,
-                imageKey,
-                MonthlyReportImageStatus.COMPLETED,
-                MonthlyReportStatus.COMPLETED
-        );
+    public void confirmMonthly(Long reportId, Long logId, ReportContent content) {
+        ReportContent normalized = content.normalized();
+
+        String summary = normalized.summary();
+        String discovered = normalized.discovered().plainText();
+        String improve = normalized.improve().plainText();
+
+        // report를 COMPLETED로
+        String contentJson;
+        try {
+            contentJson = objectMapper.writeValueAsString(normalized);
+        } catch (Exception e) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+        monthlyReportRepository.markCompleted(
+                reportId, MonthlyReportStatus.COMPLETED.name(), contentJson, discovered, improve, summary);
 
         // log를 CONFIRMED로
         crystalLogRepository.markConfirmed(logId);
     }
 
-    public void confirmMonthlyText(
-            Long reportId,
-            MonthlyReportV2Content content,
-            TypeTextContent emotionSummaryContent,
-            TypeEmotionStatsContent emotionStats,
-            InterestStatsContent interestStats
-    ) {
-        MonthlyReportV2Content contentNormalized = content.normalized();
-        TypeTextContent emotionSummaryContentNormalized = emotionSummaryContent.normalized();
-        InterestStatsContent interestStatsNormalized = interestStats.normalized();
-
-        String summary = contentNormalized.summary();
-        String commentSummary = contentNormalized.commentSummary();
-        String dominantKeyword = contentNormalized.dominantKeyword();
-
-        String contentJson;
-        String emotionSummaryContentJson;
-        String emotionStatsJson;
-        String interestStatsJson;
-
-        try {
-            contentJson = objectMapper.writeValueAsString(contentNormalized);
-            emotionSummaryContentJson = objectMapper.writeValueAsString(emotionSummaryContentNormalized);
-            emotionStatsJson = objectMapper.writeValueAsString(emotionStats.normalized());
-            interestStatsJson = objectMapper.writeValueAsString(interestStatsNormalized);
-        } catch (Exception e) {
-            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
-        }
-        monthlyReportV2Repository.updateContent(
-                reportId,
-                contentJson,
-                emotionSummaryContentJson,
-                summary,
-                commentSummary,
-                dominantKeyword,
-                emotionStatsJson,
-                interestStatsJson,
-                MonthlyReportStatus.TEXT_COMPLETED.name()
-        );
-    }
-
     public void failAndRefundMonthly(Long userId, Long reportId, Long logId) {
-        monthlyReportV2Repository.markFailed(reportId, MonthlyReportStatus.FAILED);
+        monthlyReportRepository.markFailed(reportId, MonthlyReportStatus.FAILED);
 
         // 환불(+cost)
         int updated = userWalletRepository.refund(userId, MONTHLY_REPORT_COST);
@@ -163,18 +124,5 @@ public class MonthlyReportTxService {
 
         // log를 REFUNDED로
         crystalLogRepository.markRefunded(logId);
-    }
-
-    public void markMonthlyImageProcessing(Long reportId) {
-        monthlyReportV2Repository.updateImageStatus(reportId, MonthlyReportImageStatus.PROCESSING);
-    }
-
-    public void failMonthlyImage(Long reportId) {
-        monthlyReportV2Repository.updateImageStatus(reportId, MonthlyReportImageStatus.FAILED);
-    }
-
-    public void failAndRefundMonthlyWithImage(Long userId, Long reportId, Long logId) {
-        this.failAndRefundMonthly(userId, reportId, logId);
-        this.failMonthlyImage(reportId);
     }
 }

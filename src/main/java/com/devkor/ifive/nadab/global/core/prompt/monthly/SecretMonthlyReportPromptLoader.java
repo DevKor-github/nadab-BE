@@ -14,17 +14,30 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SecretMonthlyReportPromptLoader implements MonthlyReportPromptLoader {
 
-    @Value("${MONTHLY_PROMPT}")
-    private String rawPrompt;
+    @Value("${MONTHLY_V1_PROMPT}")
+    private String monthlyV1Prompt;
+
+    @Value("${MONTHLY_V2_BASELINE_PROMPT}")
+    private String monthlyV2BaselinePrompt;
 
     @Override
-    public String loadPrompt() {
-        if (rawPrompt == null || rawPrompt.isBlank()) {
-            log.error("환경 변수 MONTHLY_PROMPT가 비어있습니다.");
+    public String loadV1Prompt() {
+        if (monthlyV1Prompt == null ||  monthlyV1Prompt.isBlank()) {
+            log.error("환경 변수 MONTHLY_V1_PROMPT가 비어있습니다.");
             throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_ENV_VAR_NOT_SET);
         }
 
-        return rawPrompt;
+        return monthlyV1Prompt;
+    }
+
+    @Override
+    public String loadV2BaselinePrompt() {
+        if (monthlyV2BaselinePrompt == null || monthlyV2BaselinePrompt.isBlank()) {
+            log.error("환경 변수 MONTHLY_V2_BASELINE_PROMPT가 비어있습니다.");
+            throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_ENV_VAR_NOT_SET);
+        }
+
+        return monthlyV2BaselinePrompt;
     }
 
     @Override

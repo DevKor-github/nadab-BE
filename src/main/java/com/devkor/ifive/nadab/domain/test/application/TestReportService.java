@@ -1,7 +1,9 @@
 package com.devkor.ifive.nadab.domain.test.application;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.PromptTestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.TestDailyReportRequest;
@@ -55,6 +57,7 @@ public class TestReportService {
 
     private final UserRepository userRepository;
     private final WeeklyReportRepository weeklyReportRepository;
+    private final MonthlyReportRepository monthlyReportRepository;
     private final MonthlyReportV2Repository monthlyReportV2Repository;
     private final TypeReportRepository typeReportRepository;
     private final TestCrystalLogRepository testCrystalLogRepository;
@@ -220,7 +223,7 @@ public class TestReportService {
         CrystalLog purchaseLog = testCrystalLogRepository
                 .findByUserIdAndRefTypeAndRefIdAndReasonAndStatus(
                         userId,
-                        "MONTHLY_REPORT",
+                        "MONTHLY_REPORT_V2",
                         report.getId(),
                         CrystalLogReason.REPORT_GENERATE_MONTHLY,
                         CrystalLogStatus.CONFIRMED
@@ -238,7 +241,7 @@ public class TestReportService {
 
 
         CrystalLog refundLog = CrystalLog.createConfirmed(user, MONTHLY_REPORT_COST, balanceAfter,
-                CrystalLogReason.TEST_DELETE_REPORT_REFUND_MONTHLY, "MONTHLY_REPORT_REFUND", report.getId());
+                CrystalLogReason.TEST_DELETE_REPORT_REFUND_MONTHLY, "MONTHLY_REPORT_V2_REFUND", report.getId());
         testCrystalLogRepository.save(refundLog);
 
         testCrystalLogRepository.markRefunded(purchaseLog.getId());
@@ -286,5 +289,48 @@ public class TestReportService {
         testCrystalLogRepository.markRefunded(purchaseLog.getId());
 
         typeReportRepository.delete(report);
+    }
+
+    @Transactional
+    public void deleteMonthMonthlyReportV1(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
+
+        MonthlyReport report = monthlyReportRepository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate())
+                .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
+
+        if (report.getStatus() != MonthlyReportStatus.COMPLETED) {
+            throw new BadRequestException(ErrorCode.MONTHLY_REPORT_NOT_COMPLETED);
+        }
+
+        CrystalLog purchaseLog = testCrystalLogRepository
+                .findByUserIdAndRefTypeAndRefIdAndReasonAndStatus(
+                        user.getId(),
+                        "MONTHLY_REPORT",
+                        report.getId(),
+                        CrystalLogReason.REPORT_GENERATE_MONTHLY,
+                        CrystalLogStatus.CONFIRMED
+                )
+                .orElseThrow(() -> new BadRequestException(ErrorCode.CRYSTAL_LOG_NOT_FOUND));
+
+        int updated = userWalletRepository.refund(user.getId(), MONTHLY_REPORT_COST);
+        if (updated == 0) {
+            throw new NotFoundException(ErrorCode.WALLET_NOT_FOUND);
+        }
+
+        UserWallet wallet = userWalletRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new NotFoundException(ErrorCode.WALLET_NOT_FOUND));
+        long balanceAfter = wallet.getCrystalBalance();
+
+
+        CrystalLog refundLog = CrystalLog.createConfirmed(user, MONTHLY_REPORT_COST, balanceAfter,
+                CrystalLogReason.TEST_DELETE_REPORT_REFUND_MONTHLY, "MONTHLY_REPORT_REFUND", report.getId());
+        testCrystalLogRepository.save(refundLog);
+
+        testCrystalLogRepository.markRefunded(purchaseLog.getId());
+
+        monthlyReportRepository.delete(report);
     }
 }
