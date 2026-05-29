@@ -46,7 +46,8 @@ public class PendingMonthlyReportServiceV2 {
             throw new ConflictException(ErrorCode.MONTHLY_REPORT_ALREADY_COMPLETED);
         }
 
-        if (report.getStatus() == MonthlyReportStatus.IN_PROGRESS) {
+        if (report.getStatus() == MonthlyReportStatus.IN_PROGRESS
+            || report.getStatus() == MonthlyReportStatus.TEXT_COMPLETED) {
             throw new ConflictException(ErrorCode.MONTHLY_REPORT_IN_PROGRESS);
         }
 

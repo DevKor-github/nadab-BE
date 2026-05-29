@@ -24,7 +24,7 @@ public class MonthlyReportCrossVersionGuardService {
                         throw new ConflictException(ErrorCode.MONTHLY_REPORT_ALREADY_COMPLETED);
                     }
 
-                    if (reportV2.getStatus() == MonthlyReportStatus.IN_PROGRESS) {
+                    if (reportV2.getStatus() != MonthlyReportStatus.FAILED) {
                         throw new ConflictException(ErrorCode.MONTHLY_REPORT_IN_PROGRESS);
                     }
                 });
@@ -37,7 +37,7 @@ public class MonthlyReportCrossVersionGuardService {
                         throw new ConflictException(ErrorCode.MONTHLY_REPORT_ALREADY_COMPLETED);
                     }
 
-                    if (report.getStatus() == MonthlyReportStatus.IN_PROGRESS) {
+                    if (report.getStatus() != MonthlyReportStatus.FAILED) {
                         throw new ConflictException(ErrorCode.MONTHLY_REPORT_IN_PROGRESS);
                     }
                 });
