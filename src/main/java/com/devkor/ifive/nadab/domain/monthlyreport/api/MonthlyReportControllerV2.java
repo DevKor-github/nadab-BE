@@ -6,7 +6,7 @@ import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyRepor
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.ReportListTypeV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportQueryServiceV2;
-import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportService;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportServiceV2;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
@@ -31,7 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MonthlyReportControllerV2 {
 
-    private final MonthlyReportService monthlyReportService;
+    private final MonthlyReportServiceV2 monthlyReportServiceV2;
     private final MonthlyReportQueryServiceV2 monthlyReportQueryServiceV2;
 
     @PostMapping("/start")
@@ -83,7 +83,7 @@ public class MonthlyReportControllerV2 {
     public ResponseEntity<ApiResponseDto<MonthlyReportStartResponse>> startMonthlyReport(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        MonthlyReportStartResponse response = monthlyReportService.startMonthlyReport(principal.getId());
+        MonthlyReportStartResponse response = monthlyReportServiceV2.startMonthlyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 
