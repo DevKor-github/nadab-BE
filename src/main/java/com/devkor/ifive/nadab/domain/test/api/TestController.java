@@ -9,6 +9,7 @@ import com.devkor.ifive.nadab.domain.test.application.TestReportService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -207,6 +208,15 @@ public class TestController {
             @PathVariable String interestCode
     ) {
         testReportService.deleteTypeReport(principal.getId(), interestCode);
+        return ApiResponseEntity.noContent();
+    }
+
+    @Hidden
+    @PostMapping("/delete/monthly-report-v1")
+    public ResponseEntity<ApiResponseDto<Void>> deleteMonthlyReportV1(
+            @RequestParam String email
+    ) {
+        testReportService.deleteMonthMonthlyReportV1(email);
         return ApiResponseEntity.noContent();
     }
 }
