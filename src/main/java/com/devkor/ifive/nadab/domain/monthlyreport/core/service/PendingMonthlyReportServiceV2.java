@@ -21,12 +21,15 @@ import java.time.LocalDate;
 public class PendingMonthlyReportServiceV2 {
 
     private final MonthlyReportV2Repository monthlyReportV2Repository;
+    private final MonthlyReportCrossVersionGuardService monthlyReportCrossVersionGuardService;
 
     @Transactional
     public MonthlyReportV2 getOrCreatePendingMonthlyReport(User user, boolean exists) {
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
         LocalDate today = TodayDateTimeProvider.getTodayDate();
+
+        monthlyReportCrossVersionGuardService.validateCreatableForV2(user.getId(), range.monthStartDate());
 
         MonthlyReportComparisonType comparisonType = exists ? MonthlyReportComparisonType.COMPARISON : MonthlyReportComparisonType.BASELINE;
 
