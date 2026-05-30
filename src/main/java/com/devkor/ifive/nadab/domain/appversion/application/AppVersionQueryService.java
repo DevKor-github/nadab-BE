@@ -19,10 +19,10 @@ public class AppVersionQueryService {
     private final AppVersionRepository appVersionRepository;
 
     public HomeLatestVersionResponse getHomeLatestVersion() {
-        Map<AppPlatform, String> latestVersionByPlatform = appVersionRepository.findAll().stream()
+        Map<AppPlatform, String> latestVersionByPlatform = appVersionRepository.findByIsLatestTrue().stream()
                 .collect(Collectors.toMap(
                         AppVersion::getPlatform,
-                        AppVersion::getLatestVersion,
+                        AppVersion::getVersion,
                         (left, right) -> right
                 ));
 
