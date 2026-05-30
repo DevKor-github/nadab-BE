@@ -1,10 +1,14 @@
 package com.devkor.ifive.nadab.domain.appversion.core.entity;
 
 import com.devkor.ifive.nadab.global.shared.entity.AuditableEntity;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
+
+import java.util.List;
 
 @Entity
 @Table(
@@ -30,4 +34,11 @@ public class AppVersion extends AuditableEntity {
 
     @Column(name = "is_latest", nullable = false)
     private Boolean isLatest;
+
+    @Column(name = "summary", nullable = false, length = 120)
+    private String summary;
+
+    @Type(JsonType.class)
+    @Column(name = "items", columnDefinition = "jsonb", nullable = false)
+    private List<AppVersionItem> items;
 }
