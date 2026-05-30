@@ -416,7 +416,11 @@ public enum ErrorCode {
     DAILY_REPORT_LIKE_LIST_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 게시글 좋아요 리스트만 조회할 수 있습니다"),
 
     // 404 Not Found
-    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요를 찾을 수 없습니다");
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요를 찾을 수 없습니다"),
+
+    // ==================== APP_VERSION (앱 버전) ====================
+    // 404 Not Found
+    APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전을 찾을 수 없습니다");
 
 
     private final HttpStatus httpStatus;

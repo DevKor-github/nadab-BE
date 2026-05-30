@@ -74,7 +74,7 @@ public class HomeQueryService {
         }
 
         // 7. 응답 생성
-        HomeLatestVersionResponse latestVersion = appVersionQueryService.getHomeLatestVersion();
+        HomeLatestVersionResponse latestVersion = appVersionQueryService.getHomeLatestVersion(userId);
 
         return new HomeResponse(
                 weeklyAnsweredDates,

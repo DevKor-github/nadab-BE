@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.appversion.application;
 import com.devkor.ifive.nadab.domain.appversion.core.entity.AppPlatform;
 import com.devkor.ifive.nadab.domain.appversion.core.entity.AppVersion;
 import com.devkor.ifive.nadab.domain.appversion.core.repository.AppVersionRepository;
+import com.devkor.ifive.nadab.domain.appversion.core.repository.UserAppVersionDismissalRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.HomeLatestVersionResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.HomePlatformVersionResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.HomeVersionItemResponse;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,12 +23,24 @@ import java.util.stream.Collectors;
 public class AppVersionQueryService {
 
     private final AppVersionRepository appVersionRepository;
+    private final UserAppVersionDismissalRepository userAppVersionDismissalRepository;
 
-    public HomeLatestVersionResponse getHomeLatestVersion() {
-        Map<AppPlatform, HomePlatformVersionResponse> latestVersionByPlatform = appVersionRepository.findByIsLatestTrue().stream()
+    public HomeLatestVersionResponse getHomeLatestVersion(Long userId) {
+        List<AppVersion> latestVersions = appVersionRepository.findByIsLatestTrue();
+
+        List<Long> appVersionIds = latestVersions.stream()
+                .map(AppVersion::getId)
+                .toList();
+
+        Set<Long> dismissedAppVersionIds = appVersionIds.isEmpty()
+                ? Set.of()
+                : userAppVersionDismissalRepository.findDismissedAppVersionIds(userId, appVersionIds).stream()
+                .collect(Collectors.toSet());
+
+        Map<AppPlatform, HomePlatformVersionResponse> latestVersionByPlatform = latestVersions.stream()
                 .collect(Collectors.toMap(
                         AppVersion::getPlatform,
-                        this::toPlatformResponse,
+                        appVersion -> toPlatformResponse(appVersion, dismissedAppVersionIds.contains(appVersion.getId())),
                         (left, right) -> right
                 ));
 
@@ -37,7 +51,7 @@ public class AppVersionQueryService {
         );
     }
 
-    private HomePlatformVersionResponse toPlatformResponse(AppVersion appVersion) {
+    private HomePlatformVersionResponse toPlatformResponse(AppVersion appVersion, boolean dismissed) {
         List<HomeVersionItemResponse> items = Optional.ofNullable(appVersion.getItems())
                 .orElse(List.of())
                 .stream()
@@ -45,9 +59,11 @@ public class AppVersionQueryService {
                 .toList();
 
         return new HomePlatformVersionResponse(
+                appVersion.getId(),
                 appVersion.getVersion(),
                 appVersion.getSummary(),
-                items
+                items,
+                dismissed
         );
     }
 }

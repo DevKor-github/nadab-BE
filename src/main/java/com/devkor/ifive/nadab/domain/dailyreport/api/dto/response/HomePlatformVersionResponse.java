@@ -6,6 +6,9 @@ import java.util.List;
 
 @Schema(description = "플랫폼별 최신 버전 정보")
 public record HomePlatformVersionResponse(
+        @Schema(description = "앱 버전 ID", example = "1")
+        Long appVersionId,
+
         @Schema(description = "최신 앱 버전", example = "1.2.0")
         String version,
 
@@ -13,6 +16,9 @@ public record HomePlatformVersionResponse(
         String summary,
 
         @Schema(description = "업데이트 항목 목록")
-        List<HomeVersionItemResponse> items
+        List<HomeVersionItemResponse> items,
+
+        @Schema(description = "다시 보지 않기 여부", example = "false")
+        boolean dismissed
 ) {
 }
