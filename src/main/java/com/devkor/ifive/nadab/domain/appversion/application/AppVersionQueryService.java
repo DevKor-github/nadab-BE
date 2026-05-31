@@ -46,8 +46,7 @@ public class AppVersionQueryService {
 
         return new HomeLatestVersionResponse(
                 latestVersionByPlatform.get(AppPlatform.IOS),
-                latestVersionByPlatform.get(AppPlatform.ANDROID),
-                latestVersionByPlatform.get(AppPlatform.WEB)
+                latestVersionByPlatform.get(AppPlatform.ANDROID)
         );
     }
 

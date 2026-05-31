@@ -6,8 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record HomeLatestVersionResponse(
         HomePlatformVersionResponse ios,
 
-        HomePlatformVersionResponse android,
-
-        HomePlatformVersionResponse web
+        HomePlatformVersionResponse android
 ) {
 }

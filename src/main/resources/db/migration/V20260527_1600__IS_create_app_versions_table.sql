@@ -16,5 +16,4 @@ CREATE UNIQUE INDEX uk_app_versions_platform_latest
 
 INSERT INTO app_versions (platform, version, is_latest, summary, items) VALUES
     ('IOS', '1.2.0', true, '', '[]'::jsonb),
-    ('ANDROID', '1.2.0', true, '', '[]'::jsonb),
-    ('WEB', '1.2.0', true, '', '[]'::jsonb);
+    ('ANDROID', '1.2.0', true, '', '[]'::jsonb);
