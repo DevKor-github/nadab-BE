@@ -37,4 +37,21 @@ public class AppVersionItem extends AuditableEntity {
 
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder;
+
+    private AppVersionItem(AppVersion appVersion, String title, String description, Integer displayOrder) {
+        this.appVersion = appVersion;
+        this.title = title;
+        this.description = description;
+        this.displayOrder = displayOrder;
+    }
+
+    public static AppVersionItem create(AppVersion appVersion, String title, String description, Integer displayOrder) {
+        return new AppVersionItem(appVersion, title, description, displayOrder);
+    }
+
+    public void update(String title, String description, Integer displayOrder) {
+        this.title = title;
+        this.description = description;
+        this.displayOrder = displayOrder;
+    }
 }

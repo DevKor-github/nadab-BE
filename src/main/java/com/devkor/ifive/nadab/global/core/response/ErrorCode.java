@@ -421,9 +421,11 @@ public enum ErrorCode {
     // ==================== APP_VERSION (앱 버전) ====================
     // 404 Not Found
     APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전을 찾을 수 없습니다"),
+    APP_VERSION_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전 항목을 찾을 수 없습니다"),
 
     // 409 Conflict
     APP_VERSION_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 플랫폼의 같은 버전이 이미 존재합니다"),
+    APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED(HttpStatus.CONFLICT, "같은 버전 내 displayOrder가 중복됩니다"),
 
     // ==================== ADMIN (어드민) ====================
     // 401 Unauthorized
