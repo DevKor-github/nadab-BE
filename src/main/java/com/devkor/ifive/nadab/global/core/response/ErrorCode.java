@@ -420,7 +420,11 @@ public enum ErrorCode {
 
     // ==================== APP_VERSION (앱 버전) ====================
     // 404 Not Found
-    APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전을 찾을 수 없습니다");
+    APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전을 찾을 수 없습니다"),
+
+    // ==================== ADMIN (어드민) ====================
+    // 401 Unauthorized
+    ADMIN_PAGE_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "관리자 페이지 비밀번호가 올바르지 않습니다");
 
 
     private final HttpStatus httpStatus;
