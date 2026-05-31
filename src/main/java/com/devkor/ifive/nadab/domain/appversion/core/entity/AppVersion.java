@@ -33,4 +33,23 @@ public class AppVersion extends AuditableEntity {
 
     @Column(name = "summary", nullable = false, length = 120)
     private String summary;
+
+    private AppVersion(AppPlatform platform, String version, boolean isLatest, String summary) {
+        this.platform = platform;
+        this.version = version;
+        this.isLatest = isLatest;
+        this.summary = summary;
+    }
+
+    public static AppVersion create(AppPlatform platform, String version, String summary) {
+        return new AppVersion(platform, version, true, summary);
+    }
+
+    public void markAsLatest() {
+        this.isLatest = true;
+    }
+
+    public void markAsNotLatest() {
+        this.isLatest = false;
+    }
 }

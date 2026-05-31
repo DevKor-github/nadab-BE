@@ -422,6 +422,9 @@ public enum ErrorCode {
     // 404 Not Found
     APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전을 찾을 수 없습니다"),
 
+    // 409 Conflict
+    APP_VERSION_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 플랫폼의 같은 버전이 이미 존재합니다"),
+
     // ==================== ADMIN (어드민) ====================
     // 401 Unauthorized
     ADMIN_PAGE_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "관리자 페이지 비밀번호가 올바르지 않습니다");
