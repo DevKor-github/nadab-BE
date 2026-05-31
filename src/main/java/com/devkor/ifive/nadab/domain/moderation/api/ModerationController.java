@@ -70,6 +70,13 @@ public class ModerationController {
                     ),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(
+                            responseCode = "403",
+                            description = """
+                                    - ErrorCode: AUTH_ACCESS_DENIED - 신고 권한 없음 (친구가 아니거나, 오늘 공유된 게시글이 아님, 비밀 댓글 열람 권한 없음)
+                                    """,
+                            content = @Content
+                    ),
+                    @ApiResponse(
                             responseCode = "404",
                             description = """
                                     - ErrorCode: DAILY_REPORT_NOT_FOUND - 공유글을 찾을 수 없음
