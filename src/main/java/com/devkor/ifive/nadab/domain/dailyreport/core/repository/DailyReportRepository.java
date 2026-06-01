@@ -164,7 +164,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
     @Query("select ae.user.id from DailyReport dr join dr.answerEntry ae where dr.id = :reportId")
     Optional<Long> findReportOwnerIdById(@Param("reportId") Long reportId);
 
-    boolean existsByIdAndIsSharedTrue(Long id);
+    boolean existsByIdAndIsSharedTrueAndDate(Long id, LocalDate date);
 
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto(

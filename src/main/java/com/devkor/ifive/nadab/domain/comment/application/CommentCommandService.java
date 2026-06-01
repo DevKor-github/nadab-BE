@@ -15,6 +15,7 @@ import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -103,7 +104,7 @@ public class CommentCommandService {
 
     private void checkCommentWriteAccess(Long dailyReportId, Long reportOwnerId, Long currentUserId) {
         if (currentUserId.equals(reportOwnerId)) return;
-        if (!dailyReportRepository.existsByIdAndIsSharedTrue(dailyReportId)) {
+        if (!dailyReportRepository.existsByIdAndIsSharedTrueAndDate(dailyReportId, TodayDateTimeProvider.getTodayDate())) {
             throw new ForbiddenException(ErrorCode.AUTH_ACCESS_DENIED);
         }
         long smallerId = Math.min(currentUserId, reportOwnerId);

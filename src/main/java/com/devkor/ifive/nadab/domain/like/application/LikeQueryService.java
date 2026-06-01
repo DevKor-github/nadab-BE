@@ -19,6 +19,7 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,7 +101,7 @@ public class LikeQueryService {
 
     private void checkCommentViewAccess(Long dailyReportId, Long reportOwnerId, Long currentUserId) {
         if (currentUserId.equals(reportOwnerId)) return;
-        if (!dailyReportRepository.existsByIdAndIsSharedTrue(dailyReportId)) {
+        if (!dailyReportRepository.existsByIdAndIsSharedTrueAndDate(dailyReportId, TodayDateTimeProvider.getTodayDate())) {
             throw new ForbiddenException(ErrorCode.AUTH_ACCESS_DENIED);
         }
         long smallerId = Math.min(currentUserId, reportOwnerId);
