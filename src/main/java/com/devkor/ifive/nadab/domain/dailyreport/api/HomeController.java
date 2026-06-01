@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.api;
 
+import com.devkor.ifive.nadab.domain.appversion.application.AppVersionDismissalCommandService;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.HomeVersionDismissRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.HomeResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.application.HomeQueryService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
@@ -11,11 +13,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HomeController {
 
     private final HomeQueryService homeQueryService;
+    private final AppVersionDismissalCommandService appVersionDismissalCommandService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -40,6 +46,14 @@ public class HomeController {
                     3. 총 기록 일수: 실제 답변한 날짜의 총 개수
                     4. 친구 프로필: 나와 같은 오늘의 질문에 답변한 친구들의 프로필 사진 URL (최대 5개)
                     5. 친구 답변 수: 나와 같은 오늘의 질문에 답변한 친구의 총 수
+                    6. 플랫폼별 최신 버전 정보 (android, ios)
+                        - 앱 버전 ID
+                        - 최신 버전 문자열
+                        - 업데이트 요약 문장
+                        - 업데이트 항목 목록
+                            - 업데이트 항목명
+                            - 업데이트 상세 설명
+                        - 다시 보지 않기 여부
 
                     ### 친구 프로필 조회 기준
                     - 나의 오늘의 질문과 동일한 질문에 답변한 친구만 표시
@@ -97,5 +111,33 @@ public class HomeController {
     ) {
         HomeResponse response = homeQueryService.getHomeData(principal.getId());
         return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/version-dismissals")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "홈 업데이트 다시 보지 않기 저장",
+            description = """
+                    사용자가 홈화면에 표시되는 앱 버전 업데이트 알림을 다시 보지 않도록 설정합니다.
+
+                    ### 요청 정보
+                    - appVersionId: 숨김 처리할 앱 버전 ID (홈화면 정보 조회 api에서 제공되는 앱 버전 ID 사용)
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "저장 성공", content = @Content),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+                    @ApiResponse(responseCode = "404", description = """
+                            - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                            - ErrorCode: APP_VERSION_NOT_FOUND - 앱 버전을 찾을 수 없음
+                            """, content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<Void>> dismissHomeVersion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody HomeVersionDismissRequest request
+    ) {
+        appVersionDismissalCommandService.dismiss(principal.getId(), request.appVersionId());
+        return ApiResponseEntity.noContent();
     }
 }

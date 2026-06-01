@@ -83,6 +83,12 @@ app:
     secure: false
     same-site: Lax
 
+admin:
+  page:
+    password: ${ADMIN_PAGE_PASSWORD}
+    token-expiration-seconds: 43200
+    cookie-name: admin_auth
+
 api_prefix: /api/v1
 
 firebase:

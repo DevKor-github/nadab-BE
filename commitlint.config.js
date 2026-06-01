@@ -14,6 +14,7 @@ module.exports = {
             "revert"
         ]],
         "scope-enum": [2, "always", [
+            "admin",
             "auth",
             "user",
             "ai",
@@ -100,6 +101,9 @@ module.exports = {
             scope: {
                 description: '[Scope] 이번 변경이 적용된 범위를 선택해주세요 (범위 생략하려면 empty 선택)',
                 enum: {
+                    admin: {
+                        description: '🧑‍💻 어드민 도메인 (예: 어드민 페이지)'
+                    },
                     auth: {
                         description: '🔐 인증/인가 도메인 (예: OAuth2, JWT, 세션)'
                     },
