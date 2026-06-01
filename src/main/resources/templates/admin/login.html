@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>NADAB Admin Login</title>
+    <style>
+        :root {
+            --bg: #111318;
+            --panel: #1a1f29;
+            --border: #2d3442;
+            --text: #e7ecf5;
+            --muted: #9ba5b8;
+            --accent: #4b8bff;
+            --danger: #d65757;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 8px;
+        }
+
+        .subtitle {
+            margin: 0 0 20px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .field {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 14px;
+            background: #141923;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            border: 0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-weight: 700;
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error {
+            margin-top: 10px;
+            min-height: 18px;
+            color: var(--danger);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1 class="title">관리자 로그인</h1>
+    <p class="subtitle">비밀번호를 입력해 버전 관리 페이지에 접근합니다.</p>
+    <form id="loginForm">
+        <label class="field-label" for="password">비밀번호</label>
+        <input id="password" class="field" type="password" autocomplete="current-password" required/>
+        <button id="submitBtn" class="btn" type="submit">로그인</button>
+        <div id="error" class="error"></div>
+    </form>
+</div>
+
+<script>
+    const loginForm = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorEl = document.getElementById('error');
+
+    async function checkAlreadyAuthenticated() {
+        try {
+            const response = await fetch('/admin/api/auth-status', {method: 'GET'});
+            if (response.ok) {
+                location.replace('/admin');
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    async function login(password) {
+        const response = await fetch('/admin/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({password})
+        });
+
+        if (response.ok) {
+            location.replace('/admin');
+            return;
+        }
+
+        let message = '로그인에 실패했습니다.';
+        try {
+            const errorBody = await response.json();
+            if (errorBody && errorBody.message) {
+                message = errorBody.message;
+            }
+        } catch (e) {
+            // ignore
+        }
+        throw new Error(message);
+    }
+
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        errorEl.textContent = '';
+        submitBtn.disabled = true;
+
+        try {
+            await login(passwordInput.value);
+        } catch (e) {
+            errorEl.textContent = e.message;
+            submitBtn.disabled = false;
+        }
+    });
+
+    checkAlreadyAuthenticated();
+</script>
+</body>
+</html>

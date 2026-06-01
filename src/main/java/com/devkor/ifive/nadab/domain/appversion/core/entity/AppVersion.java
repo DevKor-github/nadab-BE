@@ -52,4 +52,8 @@ public class AppVersion extends AuditableEntity {
     public void markAsNotLatest() {
         this.isLatest = false;
     }
+
+    public void updateSummary(String summary) {
+        this.summary = summary;
+    }
 }

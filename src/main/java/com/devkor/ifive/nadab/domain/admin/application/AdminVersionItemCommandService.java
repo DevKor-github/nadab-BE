@@ -37,7 +37,7 @@ public class AdminVersionItemCommandService {
         );
 
         try {
-            appVersionItemRepository.save(item);
+            appVersionItemRepository.saveAndFlush(item);
             return item.getId();
         } catch (DataIntegrityViolationException e) {
             throw new ConflictException(ErrorCode.APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED);
@@ -55,7 +55,12 @@ public class AdminVersionItemCommandService {
             throw new ConflictException(ErrorCode.APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED);
         }
 
-        item.update(request.title(), request.description(), request.displayOrder());
+        try {
+            item.update(request.title(), request.description(), request.displayOrder());
+            appVersionItemRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(ErrorCode.APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED);
+        }
     }
 
     public void deleteItem(Long appVersionItemId) {

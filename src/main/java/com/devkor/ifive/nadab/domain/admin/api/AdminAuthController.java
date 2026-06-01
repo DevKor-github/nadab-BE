@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.admin.infra.security.AdminPageAuthCookieSer
 import com.devkor.ifive.nadab.domain.admin.infra.security.AdminPageAuthTokenService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.annotation.security.PermitAll;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @RestController
 @RequestMapping("/admin/api")
 @RequiredArgsConstructor

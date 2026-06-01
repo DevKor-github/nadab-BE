@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.admin.api;
 
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionCreateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionItemUpsertRequest;
+import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionSummaryUpdateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminLatestVersionsResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionCreateResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionItemCreateResponse;
@@ -10,6 +11,7 @@ import com.devkor.ifive.nadab.domain.admin.application.AdminVersionItemCommandSe
 import com.devkor.ifive.nadab.domain.admin.application.AdminVersionQueryService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @RestController
 @RequestMapping("/admin/api/versions")
 @RequiredArgsConstructor
@@ -42,6 +45,15 @@ public class AdminVersionController {
     ) {
         Long appVersionId = adminVersionCommandService.createVersion(request);
         return ApiResponseEntity.created(new AdminVersionCreateResponse(appVersionId));
+    }
+
+    @PutMapping("/{appVersionId}/summary")
+    public ResponseEntity<ApiResponseDto<Void>> updateVersionSummary(
+            @PathVariable Long appVersionId,
+            @RequestBody @Valid AdminVersionSummaryUpdateRequest request
+    ) {
+        adminVersionCommandService.updateSummary(appVersionId, request.summary());
+        return ApiResponseEntity.noContent();
     }
 
     @PostMapping("/{appVersionId}/items")

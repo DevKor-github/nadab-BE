@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>NADAB Admin Version</title>
+    <style>
+        :root {
+            --bg: #10141b;
+            --surface: #181e28;
+            --surface-2: #202837;
+            --border: #2e3748;
+            --text: #e8edf8;
+            --muted: #9ca5bc;
+            --primary: #4b8bff;
+            --danger: #d35a5a;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .page {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-link {
+            text-decoration: none;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            background: var(--surface-2);
+        }
+
+        .tab-link.active {
+            border-color: var(--primary);
+            background: rgba(75, 139, 255, 0.2);
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .panel-title {
+            margin: 0 0 12px;
+            font-size: 16px;
+            color: var(--muted);
+        }
+
+        .grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .grid-3 {
+            grid-template-columns: 1fr 1fr 2fr;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: #121823;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: 0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-ghost { background: var(--surface-2); color: var(--text); }
+        .btn.is-hidden { display: none; }
+
+        .confirmed-ui {
+            transition: opacity 0.15s ease;
+        }
+
+        tr.confirmed-ui td:not(.actions) {
+            opacity: 0.58;
+        }
+
+        tr.confirmed-ui td.actions {
+            opacity: 1;
+        }
+
+        .summary-editor.confirmed-ui .field-label,
+        .summary-editor.confirmed-ui .summary {
+            opacity: 0.58;
+        }
+
+        .draft-ui {
+            opacity: 1;
+            transition: opacity 0.15s ease;
+        }
+
+        .version-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .version-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .version-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .version-head strong {
+            font-size: 15px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .items-table th, .items-table td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            vertical-align: top;
+            font-size: 12px;
+        }
+
+        .items-table th {
+            color: var(--muted);
+            font-weight: 700;
+            text-align: left;
+        }
+
+        .items-table td.actions {
+            width: 140px;
+        }
+
+        .items-table textarea {
+            min-height: 64px;
+        }
+
+        .empty {
+            color: var(--muted);
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 9999;
+            padding: 16px;
+        }
+
+        .popup-backdrop.open {
+            display: flex;
+        }
+
+        .popup {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .popup-title {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .popup-message {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .popup-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        input:disabled, textarea:disabled {
+            cursor: not-allowed;
+            opacity: 0.95;
+        }
+
+        @media (max-width: 900px) {
+            .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <h1 class="title">Admin Console</h1>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+    </div>
+
+    <nav class="tabs">
+        <a href="/admin/tabs/app-versions" class="tab-link active">App Versions</a>
+    </nav>
+
+    <div class="panel">
+        <h2 class="panel-title">Create Version</h2>
+        <form id="createVersionForm" class="grid grid-3">
+            <div>
+                <label class="field-label" for="platform">Platform</label>
+                <select id="platform" required>
+                    <option value="IOS">IOS</option>
+                    <option value="ANDROID">ANDROID</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label" for="version">Version</label>
+                <input id="version" type="text" maxlength="30" placeholder="e.g. 1.2.1" required/>
+            </div>
+            <div>
+                <label class="field-label" for="createSummary">Summary</label>
+                <textarea id="createSummary" maxlength="120" placeholder="Update summary"></textarea>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Create Version</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">Current Latest Versions</h2>
+        <div id="versionList" class="version-list"></div>
+    </div>
+</div>
+
+<div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+        <h2 id="popupTitle" class="popup-title"></h2>
+        <p id="popupMessage" class="popup-message"></p>
+        <div class="popup-actions">
+            <button id="popupCancelBtn" class="btn btn-ghost" type="button">No</button>
+            <button id="popupConfirmBtn" class="btn btn-primary" type="button">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const versionListEl = document.getElementById('versionList');
+    const createVersionForm = document.getElementById('createVersionForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const popupBackdropEl = document.getElementById('popupBackdrop');
+    const popupTitleEl = document.getElementById('popupTitle');
+    const popupMessageEl = document.getElementById('popupMessage');
+    const popupCancelBtn = document.getElementById('popupCancelBtn');
+    const popupConfirmBtn = document.getElementById('popupConfirmBtn');
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function showPopup({title, message, confirmText = 'OK', cancelText = 'No', isConfirm = false}) {
+        popupTitleEl.textContent = title;
+        popupMessageEl.textContent = message;
+        popupConfirmBtn.textContent = confirmText;
+        popupCancelBtn.textContent = cancelText;
+        popupCancelBtn.style.display = isConfirm ? 'inline-block' : 'none';
+        popupBackdropEl.classList.add('open');
+
+        return new Promise((resolve) => {
+            const cleanup = () => {
+                popupBackdropEl.classList.remove('open');
+                popupConfirmBtn.onclick = null;
+                popupCancelBtn.onclick = null;
+            };
+
+            popupConfirmBtn.onclick = () => {
+                cleanup();
+                resolve(true);
+            };
+            popupCancelBtn.onclick = () => {
+                cleanup();
+                resolve(false);
+            };
+        });
+    }
+
+    function showConfirmPopup(message) {
+        return showPopup({
+            title: 'Confirm',
+            message,
+            confirmText: 'Yes',
+            cancelText: 'No',
+            isConfirm: true
+        });
+    }
+
+    function showResultPopup(message, isError = false) {
+        return showPopup({
+            title: isError ? 'Error' : 'Done',
+            message,
+            confirmText: 'OK',
+            isConfirm: false
+        });
+    }
+
+    async function request(method, url, body) {
+        const response = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: body ? JSON.stringify(body) : undefined
+        });
+
+        if (response.status === 401) {
+            location.replace('/admin/login');
+            return null;
+        }
+
+        if (!response.ok) {
+            let message = 'Request failed.';
+            try {
+                const errorBody = await response.json();
+                if (errorBody && errorBody.message) {
+                    message = errorBody.message;
+                }
+            } catch (e) {
+                // ignore
+            }
+            throw new Error(message);
+        }
+
+        if (response.status === 204) {
+            return null;
+        }
+        return response.json();
+    }
+
+    function renderItemsRows(version) {
+        const rows = version.items.map((item) => `
+            <tr data-item-id="${item.id}" class="confirmed-ui">
+                <td><input class="item-title" type="text" maxlength="100" value="${escapeHtml(item.title)}" data-original="${escapeHtml(item.title)}" disabled/></td>
+                <td><textarea class="item-description" maxlength="500" data-original="${escapeHtml(item.description)}" disabled>${escapeHtml(item.description)}</textarea></td>
+                <td><input class="item-order" type="number" min="1" max="9999" value="${item.displayOrder}" data-original="${item.displayOrder}" disabled/></td>
+                <td class="actions">
+                    <div class="btn-row">
+                        <button type="button" class="btn btn-ghost" data-action="edit-item">Edit</button>
+                        <button type="button" class="btn btn-primary is-hidden" data-action="update-item">Save</button>
+                        <button type="button" class="btn btn-ghost is-hidden" data-action="cancel-item">Cancel</button>
+                        <button type="button" class="btn btn-danger" data-action="delete-item">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        return rows + `
+            <tr data-new-item="true" class="draft-ui">
+                <td><input class="item-title" type="text" maxlength="100" placeholder="Title"/></td>
+                <td><textarea class="item-description" maxlength="500" placeholder="Description"></textarea></td>
+                <td><input class="item-order" type="number" min="1" max="9999" placeholder="Order"/></td>
+                <td class="actions">
+                    <button type="button" class="btn btn-primary" data-action="create-item">Add Item</button>
+                </td>
+            </tr>
+        `;
+    }
+
+    function renderVersions(versions) {
+        if (!versions.length) {
+            versionListEl.innerHTML = '<div class="empty">No latest version records.</div>';
+            return;
+        }
+
+        versionListEl.innerHTML = versions.map((version) => `
+            <section class="version-card" data-version-id="${version.id}">
+                <div class="version-head">
+                    <strong>${escapeHtml(version.platform)} / ${escapeHtml(version.version)}</strong>
+                </div>
+                <div class="summary-editor confirmed-ui">
+                    <label class="field-label">Summary</label>
+                    <textarea class="summary" maxlength="120" data-original="${escapeHtml(version.summary)}" disabled>${escapeHtml(version.summary)}</textarea>
+                    <div class="btn-row" style="margin-top:8px;">
+                        <button type="button" class="btn btn-ghost" data-action="edit-summary">Edit</button>
+                        <button type="button" class="btn btn-primary is-hidden" data-action="save-summary">Save Summary</button>
+                        <button type="button" class="btn btn-ghost is-hidden" data-action="cancel-summary">Cancel Edit</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="field-label">Update Items</label>
+                    <table class="items-table">
+                        <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Order</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            ${renderItemsRows(version)}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        `).join('');
+    }
+
+    function rowToPayload(rowEl) {
+        const title = rowEl.querySelector('.item-title').value.trim();
+        const description = rowEl.querySelector('.item-description').value.trim();
+        const displayOrderRaw = rowEl.querySelector('.item-order').value;
+        const displayOrder = Number(displayOrderRaw);
+        return {title, description, displayOrder};
+    }
+
+    function toggleSummaryEditMode(summaryEditor, editing) {
+        const summaryInput = summaryEditor.querySelector('.summary');
+        const editBtn = summaryEditor.querySelector('[data-action="edit-summary"]');
+        const saveBtn = summaryEditor.querySelector('[data-action="save-summary"]');
+        const cancelBtn = summaryEditor.querySelector('[data-action="cancel-summary"]');
+
+        summaryInput.disabled = !editing;
+        editBtn.classList.toggle('is-hidden', editing);
+        saveBtn.classList.toggle('is-hidden', !editing);
+        cancelBtn.classList.toggle('is-hidden', !editing);
+
+        if (editing) {
+            summaryEditor.classList.remove('confirmed-ui');
+            summaryEditor.classList.add('draft-ui');
+            summaryInput.focus();
+        } else {
+            summaryEditor.classList.remove('draft-ui');
+            summaryEditor.classList.add('confirmed-ui');
+        }
+    }
+
+    function toggleItemEditMode(row, editing) {
+        const titleInput = row.querySelector('.item-title');
+        const descriptionInput = row.querySelector('.item-description');
+        const orderInput = row.querySelector('.item-order');
+        const editBtn = row.querySelector('[data-action="edit-item"]');
+        const saveBtn = row.querySelector('[data-action="update-item"]');
+        const cancelBtn = row.querySelector('[data-action="cancel-item"]');
+        const deleteBtn = row.querySelector('[data-action="delete-item"]');
+
+        titleInput.disabled = !editing;
+        descriptionInput.disabled = !editing;
+        orderInput.disabled = !editing;
+        editBtn.classList.toggle('is-hidden', editing);
+        saveBtn.classList.toggle('is-hidden', !editing);
+        cancelBtn.classList.toggle('is-hidden', !editing);
+        deleteBtn.classList.toggle('is-hidden', editing);
+
+        if (editing) {
+            row.classList.remove('confirmed-ui');
+            row.classList.add('draft-ui');
+            titleInput.focus();
+        } else {
+            row.classList.remove('draft-ui');
+            row.classList.add('confirmed-ui');
+        }
+    }
+
+    async function loadVersions() {
+        const body = await request('GET', '/admin/api/versions/latest');
+        if (!body) {
+            return;
+        }
+        const versions = body.data?.versions || [];
+        renderVersions(versions);
+    }
+
+    createVersionForm.addEventListener('input', () => {
+        createVersionForm.classList.add('draft-ui');
+    });
+
+    versionListEl.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const summaryEditor = target.closest('.summary-editor');
+        if (summaryEditor) {
+            summaryEditor.classList.remove('confirmed-ui');
+            summaryEditor.classList.add('draft-ui');
+        }
+
+        const row = target.closest('tr[data-item-id], tr[data-new-item]');
+        if (row) {
+            row.classList.remove('confirmed-ui');
+            row.classList.add('draft-ui');
+        }
+    });
+
+    createVersionForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const confirmed = await showConfirmPopup('Create this version?');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const payload = {
+                platform: document.getElementById('platform').value,
+                version: document.getElementById('version').value.trim(),
+                summary: document.getElementById('createSummary').value.trim()
+            };
+            await request('POST', '/admin/api/versions', payload);
+            createVersionForm.reset();
+            createVersionForm.classList.remove('draft-ui');
+            await loadVersions();
+            await showResultPopup('Version created.');
+        } catch (e) {
+            await showResultPopup(e.message, true);
+        }
+    });
+
+    versionListEl.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const action = target.dataset.action;
+        if (!action) {
+            return;
+        }
+
+        const versionCard = target.closest('[data-version-id]');
+        if (!versionCard) {
+            return;
+        }
+        const appVersionId = Number(versionCard.dataset.versionId);
+
+        try {
+            if (action === 'edit-summary') {
+                const summaryEditor = versionCard.querySelector('.summary-editor');
+                toggleSummaryEditMode(summaryEditor, true);
+                return;
+            }
+
+            if (action === 'cancel-summary') {
+                const summaryEditor = versionCard.querySelector('.summary-editor');
+                const summaryInput = summaryEditor.querySelector('.summary');
+                summaryInput.value = summaryInput.dataset.original ?? '';
+                toggleSummaryEditMode(summaryEditor, false);
+                return;
+            }
+
+            if (action === 'save-summary') {
+                const confirmed = await showConfirmPopup('Save summary?');
+                if (!confirmed) {
+                    return;
+                }
+                const summary = versionCard.querySelector('.summary').value.trim();
+                await request('PUT', `/admin/api/versions/${appVersionId}/summary`, {summary});
+                const summaryEditor = versionCard.querySelector('.summary-editor');
+                const summaryInput = summaryEditor.querySelector('.summary');
+                summaryInput.value = summary;
+                summaryInput.dataset.original = summary;
+                toggleSummaryEditMode(summaryEditor, false);
+                await showResultPopup('Summary saved.');
+                return;
+            }
+
+            if (action === 'create-item') {
+                const confirmed = await showConfirmPopup('Add this item?');
+                if (!confirmed) {
+                    return;
+                }
+                const newRow = target.closest('tr');
+                const payload = rowToPayload(newRow);
+                await request('POST', `/admin/api/versions/${appVersionId}/items`, payload);
+                await loadVersions();
+                await showResultPopup('Item added.');
+                return;
+            }
+
+            const row = target.closest('tr[data-item-id]');
+            if (!row) {
+                return;
+            }
+            const appVersionItemId = Number(row.dataset.itemId);
+
+            if (action === 'edit-item') {
+                toggleItemEditMode(row, true);
+                return;
+            }
+
+            if (action === 'cancel-item') {
+                const titleInput = row.querySelector('.item-title');
+                const descriptionInput = row.querySelector('.item-description');
+                const orderInput = row.querySelector('.item-order');
+
+                titleInput.value = titleInput.dataset.original ?? '';
+                descriptionInput.value = descriptionInput.dataset.original ?? '';
+                orderInput.value = orderInput.dataset.original ?? '';
+
+                toggleItemEditMode(row, false);
+                return;
+            }
+
+            if (action === 'update-item') {
+                const confirmed = await showConfirmPopup('Save item changes?');
+                if (!confirmed) {
+                    return;
+                }
+                const payload = rowToPayload(row);
+                await request('PUT', `/admin/api/versions/items/${appVersionItemId}`, payload);
+                const titleInput = row.querySelector('.item-title');
+                const descriptionInput = row.querySelector('.item-description');
+                const orderInput = row.querySelector('.item-order');
+
+                titleInput.value = payload.title;
+                descriptionInput.value = payload.description;
+                orderInput.value = String(payload.displayOrder);
+
+                titleInput.dataset.original = payload.title;
+                descriptionInput.dataset.original = payload.description;
+                orderInput.dataset.original = String(payload.displayOrder);
+
+                toggleItemEditMode(row, false);
+                await showResultPopup('Item updated.');
+                return;
+            }
+
+            if (action === 'delete-item') {
+                const confirmed = await showConfirmPopup('Delete this item?');
+                if (!confirmed) {
+                    return;
+                }
+                await request('DELETE', `/admin/api/versions/items/${appVersionItemId}`);
+                await loadVersions();
+                await showResultPopup('Item deleted.');
+            }
+        } catch (e) {
+            await showResultPopup(e.message, true);
+        }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirmPopup('Logout now?');
+        if (!confirmed) {
+            return;
+        }
+        try {
+            await request('POST', '/admin/api/logout');
+        } finally {
+            location.replace('/admin/login');
+        }
+    });
+
+    loadVersions().catch(async (e) => {
+        await showResultPopup(e.message, true);
+    });
+</script>
+</body>
+</html>
