@@ -55,13 +55,13 @@ public class CommentQueryService {
         }
         Long nextCursor = hasNext ? comments.get(comments.size() - 1).getId() : null;
 
-        Map<Long, Long> subCountMap = buildSubCountMap(comments, excludedUserIds, currentUserId, reportOwnerId);
+        Map<Long, Long> subCountMap = buildSubCountMap(comments, excludedUserIds, currentUserId);
 
         List<Long> commentIds = comments.stream().map(Comment::getId).toList();
         Set<Long> likedCommentIds = commentIds.isEmpty() ? Set.of()
                 : new HashSet<>(commentLikeRepository.findLikedCommentIds(commentIds, currentUserId));
         Set<Long> commentIdsWithLikes = commentIds.isEmpty() ? Set.of()
-                : new HashSet<>(commentLikeRepository.findCommentIdsWithLikes(commentIds));
+                : new HashSet<>(commentLikeRepository.findCommentIdsWithLikes(commentIds, excludedUserIds));
 
         List<CommentResponse> responses = comments.stream()
                 .map(c -> {
@@ -127,7 +127,7 @@ public class CommentQueryService {
         Set<Long> likedSubCommentIds = subCommentIds.isEmpty() ? Set.of()
                 : new HashSet<>(commentLikeRepository.findLikedCommentIds(subCommentIds, currentUserId));
         Set<Long> subCommentIdsWithLikes = subCommentIds.isEmpty() ? Set.of()
-                : new HashSet<>(commentLikeRepository.findCommentIdsWithLikes(subCommentIds));
+                : new HashSet<>(commentLikeRepository.findCommentIdsWithLikes(subCommentIds, excludedUserIds));
 
         List<CommentResponse> responses = subComments.stream()
                 .map(c -> {
@@ -157,31 +157,14 @@ public class CommentQueryService {
         return new CommentListResponse(responses, nextCursor, hasNext);
     }
 
-    private Map<Long, Long> buildSubCountMap(List<Comment> comments, List<Long> excludedUserIds,
-                                              Long currentUserId, Long reportOwnerId) {
+    private Map<Long, Long> buildSubCountMap(List<Comment> comments, List<Long> excludedUserIds, Long currentUserId) {
         if (comments.isEmpty()) {
             return Map.of();
         }
         List<Long> parentIds = comments.stream().map(Comment::getId).toList();
 
-        // 현재 사용자가 비밀 대댓글을 열람할 수 있는 부모 댓글 ID 목록
-        // - 리포트 소유자: 모든 부모 댓글의 비밀 대댓글 열람 가능
-        // - 그 외: 자신이 작성한 부모 댓글의 비밀 대댓글만 열람 가능
-        List<Long> visibleSecretParentIds;
-        if (currentUserId.equals(reportOwnerId)) {
-            visibleSecretParentIds = parentIds;
-        } else {
-            visibleSecretParentIds = comments.stream()
-                    .filter(c -> c.getAuthor().getId().equals(currentUserId))
-                    .map(Comment::getId)
-                    .toList();
-            if (visibleSecretParentIds.isEmpty()) {
-                visibleSecretParentIds = List.of(-1L);
-            }
-        }
-
         return commentRepository.countVisibleSubCommentsByParentIds(
-                        parentIds, excludedUserIds, currentUserId, visibleSecretParentIds)
+                        parentIds, excludedUserIds, currentUserId)
                 .stream()
                 .collect(Collectors.toMap(SubCommentCountDto::parentCommentId, SubCommentCountDto::count));
     }

@@ -27,8 +27,13 @@ public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> 
             select distinct l.comment.id
             from CommentLike l
             where l.comment.id in :commentIds
+              and l.user.id not in :excludedUserIds
+              and l.user.deletedAt is null
             """)
-    List<Long> findCommentIdsWithLikes(@Param("commentIds") List<Long> commentIds);
+    List<Long> findCommentIdsWithLikes(
+            @Param("commentIds") List<Long> commentIds,
+            @Param("excludedUserIds") List<Long> excludedUserIds
+    );
 
     @Query("""
             select l.user

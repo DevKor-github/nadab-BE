@@ -88,18 +88,12 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
               select 1 from ContentReport cr
               where cr.reporter.id = :currentUserId and cr.comment = c
           )
-          and (
-            c.secret = false
-            or c.author.id = :currentUserId
-            or c.parentComment.id in :visibleSecretParentIds
-          )
         group by c.parentComment.id
     """)
     List<SubCommentCountDto> countVisibleSubCommentsByParentIds(
             @Param("parentIds") List<Long> parentIds,
             @Param("excludedUserIds") List<Long> excludedUserIds,
-            @Param("currentUserId") Long currentUserId,
-            @Param("visibleSecretParentIds") List<Long> visibleSecretParentIds
+            @Param("currentUserId") Long currentUserId
     );
 
     @Query("""

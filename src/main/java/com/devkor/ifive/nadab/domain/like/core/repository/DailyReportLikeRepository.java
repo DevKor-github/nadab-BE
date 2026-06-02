@@ -27,8 +27,13 @@ public interface DailyReportLikeRepository extends JpaRepository<DailyReportLike
             select distinct l.dailyReport.id
             from DailyReportLike l
             where l.dailyReport.id in :reportIds
+              and l.user.id not in :excludedUserIds
+              and l.user.deletedAt is null
             """)
-    List<Long> findReportIdsWithLikes(@Param("reportIds") List<Long> reportIds);
+    List<Long> findReportIdsWithLikes(
+            @Param("reportIds") List<Long> reportIds,
+            @Param("excludedUserIds") List<Long> excludedUserIds
+    );
 
     @Query("""
             select l.user
