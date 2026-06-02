@@ -11,6 +11,7 @@ import com.devkor.ifive.nadab.domain.friend.core.repository.FriendshipRepository
 import com.devkor.ifive.nadab.domain.like.core.repository.DailyReportLikeRepository;
 import com.devkor.ifive.nadab.domain.moderation.application.SharingSuspensionService;
 import com.devkor.ifive.nadab.domain.moderation.core.repository.ContentReportRepository;
+import com.devkor.ifive.nadab.domain.moderation.core.repository.UserBlockRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +38,7 @@ public class FeedQueryService {
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
     private final ContentReportRepository contentReportRepository;
     private final SharingSuspensionService sharingSuspensionService;
+    private final UserBlockRepository userBlockRepository;
 
     public FeedListResponse getFeeds(Long userId) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
@@ -97,7 +100,8 @@ public class FeedQueryService {
             reportIdsWithLikes = Set.of();
         } else {
             likedReportIds = new HashSet<>(dailyReportLikeRepository.findLikedReportIds(allReportIds, userId));
-            reportIdsWithLikes = new HashSet<>(dailyReportLikeRepository.findReportIdsWithLikes(allReportIds));
+            reportIdsWithLikes = new HashSet<>(
+                    dailyReportLikeRepository.findReportIdsWithLikes(allReportIds, getExcludedUserIds(userId)));
         }
 
         FeedResponse myReport = myFeedDto
@@ -133,6 +137,17 @@ public class FeedQueryService {
                 likedReportIds.contains(dto.dailyReportId()),
                 reportIdsWithLikes.contains(dto.dailyReportId())
         );
+    }
+
+    private List<Long> getExcludedUserIds(Long userId) {
+        List<Long> blocked = userBlockRepository.findBlockedUserIdsBidirectional(userId);
+        List<Long> suspended = sharingSuspensionService.getAllActiveSuspendedUserIds();
+
+        Set<Long> combined = new HashSet<>(blocked);
+        combined.addAll(suspended);
+        combined.remove(userId);
+
+        return combined.isEmpty() ? List.of(-1L) : new ArrayList<>(combined);
     }
 
     private String buildProfileUrl(String profileImageKey, DefaultProfileType defaultProfileType) {
