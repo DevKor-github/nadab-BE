@@ -290,6 +290,9 @@
      th:classappend="${activeTab} == 'type' ? ' active' : ''"
      th:href="@{/stats/type}">유형</a>
   <a class="tab-link"
+     th:classappend="${activeTab} == 'withdrawal' ? ' active' : ''"
+     th:href="@{/stats/withdrawal}">탈퇴</a>
+  <a class="tab-link"
      th:classappend="${activeTab} == 'total' ? ' active' : ''"
      th:href="@{/stats/total}">전체</a>
 </div>
