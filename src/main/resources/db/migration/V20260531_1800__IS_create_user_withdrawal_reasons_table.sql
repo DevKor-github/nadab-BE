@@ -3,6 +3,7 @@ CREATE TABLE user_withdrawal_reasons (
     user_id       BIGINT       NOT NULL,
     reason        VARCHAR(50)  NOT NULL,
     custom_reason VARCHAR(200),
+    withdrawn_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_user_withdrawal_reasons_user
@@ -18,3 +19,5 @@ CREATE TABLE user_withdrawal_reasons (
 
 CREATE INDEX idx_user_withdrawal_reasons_user_id ON user_withdrawal_reasons (user_id);
 CREATE INDEX idx_user_withdrawal_reasons_reason_created_at ON user_withdrawal_reasons (reason, created_at DESC);
+CREATE INDEX idx_user_withdrawal_reasons_withdrawn_at ON user_withdrawal_reasons (withdrawn_at DESC);
+CREATE INDEX idx_user_withdrawal_reasons_user_withdrawn_at ON user_withdrawal_reasons (user_id, withdrawn_at DESC);
