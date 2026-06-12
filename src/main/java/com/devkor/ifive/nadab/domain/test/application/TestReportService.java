@@ -44,6 +44,8 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class TestReportService {
@@ -211,8 +213,13 @@ public class TestReportService {
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
 
-        MonthlyReportV2 report = monthlyReportV2Repository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate())
-                .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
+        Optional<MonthlyReportV2> reportV2 = monthlyReportV2Repository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate());
+        if (reportV2.isEmpty()) {
+            deleteMonthMonthlyReportV1(user.getEmail());
+            return;
+        }
+
+        MonthlyReportV2 report = reportV2.get();
 
         if (report.getStatus() != MonthlyReportStatus.COMPLETED) {
             throw new BadRequestException(ErrorCode.MONTHLY_REPORT_NOT_COMPLETED);
