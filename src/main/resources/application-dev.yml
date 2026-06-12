@@ -48,6 +48,10 @@ profile-image:
   env: dev
   base-url: ${PROFILE_IMAGE_BASE_URL}
 
+test:
+  account:
+    password: ${DEV_TEST_ACCOUNT_PASSWORD:}
+
 app:
   cookie:
     secure: true
