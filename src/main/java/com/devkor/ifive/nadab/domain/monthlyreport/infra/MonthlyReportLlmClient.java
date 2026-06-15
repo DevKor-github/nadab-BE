@@ -48,7 +48,7 @@ public class MonthlyReportLlmClient {
 
     public AiReportResultDto generate(
             String monthStartDate, String monthEndDate, String weeklySummaries, String representativeEntries) {
-        String prompt = monthlyReportPromptLoader.loadPrompt()
+        String prompt = monthlyReportPromptLoader.loadV1Prompt()
                 .replace("{monthStartDate}", monthStartDate)
                 .replace("{monthEndDate}", monthEndDate)
                 .replace("{weeklySummaries}", weeklySummaries)

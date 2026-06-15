@@ -44,6 +44,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
      */
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AnswerDetailDto(
+            dr.id,
             q.questionText,
             i.code,
             ae.date,
@@ -160,6 +161,35 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
         @Param("date") LocalDate date
     );
 
+    @Query("select ae.user.id from DailyReport dr join dr.answerEntry ae where dr.id = :reportId")
+    Optional<Long> findReportOwnerIdById(@Param("reportId") Long reportId);
+
+    boolean existsByIdAndIsSharedTrueAndDate(Long id, LocalDate date);
+
+    @Query("""
+        select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.FeedDto(
+            dr.id,
+            ae.user.nickname,
+            ae.user.profileImageKey,
+            ae.user.defaultProfileType,
+            ae.question.interest.code,
+            ae.question.questionText,
+            ae.content,
+            dr.emotion.code,
+            ae.imageKey
+        )
+        from DailyReport dr
+        join dr.answerEntry ae
+        where ae.user.id = :userId
+          and dr.date = :date
+          and dr.isShared = true
+          and dr.status = com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus.COMPLETED
+    """)
+    Optional<FeedDto> findMySharedFeedByDate(
+        @Param("userId") Long userId,
+        @Param("date") LocalDate date
+    );
+
     @Query("""
         select new com.devkor.ifive.nadab.domain.dailyreport.core.dto.InterestCompletedCountDto(
             i.code,
@@ -177,4 +207,8 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
             @Param("userId") Long userId,
             @Param("status") DailyReportStatus status
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE DailyReport r SET r.isShared = false WHERE r.answerEntry.user.id = :userId AND r.date = :date AND r.isShared = true")
+    int stopSharingByUserIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
 }

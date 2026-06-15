@@ -79,7 +79,7 @@ public class MonthlyReportGenerationListener {
 
             // 월간 리포트 완성 이벤트 발행
             eventPublisher.publishEvent(
-                new MonthlyReportCompletedEvent(event.reportId(), event.userId())
+                    new MonthlyReportCompletedEvent(event.reportId(), event.userId())
             );
 
         } catch (Exception e) {
@@ -103,4 +103,3 @@ public class MonthlyReportGenerationListener {
         return (s.length() <= MAX_LEN) ? s : s.substring(0, MAX_LEN);
     }
 }
-

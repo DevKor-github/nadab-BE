@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
@@ -19,6 +20,16 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
         ) then true else false end
         """)
     boolean existsByUserIds(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+
+    @Query("""
+        select case when exists (
+            select 1 from Friendship f
+            where f.user1.id = :userId1 and f.user2.id = :userId2
+              and f.status = 'ACCEPTED'
+              and f.user1.deletedAt is null and f.user2.deletedAt is null
+        ) then true else false end
+        """)
+    boolean existsAcceptedByUserIds(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
     @Query("""
         select count(f) from Friendship f
@@ -66,6 +77,16 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
             @Param("userId") Long userId,
             @Param("keyword") String keyword
     );
+
+    @Query("""
+        select f from Friendship f
+        join fetch f.user1
+        join fetch f.user2
+        where ((f.user1.id = :userId and f.user2.id in :otherIds)
+            or (f.user2.id = :userId and f.user1.id in :otherIds))
+          and f.user1.deletedAt is null and f.user2.deletedAt is null
+        """)
+    List<Friendship> findByUserIdAndOtherUserIds(@Param("userId") Long userId, @Param("otherIds") Collection<Long> otherIds);
 
     @Modifying
     @Query("""

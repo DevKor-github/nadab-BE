@@ -1,14 +1,18 @@
 package com.devkor.ifive.nadab.domain.test.api;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.DailyReportResponse;
+import com.devkor.ifive.nadab.domain.test.api.dto.request.CreateTestUserRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.PromptTestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.TestDailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
+import com.devkor.ifive.nadab.domain.test.api.dto.response.CreateTestUserResponse;
 import com.devkor.ifive.nadab.domain.test.api.dto.response.TestDailyReportResponse;
 import com.devkor.ifive.nadab.domain.test.application.TestReportService;
+import com.devkor.ifive.nadab.domain.test.application.TestUserService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,6 +36,17 @@ import org.springframework.web.bind.annotation.*;
 public class TestController {
 
     private final TestReportService testReportService;
+    private final TestUserService testUserService;
+
+    @Hidden
+    @PostMapping("/users")
+    @PermitAll
+    public ResponseEntity<ApiResponseDto<CreateTestUserResponse>> createTestUser(
+            @Valid @RequestBody CreateTestUserRequest request
+    ) {
+        CreateTestUserResponse response = testUserService.createTestUser(request);
+        return ApiResponseEntity.ok(response);
+    }
 
     @PostMapping("/generate/daily-report")
     @PermitAll
@@ -207,6 +222,15 @@ public class TestController {
             @PathVariable String interestCode
     ) {
         testReportService.deleteTypeReport(principal.getId(), interestCode);
+        return ApiResponseEntity.noContent();
+    }
+
+    @Hidden
+    @PostMapping("/delete/monthly-report-v1")
+    public ResponseEntity<ApiResponseDto<Void>> deleteMonthlyReportV1(
+            @RequestParam String email
+    ) {
+        testReportService.deleteMonthMonthlyReportV1(email);
         return ApiResponseEntity.noContent();
     }
 }

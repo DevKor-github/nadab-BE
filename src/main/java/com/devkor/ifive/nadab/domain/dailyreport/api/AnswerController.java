@@ -99,6 +99,7 @@ public class AnswerController {
             description = """
                     답변 ID로 해당 답변의 상세 정보와 리포트를 조회합니다.
 
+                    - 일간 리포트 ID (dailyReportId, 리포트 없으면 null)
                     - 질문 내용 (questionText)
                     - 질문 카테고리 (interestCode)
                     - 답변 작성일 (answerDate)
@@ -206,6 +207,7 @@ public class AnswerController {
                     특정 날짜의 답변 전체 정보를 조회합니다.
 
                     응답 데이터:
+                    - 일간 리포트 ID (dailyReportId, 리포트 없으면 null)
                     - 질문 내용 (questionText)
                     - 질문 카테고리 (interestCode)
                     - 답변 작성일 (answerDate)

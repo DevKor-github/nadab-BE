@@ -8,6 +8,9 @@ import java.time.LocalDate;
 @Schema(description = "답변 상세 조회 응답")
 public record AnswerDetailResponse(
 
+        @Schema(description = "일간 리포트 ID (댓글·좋아요 조회 시 사용)", example = "42")
+        Long dailyReportId,
+
         @Schema(description = "질문 내용", example = "오늘 가장 기뻤던 순간은?")
         String questionText,
 
@@ -31,6 +34,7 @@ public record AnswerDetailResponse(
 ) {
     public static AnswerDetailResponse from(AnswerDetailDto dto, String imageUrl) {
         return new AnswerDetailResponse(
+                dto.dailyReportId(),
                 dto.questionText(),
                 dto.interestCode() != null ? dto.interestCode().name() : null,
                 dto.answerDate(),

@@ -30,9 +30,11 @@ public class MonthlyReportController {
     private final MonthlyReportService monthlyReportService;
     private final MonthlyReportQueryService monthlyReportQueryService;
 
+    @Deprecated(since = "2026-05-15", forRemoval = true)
     @PostMapping("/start")
     @PreAuthorize("isAuthenticated()")
     @Operation(
+            deprecated = true,
             summary = "월간 리포트 생성 시작",
             description = """
                     사용자의 (지난 달에 대한) 월간 리포트 생성을 시작합니다. </br>
@@ -83,9 +85,11 @@ public class MonthlyReportController {
         return ApiResponseEntity.ok(response);
     }
 
+    @Deprecated(since = "2026-05-15", forRemoval = true)
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(
+            deprecated = true,
             summary = "나의 월간 리포트 조회",
             description = """
                     사용자의 (지난 달에 대한) 월간 리포트와 이전 월간 리포트를 조회합니다. </br>

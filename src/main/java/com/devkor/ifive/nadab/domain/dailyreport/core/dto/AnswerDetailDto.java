@@ -10,6 +10,7 @@ import java.time.LocalDate;
  * Repository 쿼리 결과를 담는 DTO
  */
 public record AnswerDetailDto(
+        Long dailyReportId,
         String questionText,
         InterestCode interestCode,
         LocalDate answerDate,

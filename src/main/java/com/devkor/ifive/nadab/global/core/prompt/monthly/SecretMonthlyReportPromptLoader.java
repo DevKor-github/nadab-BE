@@ -14,16 +14,57 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SecretMonthlyReportPromptLoader implements MonthlyReportPromptLoader {
 
-    @Value("${MONTHLY_PROMPT}")
-    private String rawPrompt;
+    @Value("${MONTHLY_V1_PROMPT}")
+    private String monthlyV1Prompt;
+
+    @Value("${MONTHLY_V2_BASELINE_PROMPT}")
+    private String monthlyV2BaselinePrompt;
 
     @Override
-    public String loadPrompt() {
-        if (rawPrompt == null || rawPrompt.isBlank()) {
-            log.error("환경 변수 MONTHLY_PROMPT가 비어있습니다.");
+    public String loadV1Prompt() {
+        if (monthlyV1Prompt == null ||  monthlyV1Prompt.isBlank()) {
+            log.error("환경 변수 MONTHLY_V1_PROMPT가 비어있습니다.");
             throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_ENV_VAR_NOT_SET);
         }
 
-        return rawPrompt;
+        return monthlyV1Prompt;
+    }
+
+    @Override
+    public String loadV2BaselinePrompt() {
+        if (monthlyV2BaselinePrompt == null || monthlyV2BaselinePrompt.isBlank()) {
+            log.error("환경 변수 MONTHLY_V2_BASELINE_PROMPT가 비어있습니다.");
+            throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_ENV_VAR_NOT_SET);
+        }
+
+        return monthlyV2BaselinePrompt;
+    }
+
+    @Override
+    public String loadImagePrompt() {
+        return """
+                Create a premium abstract monthly self-reflection cover image for a Korean journaling app.
+               
+                Report context:
+                - Monthly summary: %s
+                - Gentle comment summary: %s
+                - Dominant keyword: %s
+                - Month: %s to %s
+               
+                Task:
+                Create a symbolic, abstract cover image that represents the emotional meaning of this monthly report. Do not use a fixed scene. Choose objects, colors, light, space, and composition that naturally match the report's theme.
+               
+                The image should feel calm, warm, reflective, comforting, refined, and suitable for a premium mobile app monthly report card.
+               
+                Style:
+                Premium editorial illustration, modern app-friendly aesthetic, soft lighting, subtle texture, refined color palette, clean composition, enough negative space.
+               
+                Strict constraints:
+                No people, no faces, no hands, no body parts.
+                No readable text, no letters, no Korean characters, no English characters, no numbers, no symbols, no handwriting, no typography.
+                No UI, no logos, no brand marks, no watermarks.
+                No medical, therapy, counseling, hospital, or diagnosis-related imagery.
+                No dark, horror, gloomy, childish, or overly dramatic mood.
+               """;
     }
 }

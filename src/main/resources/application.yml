@@ -83,8 +83,22 @@ app:
     secure: false
     same-site: Lax
 
+admin:
+  page:
+    password: ${ADMIN_PAGE_PASSWORD}
+    token-expiration-seconds: 43200
+    cookie-name: admin_auth
+
 api_prefix: /api/v1
 
 firebase:
   admin:
     key-base64: ${FIREBASE_ADMIN_KEY}
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+  image:
+    model: gpt-image-1.5
+    size: 1024x1024
+    quality: low
+    output-format: webp

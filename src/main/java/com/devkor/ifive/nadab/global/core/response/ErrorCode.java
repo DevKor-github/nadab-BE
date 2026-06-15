@@ -14,6 +14,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다"),
     FILE_STORAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "스토리지에서 해당 파일을 찾을 수 없습니다"), // S3 등 스토리지에 실제 파일 객체가 없는 경우
+    TEST_USER_PASSWORD_NOT_CONFIGURED(HttpStatus.BAD_REQUEST, "테스트 계정 비밀번호가 설정되지 않았습니다"),
 
     // ==================== AUTH (인증) ====================
     // 400 Bad Request
@@ -27,6 +28,12 @@ public enum ErrorCode {
     AUTH_RESTORE_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, "복구 가능 기간(14일)이 지났습니다"),
     AUTH_SOCIAL_ACCOUNT_RESTORE_FORBIDDEN(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 일반 계정 복구를 사용할 수 없습니다"),
     AUTH_UNSUPPORTED_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth2 제공자입니다"),
+
+    AUTH_WITHDRAWAL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "탈퇴 사유는 최소 1개 이상 선택해야 합니다"),
+    AUTH_WITHDRAWAL_REASON_DUPLICATED(HttpStatus.BAD_REQUEST, "탈퇴 사유는 중복 선택할 수 없습니다"),
+    AUTH_WITHDRAWAL_OTHER_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "기타 사유를 선택한 경우 직접 입력이 필요합니다"),
+    AUTH_WITHDRAWAL_OTHER_REASON_TOO_LONG(HttpStatus.BAD_REQUEST, "기타 사유는 200자 이하로 입력해야 합니다"),
+    AUTH_WITHDRAWAL_OTHER_REASON_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "기타 사유는 OTHER 선택 시에만 입력할 수 있습니다"),
 
     // 401 Unauthorized
     AUTH_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다"),
@@ -165,6 +172,7 @@ public enum ErrorCode {
     // 404 Not Found
     MONTHLY_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "월간 리포트를 찾을 수 없습니다"),
     MONTHLY_REPORT_NOT_COMPLETED(HttpStatus.NOT_FOUND, "해당 월간 리포트가 아직 생성 완료되지 않았습니다"),
+    MONTHLY_REPORT_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인 월간 리포트만 조회할 수 있습니다"),
 
     // 409 Conflict
     MONTHLY_REPORT_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 작성된 월간 리포트가 존재합니다"),
@@ -391,7 +399,44 @@ public enum ErrorCode {
     CONTENT_REPORT_SELF_REPORT_FORBIDDEN(HttpStatus.BAD_REQUEST, "자신의 게시글은 신고할 수 없습니다"),
 
     // 409 Conflict
-    CONTENT_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 게시글입니다");
+    CONTENT_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 게시글입니다"),
+
+    // ==================== MODERATION (소셜 정지) ====================
+    // 400 Bad Request
+    SOCIAL_SUSPENDED(HttpStatus.BAD_REQUEST, "소셜 활동이 정지된 상태입니다"),
+
+    // ==================== COMMENT (댓글) ====================
+    // 400 Bad Request
+    COMMENT_NOT_TOP_LEVEL(HttpStatus.BAD_REQUEST, "대댓글에는 답글을 달 수 없습니다"),
+
+    // 404 Not Found
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다"),
+
+    // 409 Conflict
+    COMMENT_DELETED(HttpStatus.CONFLICT, "이미 삭제된 댓글입니다"),
+
+    // ==================== LIKE (좋아요) ====================
+    // 400 Bad Request
+    CANNOT_LIKE_OWN_CONTENT(HttpStatus.BAD_REQUEST, "본인의 게시글/댓글에는 좋아요를 누를 수 없습니다"),
+
+    // 403 Forbidden
+    DAILY_REPORT_LIKE_LIST_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 게시글 좋아요 리스트만 조회할 수 있습니다"),
+
+    // 404 Not Found
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요를 찾을 수 없습니다"),
+
+    // ==================== APP_VERSION (앱 버전) ====================
+    // 404 Not Found
+    APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전을 찾을 수 없습니다"),
+    APP_VERSION_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전 항목을 찾을 수 없습니다"),
+
+    // 409 Conflict
+    APP_VERSION_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 플랫폼의 같은 버전이 이미 존재합니다"),
+    APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED(HttpStatus.CONFLICT, "같은 버전 내 displayOrder가 중복됩니다"),
+
+    // ==================== ADMIN (어드민) ====================
+    // 401 Unauthorized
+    ADMIN_PAGE_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "관리자 페이지 비밀번호가 올바르지 않습니다");
 
 
     private final HttpStatus httpStatus;

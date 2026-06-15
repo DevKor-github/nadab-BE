@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.application;
 
+import com.devkor.ifive.nadab.domain.appversion.application.AppVersionQueryService;
+import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.HomeLatestVersionResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.HomeResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryQueryRepository;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
@@ -27,6 +29,7 @@ public class HomeQueryService {
     private final AnswerEntryQueryRepository answerEntryQueryRepository;
     private final UserDailyQuestionRepository userDailyQuestionRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final AppVersionQueryService appVersionQueryService;
 
     public HomeResponse getHomeData(Long userId) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
@@ -71,12 +74,15 @@ public class HomeQueryService {
         }
 
         // 7. 응답 생성
+        HomeLatestVersionResponse latestVersion = appVersionQueryService.getHomeLatestVersion(userId);
+
         return new HomeResponse(
                 weeklyAnsweredDates,
                 currentStreak,
                 totalAnsweredDays,
                 answeredFriendProfiles,
-                answeredFriendCount
+                answeredFriendCount,
+                latestVersion
         );
     }
 

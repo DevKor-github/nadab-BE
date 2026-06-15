@@ -20,12 +20,15 @@ import java.time.LocalDate;
 public class PendingMonthlyReportService {
 
     private final MonthlyReportRepository monthlyReportRepository;
+    private final MonthlyReportCrossVersionGuardService monthlyReportCrossVersionGuardService;
 
     @Transactional
     public MonthlyReport getOrCreatePendingMonthlyReport(User user) {
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
         LocalDate today = TodayDateTimeProvider.getTodayDate();
+
+        monthlyReportCrossVersionGuardService.validateCreatableForV1(user.getId(), range.monthStartDate());
 
         MonthlyReport report = monthlyReportRepository.findByUserIdAndMonthStartDate(user.getId(), range.monthStartDate())
                 .orElseGet(() -> monthlyReportRepository.save(MonthlyReport.createPending(
