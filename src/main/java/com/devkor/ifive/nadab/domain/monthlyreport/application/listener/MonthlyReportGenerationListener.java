@@ -7,8 +7,12 @@ import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerat
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClient;
+import com.devkor.ifive.nadab.domain.reportlog.application.ReportGenerationLogRecorder;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationStep;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationType;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
+import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.shared.reportcontent.AiReportResultDto;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
@@ -27,18 +31,18 @@ import java.util.List;
 @Slf4j
 public class MonthlyReportGenerationListener {
 
+    private static final String MONTHLY_REPORT_LLM_MODEL = "GEMINI_2_5_FLASH";
+
     private final MonthlyQueryRepository monthlyQueryRepository;
 
     private final MonthlyReportLlmClient monthlyReportLlmClient;
     private final MonthlyReportTxService monthlyReportTxService;
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
+    private final ReportGenerationLogRecorder reportGenerationLogRecorder;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final int MAX_LEN = 245;
-
     @Async("monthlyReportTaskExecutor")
-    @TransactionalEventListener(phase =
-            TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(MonthlyReportGenerationRequestedEventDto event) {
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
@@ -52,11 +56,26 @@ public class MonthlyReportGenerationListener {
         String weeklySummaries = monthlyWeeklySummariesService.buildWeeklySummaries(event.userId(), range);
 
         AiReportResultDto dto;
+        Long generationLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.MONTHLY,
+                event.reportId(),
+                ReportGenerationStep.MONTHLY_GENERATE,
+                LlmProvider.GEMINI,
+                MONTHLY_REPORT_LLM_MODEL,
+                null
+        );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
             dto = monthlyReportLlmClient.generate(
-                    range.monthStartDate().toString(), range.monthEndDate().toString(), weeklySummaries, representativeEntries);
+                    range.monthStartDate().toString(),
+                    range.monthEndDate().toString(),
+                    weeklySummaries,
+                    representativeEntries
+            );
+            reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(generationLogId, e);
             log.error("[MONTHLY_REPORT][LLM_FAILED] userId={}, reportId={}",
                     event.userId(), event.reportId(), e);
 
@@ -69,7 +88,15 @@ public class MonthlyReportGenerationListener {
             return;
         }
 
-        // 성공 확정(별도 트랜잭션)
+        Long confirmLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.MONTHLY,
+                event.reportId(),
+                ReportGenerationStep.MONTHLY_CONFIRM,
+                null,
+                null,
+                null
+        );
         try {
             monthlyReportTxService.confirmMonthly(
                     event.reportId(),
@@ -81,8 +108,10 @@ public class MonthlyReportGenerationListener {
             eventPublisher.publishEvent(
                     new MonthlyReportCompletedEvent(event.reportId(), event.userId())
             );
+            reportGenerationLogRecorder.succeed(confirmLogId);
 
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(confirmLogId, e);
             log.error("[MONTHLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
                     event.userId(), event.reportId(), event.crystalLogId(), e);
 
@@ -93,13 +122,5 @@ public class MonthlyReportGenerationListener {
                     event.crystalLogId()
             );
         }
-
-    }
-
-    // 최대 길이 자르기
-    private String cut(String s) {
-        if (s == null) return null;
-        s = s.trim();
-        return (s.length() <= MAX_LEN) ? s : s.substring(0, MAX_LEN);
     }
 }
