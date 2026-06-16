@@ -9,7 +9,6 @@ CREATE TABLE report_generation_logs (
     llm_model VARCHAR(128),
     error_code VARCHAR(128),
     exception_class VARCHAR(255),
-    error_message TEXT,
     http_status INTEGER,
     external_error_code VARCHAR(128),
     elapsed_ms BIGINT,

@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BusinessException;
+import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +58,9 @@ public class ReportGenerationLogService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long logId, Exception exception) {
-        fail(logId, exception, null, null);
+        Integer externalHttpStatus = extractExternalHttpStatus(exception);
+        String externalErrorCode = extractExternalErrorCode(exception);
+        fail(logId, exception, externalHttpStatus, externalErrorCode);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -70,7 +73,6 @@ public class ReportGenerationLogService {
                     log.fail(
                             errorCode == null ? null : errorCode.getCode(),
                             exception == null ? null : cut(exception.getClass().getName(), 255),
-                            exception == null ? null : exception.getMessage(),
                             resolvedHttpStatus,
                             externalErrorCode
                     );
@@ -89,6 +91,20 @@ public class ReportGenerationLogService {
             return null;
         }
         return errorCode.getHttpStatus().value();
+    }
+
+    private Integer extractExternalHttpStatus(Exception exception) {
+        if (exception instanceof AiServiceUnavailableException aiException) {
+            return aiException.getExternalHttpStatus();
+        }
+        return null;
+    }
+
+    private String extractExternalErrorCode(Exception exception) {
+        if (exception instanceof AiServiceUnavailableException aiException) {
+            return aiException.getExternalErrorCode();
+        }
+        return null;
     }
 
     private String cut(String value, int maxLength) {

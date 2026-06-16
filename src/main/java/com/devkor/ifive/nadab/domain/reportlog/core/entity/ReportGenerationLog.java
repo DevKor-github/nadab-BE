@@ -70,9 +70,6 @@ public class ReportGenerationLog extends CreatableEntity {
     @Column(name = "exception_class", length = 255)
     private String exceptionClass;
 
-    @Column(name = "error_message", columnDefinition = "TEXT")
-    private String errorMessage;
-
     @Column(name = "http_status")
     private Integer httpStatus;
 
@@ -131,14 +128,12 @@ public class ReportGenerationLog extends CreatableEntity {
     public void fail(
             String errorCode,
             String exceptionClass,
-            String errorMessage,
             Integer httpStatus,
             String externalErrorCode
     ) {
         this.status = ReportGenerationLogStatus.FAILED;
         this.errorCode = errorCode;
         this.exceptionClass = exceptionClass;
-        this.errorMessage = errorMessage;
         this.httpStatus = httpStatus;
         this.externalErrorCode = externalErrorCode;
         finish();
