@@ -79,12 +79,6 @@ public class ReportGenerationLog extends CreatableEntity {
     @Column(name = "elapsed_ms")
     private Long elapsedMs;
 
-    @Column(name = "prompt_chars")
-    private Integer promptChars;
-
-    @Column(name = "response_chars")
-    private Integer responseChars;
-
     @Type(JsonType.class)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private JsonNode metadata;
@@ -102,7 +96,6 @@ public class ReportGenerationLog extends CreatableEntity {
             ReportGenerationStep step,
             LlmProvider llmProvider,
             String llmModel,
-            Integer promptChars,
             JsonNode metadata
     ) {
         ReportGenerationLog log = new ReportGenerationLog();
@@ -113,15 +106,13 @@ public class ReportGenerationLog extends CreatableEntity {
         log.status = ReportGenerationLogStatus.STARTED;
         log.llmProvider = llmProvider;
         log.llmModel = llmModel;
-        log.promptChars = promptChars;
         log.metadata = metadata;
         log.startedAt = OffsetDateTime.now();
         return log;
     }
 
-    public void succeed(Integer responseChars) {
+    public void succeed() {
         this.status = ReportGenerationLogStatus.SUCCEEDED;
-        this.responseChars = responseChars;
         finish();
     }
 

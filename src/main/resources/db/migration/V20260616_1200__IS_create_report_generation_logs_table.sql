@@ -12,8 +12,6 @@ CREATE TABLE report_generation_logs (
     http_status INTEGER,
     external_error_code VARCHAR(128),
     elapsed_ms BIGINT,
-    prompt_chars INTEGER,
-    response_chars INTEGER,
     metadata JSONB,
     started_at TIMESTAMPTZ NOT NULL,
     ended_at TIMESTAMPTZ,

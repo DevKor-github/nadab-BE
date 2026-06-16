@@ -31,7 +31,6 @@ public class ReportGenerationLogService {
             ReportGenerationStep step,
             LlmProvider llmProvider,
             String llmModel,
-            Integer promptChars,
             JsonNode metadata
     ) {
         User user = userId == null ? null : userRepository.findById(userId).orElse(null);
@@ -43,7 +42,6 @@ public class ReportGenerationLogService {
                 step,
                 llmProvider,
                 llmModel,
-                promptChars,
                 metadata
         );
 
@@ -51,9 +49,9 @@ public class ReportGenerationLogService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void succeed(Long logId, Integer responseChars) {
+    public void succeed(Long logId) {
         reportGenerationLogRepository.findById(logId)
-                .ifPresent(log -> log.succeed(responseChars));
+                .ifPresent(ReportGenerationLog::succeed);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
