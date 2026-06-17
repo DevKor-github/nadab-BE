@@ -24,12 +24,3 @@ ALTER TABLE report_generation_logs
 
 CREATE INDEX idx_report_generation_logs_report
     ON report_generation_logs(report_type, report_id, created_at DESC);
-
-CREATE INDEX idx_report_generation_logs_user_created_at
-    ON report_generation_logs(user_id, created_at DESC);
-
-CREATE INDEX idx_report_generation_logs_status_created_at
-    ON report_generation_logs(status, created_at DESC);
-
-CREATE INDEX idx_report_generation_logs_error_code_created_at
-    ON report_generation_logs(error_code, created_at DESC);
