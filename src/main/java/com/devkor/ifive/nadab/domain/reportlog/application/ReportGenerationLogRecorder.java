@@ -4,7 +4,6 @@ import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationLog;
 import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationStep;
 import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationType;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,8 +21,7 @@ public class ReportGenerationLogRecorder {
             Long reportId,
             ReportGenerationStep step,
             LlmProvider llmProvider,
-            String llmModel,
-            JsonNode metadata
+            String llmModel
     ) {
         try {
             ReportGenerationLog log = reportGenerationLogService.start(
@@ -32,8 +30,7 @@ public class ReportGenerationLogRecorder {
                     reportId,
                     step,
                     llmProvider,
-                    llmModel,
-                    metadata
+                    llmModel
             );
             return log.getId();
         } catch (Exception e) {

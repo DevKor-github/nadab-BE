@@ -10,7 +10,6 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BusinessException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -30,8 +29,7 @@ public class ReportGenerationLogService {
             Long reportId,
             ReportGenerationStep step,
             LlmProvider llmProvider,
-            String llmModel,
-            JsonNode metadata
+            String llmModel
     ) {
         User user = userId == null ? null : userRepository.findById(userId).orElse(null);
 
@@ -41,8 +39,7 @@ public class ReportGenerationLogService {
                 reportId,
                 step,
                 llmProvider,
-                llmModel,
-                metadata
+                llmModel
         );
 
         return reportGenerationLogRepository.save(log);

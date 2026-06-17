@@ -122,8 +122,7 @@ public class TypeReportGenerationListener {
                 event.reportId(),
                 ReportGenerationStep.TYPE_EVIDENCE_CARDS,
                 LlmProvider.OPENAI,
-                TYPE_REPORT_OPENAI_MODEL,
-                null
+                TYPE_REPORT_OPENAI_MODEL
         );
         try {
             cards = evidenceCardGenerationService.generate(recentEntries);
@@ -144,8 +143,7 @@ public class TypeReportGenerationListener {
                 event.reportId(),
                 ReportGenerationStep.TYPE_PATTERN_EXTRACTION,
                 LlmProvider.OPENAI,
-                TYPE_REPORT_OPENAI_MODEL,
-                null
+                TYPE_REPORT_OPENAI_MODEL
         );
         try {
             patterns = patternExtractionService.extract(cards);
@@ -178,8 +176,7 @@ public class TypeReportGenerationListener {
                 event.reportId(),
                 ReportGenerationStep.TYPE_SELECTION,
                 LlmProvider.OPENAI,
-                TYPE_REPORT_OPENAI_MODEL,
-                null
+                TYPE_REPORT_OPENAI_MODEL
         );
         try {
             selection = typeSelectionService.select(candidates, patterns);
@@ -213,8 +210,7 @@ public class TypeReportGenerationListener {
                 event.reportId(),
                 ReportGenerationStep.TYPE_CONTENT_GENERATION,
                 LlmProvider.GEMINI,
-                TYPE_REPORT_GEMINI_MODEL,
-                null
+                TYPE_REPORT_GEMINI_MODEL
         );
         try {
             content = typeReportContentGenerationService.generate(
@@ -239,7 +235,6 @@ public class TypeReportGenerationListener {
                 ReportGenerationType.TYPE,
                 event.reportId(),
                 ReportGenerationStep.TYPE_CONFIRM,
-                null,
                 null,
                 null
         );

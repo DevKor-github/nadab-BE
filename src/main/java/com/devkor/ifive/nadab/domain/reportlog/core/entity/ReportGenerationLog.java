@@ -3,8 +3,6 @@ package com.devkor.ifive.nadab.domain.reportlog.core.entity;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.shared.entity.CreatableEntity;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -20,7 +18,6 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Type;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -79,10 +76,6 @@ public class ReportGenerationLog extends CreatableEntity {
     @Column(name = "elapsed_ms")
     private Long elapsedMs;
 
-    @Type(JsonType.class)
-    @Column(name = "metadata", columnDefinition = "jsonb")
-    private JsonNode metadata;
-
     @Column(name = "started_at", nullable = false)
     private OffsetDateTime startedAt;
 
@@ -95,8 +88,7 @@ public class ReportGenerationLog extends CreatableEntity {
             Long reportId,
             ReportGenerationStep step,
             LlmProvider llmProvider,
-            String llmModel,
-            JsonNode metadata
+            String llmModel
     ) {
         ReportGenerationLog log = new ReportGenerationLog();
         log.user = user;
@@ -106,7 +98,6 @@ public class ReportGenerationLog extends CreatableEntity {
         log.status = ReportGenerationLogStatus.STARTED;
         log.llmProvider = llmProvider;
         log.llmModel = llmModel;
-        log.metadata = metadata;
         log.startedAt = OffsetDateTime.now();
         return log;
     }

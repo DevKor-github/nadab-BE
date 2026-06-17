@@ -50,8 +50,7 @@ class ReportGenerationLogServiceTest {
                 100L,
                 ReportGenerationStep.DAILY_GENERATE,
                 LlmProvider.OPENAI,
-                "GPT_4_O_MINI",
-                null
+                "GPT_4_O_MINI"
         );
 
         // then
@@ -115,8 +114,7 @@ class ReportGenerationLogServiceTest {
                 100L,
                 ReportGenerationStep.DAILY_GENERATE,
                 LlmProvider.OPENAI,
-                "GPT_4_O_MINI",
-                null
+                "GPT_4_O_MINI"
         );
     }
 }

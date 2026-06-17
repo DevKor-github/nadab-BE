@@ -99,8 +99,7 @@ public class DailyReportService {
                 prep.reportId(),
                 ReportGenerationStep.DAILY_GENERATE,
                 LlmProvider.OPENAI,
-                DAILY_REPORT_LLM_MODEL,
-                null
+                DAILY_REPORT_LLM_MODEL
         );
 
         AiDailyReportResultDto dto;

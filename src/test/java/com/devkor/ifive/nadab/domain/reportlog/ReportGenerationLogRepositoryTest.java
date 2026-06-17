@@ -93,8 +93,7 @@ class ReportGenerationLogRepositoryTest extends PostgresIntegrationTestSupport {
                 reportId,
                 step,
                 LlmProvider.OPENAI,
-                "GPT_4_O_MINI",
-                null
+                "GPT_4_O_MINI"
         );
     }
 }

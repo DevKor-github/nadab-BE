@@ -115,8 +115,7 @@ public class MonthlyReportGenerationListenerV2 {
                 event.reportId(),
                 ReportGenerationStep.MONTHLY_V2_GENERATE,
                 LlmProvider.GEMINI,
-                MONTHLY_REPORT_V2_LLM_MODEL,
-                null
+                MONTHLY_REPORT_V2_LLM_MODEL
         );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
@@ -148,7 +147,6 @@ public class MonthlyReportGenerationListenerV2 {
                 ReportGenerationType.MONTHLY_V2,
                 event.reportId(),
                 ReportGenerationStep.MONTHLY_V2_TEXT_CONFIRM,
-                null,
                 null,
                 null
         );
@@ -183,7 +181,6 @@ public class MonthlyReportGenerationListenerV2 {
                 event.reportId(),
                 ReportGenerationStep.MONTHLY_V2_IMAGE_GENERATE,
                 LlmProvider.OPENAI,
-                null,
                 null
         );
         try {
@@ -213,7 +210,6 @@ public class MonthlyReportGenerationListenerV2 {
                 ReportGenerationType.MONTHLY_V2,
                 event.reportId(),
                 ReportGenerationStep.MONTHLY_V2_CONFIRM,
-                null,
                 null,
                 null
         );

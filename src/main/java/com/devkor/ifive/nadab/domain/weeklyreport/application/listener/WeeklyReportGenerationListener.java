@@ -54,8 +54,7 @@ public class WeeklyReportGenerationListener {
                 event.reportId(),
                 ReportGenerationStep.WEEKLY_GENERATE,
                 LlmProvider.GEMINI,
-                WEEKLY_REPORT_LLM_MODEL,
-                null
+                WEEKLY_REPORT_LLM_MODEL
         );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
@@ -80,7 +79,6 @@ public class WeeklyReportGenerationListener {
                 ReportGenerationType.WEEKLY,
                 event.reportId(),
                 ReportGenerationStep.WEEKLY_CONFIRM,
-                null,
                 null,
                 null
         );

@@ -62,8 +62,7 @@ public class MonthlyReportGenerationListener {
                 event.reportId(),
                 ReportGenerationStep.MONTHLY_GENERATE,
                 LlmProvider.GEMINI,
-                MONTHLY_REPORT_LLM_MODEL,
-                null
+                MONTHLY_REPORT_LLM_MODEL
         );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
@@ -93,7 +92,6 @@ public class MonthlyReportGenerationListener {
                 ReportGenerationType.MONTHLY,
                 event.reportId(),
                 ReportGenerationStep.MONTHLY_CONFIRM,
-                null,
                 null,
                 null
         );
