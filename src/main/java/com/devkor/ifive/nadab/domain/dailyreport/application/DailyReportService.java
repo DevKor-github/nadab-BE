@@ -16,6 +16,9 @@ import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.repository.DailyQuestionRepository;
 import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionRepository;
+import com.devkor.ifive.nadab.domain.reportlog.application.ReportGenerationLogRecorder;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationStep;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationType;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
@@ -25,6 +28,7 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 
+import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +42,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DailyReportService {
 
+    private static final String DAILY_REPORT_LLM_MODEL = "GPT_4_O_MINI";
+
     private final UserRepository userRepository;
     private final DailyQuestionRepository dailyQuestionRepository;
     private final UserDailyQuestionRepository userDailyQuestionRepository;
@@ -46,6 +52,7 @@ public class DailyReportService {
     private final ProfileImageService profileImageService;
 
     private final DailyReportLlmClient dailyReportLlmClient;
+    private final ReportGenerationLogRecorder reportGenerationLogRecorder;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -86,11 +93,21 @@ public class DailyReportService {
         PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer(), isDayPassed, request.objectKey());
 
         AnswerEntry answerEntry = prep.entry();
+        Long generationLogId = reportGenerationLogRecorder.start(
+                userId,
+                ReportGenerationType.DAILY,
+                prep.reportId(),
+                ReportGenerationStep.DAILY_GENERATE,
+                LlmProvider.OPENAI,
+                DAILY_REPORT_LLM_MODEL
+        );
 
         AiDailyReportResultDto dto;
         try {
             dto = dailyReportLlmClient.generate(question.getQuestionText(), answerEntry);
+            reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(generationLogId, e);
             dailyReportTxService.failDaily(prep.reportId());
             throw e;
         }
@@ -174,4 +191,5 @@ public class DailyReportService {
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
+
 }
