@@ -147,7 +147,7 @@ jobs:
             ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             GOOGLE_GENAI_API_KEY="${{ secrets.GOOGLE_GENAI_API_KEY }}" \
             FIREBASE_ADMIN_KEY="${{ secrets.FIREBASE_ADMIN_KEY }}" \
-            ADMIN_PAGE_PASSWORD="${{ secrets.ADMIN_PAGE_PASSWORD }}" \
+            ADMIN_PAGE_PASSWORD='${{ secrets.ADMIN_PAGE_PASSWORD }}' \
             DEV_TEST_ACCOUNT_PASSWORD="${{ secrets.DEV_TEST_ACCOUNT_PASSWORD }}" \
             nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=dev > app.log 2>&1 &
