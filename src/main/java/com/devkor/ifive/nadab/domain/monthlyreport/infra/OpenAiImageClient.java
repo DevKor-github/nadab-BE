@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.global.core.prompt.monthly.MonthlyReportPromptLoad
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,10 +87,10 @@ public class OpenAiImageClient {
         } catch (WebClientResponseException e) {
             log.error("[OPENAI_IMAGE][HTTP_ERROR] userId={}, status={}, responseBody={}",
                     userId, e.getStatusCode().value(), truncate(e.getResponseBodyAsString()), e);
-            throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
+            throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         } catch (Exception e) {
             log.error("[OPENAI_IMAGE][CALL_FAILED] userId={}, message={}", userId, e.getMessage(), e);
-            throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
+            throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
 
         if (response == null) {
