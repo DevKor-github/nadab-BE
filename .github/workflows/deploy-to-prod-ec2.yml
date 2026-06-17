@@ -117,6 +117,7 @@ jobs:
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
             JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             FRONTEND_PROD_URL="${{ secrets.FRONTEND_PROD_URL }}" \
+            FRONTEND_PROD_URL_2="${{ secrets.FRONTEND_PROD_URL_2 }}" \
             NAVER_CLIENT_ID="${{ secrets.NAVER_CLIENT_ID }}" \
             NAVER_CLIENT_SECRET="${{ secrets.NAVER_CLIENT_SECRET }}" \
             NAVER_REDIRECT_URI="${{ secrets.NAVER_REDIRECT_URI }}" \
