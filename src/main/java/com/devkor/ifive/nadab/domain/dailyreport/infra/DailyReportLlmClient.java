@@ -9,6 +9,7 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,11 +58,16 @@ public class DailyReportLlmClient {
 
         UserMessage userMessage = buildUserMessage(prompt, withImagePrompt,answerEntry);
 
-        String content = chatClient.prompt()
-                .messages(userMessage)
-                .options(options)
-                .call()
-                .content();
+        String content;
+        try {
+            content = chatClient.prompt()
+                    .messages(userMessage)
+                    .options(options)
+                    .call()
+                    .content();
+        } catch (Exception e) {
+            throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
+        }
 
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);

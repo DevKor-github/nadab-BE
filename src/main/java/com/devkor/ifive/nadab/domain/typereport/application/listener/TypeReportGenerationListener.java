@@ -1,6 +1,9 @@
 package com.devkor.ifive.nadab.domain.typereport.application.listener;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
+import com.devkor.ifive.nadab.domain.reportlog.application.ReportGenerationLogRecorder;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationStep;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationType;
 import com.devkor.ifive.nadab.domain.typereport.application.TypeReportTxService;
 import com.devkor.ifive.nadab.domain.typereport.application.event.TypeReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeEmotionStatsCalculator;
@@ -21,6 +24,7 @@ import com.devkor.ifive.nadab.domain.typereport.core.service.TypeReportContentGe
 import com.devkor.ifive.nadab.domain.typereport.core.service.TypeSelectionService;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
+import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,6 +41,10 @@ import java.util.List;
 @Slf4j
 public class TypeReportGenerationListener {
 
+    private static final String TYPE_REPORT_OPENAI_MODEL = "GPT_4_O_MINI";
+    private static final String TYPE_REPORT_GEMINI_MODEL = "GEMINI_2_5_FLASH";
+    private static final int RECENT_N = 30;
+
     private final TypeReportTxService typeReportTxService;
 
     // reportId -> interestCode 얻기 위해 필요 (PENDING row에 interest_code 있음)
@@ -52,9 +60,8 @@ public class TypeReportGenerationListener {
     private final TypeSelectionService typeSelectionService;                       // Step3
     private final TypeReportContentGenerationService typeReportContentGenerationService; // Step4
 
+    private final ReportGenerationLogRecorder reportGenerationLogRecorder;
     private final ApplicationEventPublisher eventPublisher;
-
-    private static final int RECENT_N = 30;
 
     @Async("typeReportTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -109,9 +116,19 @@ public class TypeReportGenerationListener {
 
         // 2) Step1: Evidence Cards 생성
         List<EvidenceCardDto> cards;
+        Long evidenceLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.TYPE,
+                event.reportId(),
+                ReportGenerationStep.TYPE_EVIDENCE_CARDS,
+                LlmProvider.OPENAI,
+                TYPE_REPORT_OPENAI_MODEL
+        );
         try {
             cards = evidenceCardGenerationService.generate(recentEntries);
+            reportGenerationLogRecorder.succeed(evidenceLogId);
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(evidenceLogId, e);
             log.error("[TYPE_REPORT][STEP1_FAILED] userId={}, reportId={}, interest={}",
                     event.userId(), event.reportId(), interestCode, e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
@@ -120,9 +137,19 @@ public class TypeReportGenerationListener {
 
         // 3) Step2 Patterns Extraction
         PatternExtractionResultDto patterns;
+        Long patternLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.TYPE,
+                event.reportId(),
+                ReportGenerationStep.TYPE_PATTERN_EXTRACTION,
+                LlmProvider.OPENAI,
+                TYPE_REPORT_OPENAI_MODEL
+        );
         try {
             patterns = patternExtractionService.extract(cards);
+            reportGenerationLogRecorder.succeed(patternLogId);
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(patternLogId, e);
             log.error("[TYPE_REPORT][STEP2_FAILED] userId={}, reportId={}, interest={}",
                     event.userId(), event.reportId(), interestCode, e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
@@ -143,9 +170,19 @@ public class TypeReportGenerationListener {
 
         // 5) Step3: 유형 선택
         TypeSelectionResultDto selection;
+        Long selectionLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.TYPE,
+                event.reportId(),
+                ReportGenerationStep.TYPE_SELECTION,
+                LlmProvider.OPENAI,
+                TYPE_REPORT_OPENAI_MODEL
+        );
         try {
             selection = typeSelectionService.select(candidates, patterns);
+            reportGenerationLogRecorder.succeed(selectionLogId);
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(selectionLogId, e);
             log.error("[TYPE_REPORT][STEP3_FAILED] userId={}, reportId={}, interest={}",
                     event.userId(), event.reportId(), interestCode, e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
@@ -167,6 +204,14 @@ public class TypeReportGenerationListener {
 
         // 6) Step4: 최종 생성
         TypeReportContentDto content;
+        Long contentLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.TYPE,
+                event.reportId(),
+                ReportGenerationStep.TYPE_CONTENT_GENERATION,
+                LlmProvider.GEMINI,
+                TYPE_REPORT_GEMINI_MODEL
+        );
         try {
             content = typeReportContentGenerationService.generate(
                     selectedType,
@@ -175,7 +220,9 @@ public class TypeReportGenerationListener {
                     emotionStats,
                     selection.analysisTypeCode()
             );
+            reportGenerationLogRecorder.succeed(contentLogId);
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(contentLogId, e);
             log.error("[TYPE_REPORT][STEP4_FAILED] userId={}, reportId={}, interest={}, code={}",
                     event.userId(), event.reportId(), interestCode, selection.analysisTypeCode(), e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());
@@ -183,6 +230,14 @@ public class TypeReportGenerationListener {
         }
 
         // 7) confirm & 저장
+        Long confirmLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.TYPE,
+                event.reportId(),
+                ReportGenerationStep.TYPE_CONFIRM,
+                null,
+                null
+        );
         try {
             typeReportTxService.confirmType(
                     event.reportId(),
@@ -204,8 +259,10 @@ public class TypeReportGenerationListener {
             eventPublisher.publishEvent(
                 new TypeReportCompletedEvent(event.reportId(), event.userId(), categoryName)
             );
+            reportGenerationLogRecorder.succeed(confirmLogId);
 
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(confirmLogId, e);
             log.error("[TYPE_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
                     event.userId(), event.reportId(), event.crystalLogId(), e);
             typeReportTxService.failAndRefundType(event.userId(), event.reportId(), event.crystalLogId());

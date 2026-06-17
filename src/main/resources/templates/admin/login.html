@@ -133,7 +133,7 @@
             return;
         }
 
-        let message = '로그인에 실패했습니다.';
+        let message = `로그인에 실패했습니다. (HTTP ${response.status})`;
         try {
             const errorBody = await response.json();
             if (errorBody && errorBody.message) {

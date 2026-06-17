@@ -1,12 +1,16 @@
 package com.devkor.ifive.nadab.domain.weeklyreport.application.listener;
 
+import com.devkor.ifive.nadab.domain.reportlog.application.ReportGenerationLogRecorder;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationStep;
+import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationType;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.WeeklyReportTxService;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.event.WeeklyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
-import com.devkor.ifive.nadab.domain.weeklyreport.infra.WeeklyReportLlmClient;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyQueryRepository;
+import com.devkor.ifive.nadab.domain.weeklyreport.infra.WeeklyReportLlmClient;
+import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.shared.reportcontent.AiReportResultDto;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
@@ -25,17 +29,17 @@ import java.util.List;
 @Slf4j
 public class WeeklyReportGenerationListener {
 
+    private static final String WEEKLY_REPORT_LLM_MODEL = "GEMINI_2_5_FLASH";
+
     private final WeeklyQueryRepository weeklyQueryRepository;
 
     private final WeeklyReportLlmClient weeklyReportLlmClient;
     private final WeeklyReportTxService weeklyReportTxService;
+    private final ReportGenerationLogRecorder reportGenerationLogRecorder;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final int MAX_LEN = 245;
-
     @Async("weeklyReportTaskExecutor")
-    @TransactionalEventListener(phase =
-            TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(WeeklyReportGenerationRequestedEventDto event) {
 
         WeekRangeDto range = WeekRangeCalculator.getLastWeekRange();
@@ -44,10 +48,20 @@ public class WeeklyReportGenerationListener {
         String entries = WeeklyEntriesAssembler.assemble(rows);
 
         AiReportResultDto dto;
+        Long generationLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.WEEKLY,
+                event.reportId(),
+                ReportGenerationStep.WEEKLY_GENERATE,
+                LlmProvider.GEMINI,
+                WEEKLY_REPORT_LLM_MODEL
+        );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
             dto = weeklyReportLlmClient.generate(range.weekStartDate().toString(), range.weekEndDate().toString(), entries);
+            reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(generationLogId, e);
             log.error("[WEEKLY_REPORT][LLM_FAILED] userId={}, reportId={}",
                     event.userId(), event.reportId(), e);
 
@@ -60,7 +74,14 @@ public class WeeklyReportGenerationListener {
             return;
         }
 
-        // 성공 확정(별도 트랜잭션)
+        Long confirmLogId = reportGenerationLogRecorder.start(
+                event.userId(),
+                ReportGenerationType.WEEKLY,
+                event.reportId(),
+                ReportGenerationStep.WEEKLY_CONFIRM,
+                null,
+                null
+        );
         try {
             weeklyReportTxService.confirmWeekly(
                     event.reportId(),
@@ -70,10 +91,12 @@ public class WeeklyReportGenerationListener {
 
             // 주간 리포트 완성 이벤트 발행
             eventPublisher.publishEvent(
-                new WeeklyReportCompletedEvent(event.reportId(), event.userId())
+                    new WeeklyReportCompletedEvent(event.reportId(), event.userId())
             );
+            reportGenerationLogRecorder.succeed(confirmLogId);
 
         } catch (Exception e) {
+            reportGenerationLogRecorder.fail(confirmLogId, e);
             log.error("[WEEKLY_REPORT][CONFIRM_FAILED] userId={}, reportId={}, crystalLogId={}",
                     event.userId(), event.reportId(), event.crystalLogId(), e);
 
@@ -84,14 +107,5 @@ public class WeeklyReportGenerationListener {
                     event.crystalLogId()
             );
         }
-
-    }
-
-    // 최대 길이 자르기
-    private String cut(String s) {
-        if (s == null) return null;
-        s = s.trim();
-        return (s.length() <= MAX_LEN) ? s : s.substring(0, MAX_LEN);
     }
 }
-

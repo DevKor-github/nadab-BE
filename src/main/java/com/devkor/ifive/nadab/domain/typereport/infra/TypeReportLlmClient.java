@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.global.core.prompt.type.report.TypeReportPromptLoa
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
 import com.devkor.ifive.nadab.global.shared.reportcontent.Mark;
@@ -74,11 +75,16 @@ public class TypeReportLlmClient {
                 .temperature(0.0)
                 .build();
 
-        String content = client.prompt()
-                .user(prompt)
-                .options(options)
-                .call()
-                .content();
+        String content;
+        try {
+            content = client.prompt()
+                    .user(prompt)
+                    .options(options)
+                    .call()
+                    .content();
+        } catch (Exception e) {
+            throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
+        }
 
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
@@ -306,7 +312,12 @@ public class TypeReportLlmClient {
                 .temperature(0.0)
                 .build();
 
-        String out = client.prompt().user(prompt).options(options).call().content();
+        String out;
+        try {
+            out = client.prompt().user(prompt).options(options).call().content();
+        } catch (Exception e) {
+            throw LlmExceptionMapper.toUnavailable(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE, e);
+        }
 
         if (out == null || out.isBlank()) {
             throw new AiServiceUnavailableException(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE);
@@ -395,7 +406,12 @@ public class TypeReportLlmClient {
                 .temperature(0.0)
                 .build();
 
-        String out = client.prompt().user(prompt).options(options).call().content();
+        String out;
+        try {
+            out = client.prompt().user(prompt).options(options).call().content();
+        } catch (Exception e) {
+            throw LlmExceptionMapper.toUnavailable(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE, e);
+        }
 
         if (out == null || out.isBlank()) {
             throw new AiServiceUnavailableException(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE);

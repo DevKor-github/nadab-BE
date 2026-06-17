@@ -16,8 +16,8 @@ public class AdminPageAuthCommandService {
     private final AdminPageProperties adminPageProperties;
 
     public void validatePassword(String rawPassword) {
-        byte[] input = rawPassword.getBytes(StandardCharsets.UTF_8);
-        byte[] expected = adminPageProperties.getPassword().getBytes(StandardCharsets.UTF_8);
+        byte[] input = rawPassword.strip().getBytes(StandardCharsets.UTF_8);
+        byte[] expected = adminPageProperties.getPassword().strip().getBytes(StandardCharsets.UTF_8);
 
         if (!MessageDigest.isEqual(input, expected)) {
             throw new UnauthorizedException(ErrorCode.ADMIN_PAGE_INVALID_PASSWORD);
