@@ -55,3 +55,4 @@ app:
 cors:
   allowed-origins:
     - ${FRONTEND_PROD_URL}
+    - ${FRONTEND_PROD_URL_2}
