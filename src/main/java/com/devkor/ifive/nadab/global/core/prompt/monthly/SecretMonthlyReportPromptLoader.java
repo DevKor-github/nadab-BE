@@ -20,6 +20,9 @@ public class SecretMonthlyReportPromptLoader implements MonthlyReportPromptLoade
     @Value("${MONTHLY_V2_BASELINE_PROMPT}")
     private String monthlyV2BaselinePrompt;
 
+    @Value("${MONTHLY_V2_COMPARISON_PROMPT}")
+    private String monthlyV2ComparisonPrompt;
+
     @Override
     public String loadV1Prompt() {
         if (monthlyV1Prompt == null ||  monthlyV1Prompt.isBlank()) {
@@ -38,6 +41,16 @@ public class SecretMonthlyReportPromptLoader implements MonthlyReportPromptLoade
         }
 
         return monthlyV2BaselinePrompt;
+    }
+
+    @Override
+    public String loadV2ComparisonPrompt() {
+        if (monthlyV2ComparisonPrompt == null || monthlyV2ComparisonPrompt.isBlank()) {
+            log.error("환경 변수 MONTHLY_V2_COMPARISON_PROMPT가 비어있습니다.");
+            throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_ENV_VAR_NOT_SET);
+        }
+
+        return monthlyV2ComparisonPrompt;
     }
 
     @Override

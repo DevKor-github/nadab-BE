@@ -14,6 +14,7 @@ import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
 import com.devkor.ifive.nadab.global.shared.reportcontent.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -48,6 +49,11 @@ public class MonthlyReportLlmClientV2 {
     private static final int MIN_SUMMARY = 8;
     private static final int MAX_SUMMARY = 30;
 
+    private static final int MIN_COMPARISON_EMOTION_TREND = 20;
+    private static final int MAX_COMPARISON_EMOTION_TREND = 55;
+    private static final int MAX_COMPARISON_EMOTION = 100;
+    private static final int MAX_COMPARISON_BOLD_SEGMENTS = 3;
+
     public AiMonthlyReportResultDto generate(
             String monthStartDate,
             String monthEndDate,
@@ -55,12 +61,14 @@ public class MonthlyReportLlmClientV2 {
             String representativeEntries,
             TypeEmotionStatsContent emotionStats,
             MonthlyReportComparisonInputDto comparisonInput) {
-        String prompt = monthlyReportPromptLoader.loadV2BaselinePrompt()
-                .replace("{monthStartDate}", monthStartDate)
-                .replace("{monthEndDate}", monthEndDate)
-                .replace("{weeklySummaries}", weeklySummaries)
-                .replace("{representativeEntries}", representativeEntries == null ? "" : representativeEntries)
-                .replace("{emotionStats}", TypeReportInputAssembler.assembleEmotionStats(emotionStats));
+        String prompt = buildPrompt(
+                monthStartDate,
+                monthEndDate,
+                weeklySummaries,
+                representativeEntries,
+                emotionStats,
+                comparisonInput
+        );
 
         ChatClient client = llmRouter.route(provider);
 
@@ -114,7 +122,12 @@ public class MonthlyReportLlmClientV2 {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
             }
 
-            validateLength(discovered, comment, emotion);
+            validateLength(discovered, comment, emotion, comparisonInput != null);
+
+            if (comparisonInput != null) {
+                validateComparisonEmotionTrend(emotionTrend, dominantKeyword);
+                validateComparisonEmotionSummary(styledText, dominantKeyword);
+            }
 
             return result;
 
@@ -122,6 +135,40 @@ public class MonthlyReportLlmClientV2 {
             throw e;
         } catch (Exception e) {
             throw new AiResponseParseException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    String buildPrompt(
+            String monthStartDate,
+            String monthEndDate,
+            String weeklySummaries,
+            String representativeEntries,
+            TypeEmotionStatsContent emotionStats,
+            MonthlyReportComparisonInputDto comparisonInput
+    ) {
+        String template = comparisonInput == null
+                ? monthlyReportPromptLoader.loadV2BaselinePrompt()
+                : monthlyReportPromptLoader.loadV2ComparisonPrompt();
+
+        String prompt = template
+                .replace("{monthStartDate}", monthStartDate)
+                .replace("{monthEndDate}", monthEndDate)
+                .replace("{weeklySummaries}", weeklySummaries)
+                .replace("{representativeEntries}", representativeEntries == null ? "" : representativeEntries)
+                .replace("{emotionStats}", TypeReportInputAssembler.assembleEmotionStats(emotionStats));
+
+        if (comparisonInput != null) {
+            prompt = prompt.replace("{comparisonInput}", serializeComparisonInput(comparisonInput));
+        }
+
+        return prompt;
+    }
+
+    private String serializeComparisonInput(MonthlyReportComparisonInputDto comparisonInput) {
+        try {
+            return objectMapper.writeValueAsString(comparisonInput);
+        } catch (JsonProcessingException e) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
 
@@ -309,7 +356,7 @@ public class MonthlyReportLlmClientV2 {
         }
     }
 
-    private void validateLength(String discovered, String comment, String emotion) {
+    void validateLength(String discovered, String comment, String emotion, boolean comparison) {
         int dLen = discovered.length();
         int cLen = comment.length();
         int eLen = emotion.length();
@@ -320,9 +367,65 @@ public class MonthlyReportLlmClientV2 {
         if (cLen < MIN_DISCOVERED || cLen > MAX_DISCOVERED) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID);
         }
-        if (eLen < MIN_EMOTION || eLen > MAX_EMOTION) {
+        int maxEmotion = comparison ? MAX_COMPARISON_EMOTION : MAX_EMOTION;
+        if (eLen < MIN_EMOTION || eLen > maxEmotion) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_IMPROVE_LENGTH_INVALID);
         }
+    }
+
+    void validateComparisonEmotionTrend(String emotionTrend, String dominantKeyword) {
+        String trend = emotionTrend.trim();
+        if (trend.length() < MIN_COMPARISON_EMOTION_TREND
+                || trend.length() > MAX_COMPARISON_EMOTION_TREND
+                || trend.contains("\n")
+                || trend.contains("\r")
+                || containsDigit(trend)
+                || countOccurrences(trend, dominantKeyword) != 1) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
+        }
+    }
+
+    void validateComparisonEmotionSummary(StyledText emotionSummary, String dominantKeyword) {
+        int boldSegments = 0;
+
+        for (Segment segment : emotionSummary.segments()) {
+            List<Mark> marks = segment.marks() == null ? List.of() : segment.marks();
+            if (marks.contains(Mark.HIGHLIGHT)) {
+                throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_SEGMENT_INVALID);
+            }
+            if (marks.contains(Mark.BOLD)) {
+                boldSegments++;
+            }
+        }
+
+        if (boldSegments == 0
+                || boldSegments > MAX_COMPARISON_BOLD_SEGMENTS
+                || countOccurrences(emotionSummary.plainText(), dominantKeyword) != 1) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_SEGMENT_INVALID);
+        }
+    }
+
+    private boolean containsDigit(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            if (Character.isDigit(value.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int countOccurrences(String value, String target) {
+        if (isBlank(value) || isBlank(target)) {
+            return 0;
+        }
+
+        int count = 0;
+        int fromIndex = 0;
+        while ((fromIndex = value.indexOf(target, fromIndex)) >= 0) {
+            count++;
+            fromIndex += target.length();
+        }
+        return count;
     }
 
     private void validateSummary(String summary) {
@@ -342,10 +445,8 @@ public class MonthlyReportLlmClientV2 {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
         }
         // 숫자 금지(시간/빈도 방지)
-        for (int k = 0; k < s.length(); k++) {
-            if (Character.isDigit(s.charAt(k))) {
-                throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
-            }
+        if (containsDigit(s)) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
         }
     }
 }

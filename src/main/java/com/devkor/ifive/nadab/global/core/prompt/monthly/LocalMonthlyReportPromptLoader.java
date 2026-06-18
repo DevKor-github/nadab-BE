@@ -17,6 +17,7 @@ public class LocalMonthlyReportPromptLoader implements MonthlyReportPromptLoader
 
     private static final String V1_PROMPT_PATH = "secret/monthly-prompt-v1-local.txt";
     private static final String V2_BASELINE_PROMPT_PATH = "secret/monthly-prompt-v2-baseline-local.txt";
+    private static final String V2_COMPARISON_PROMPT_PATH = "secret/monthly-prompt-v2-comparison-local.txt";
 
     @Override
     public String loadV1Prompt() {
@@ -52,6 +53,25 @@ public class LocalMonthlyReportPromptLoader implements MonthlyReportPromptLoader
 
         } catch (IOException e) {
             log.error("로컬 월간 리포트 프롬프트 파일 읽기 실패: {}", V2_BASELINE_PROMPT_PATH, e);
+            throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_FILE_READ_FAILED);
+        }
+    }
+
+    @Override
+    public String loadV2ComparisonPrompt() {
+        try {
+            ClassPathResource resource = new ClassPathResource(V2_COMPARISON_PROMPT_PATH);
+
+            if (!resource.exists()) {
+                log.error("월간 리포트 프롬프트 파일이 존재하지 않습니다: {}", V2_COMPARISON_PROMPT_PATH);
+                throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_FILE_NOT_FOUND);
+            }
+
+            byte[] bytes = resource.getContentAsByteArray();
+            return new String(bytes, StandardCharsets.UTF_8);
+
+        } catch (IOException e) {
+            log.error("로컬 월간 리포트 프롬프트 파일 읽기 실패: {}", V2_COMPARISON_PROMPT_PATH, e);
             throw new BadRequestException(ErrorCode.PROMPT_MONTHLY_FILE_READ_FAILED);
         }
     }
