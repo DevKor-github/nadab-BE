@@ -4,11 +4,14 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxServiceV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyInterestStatsCalculator;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyReportComparisonInputAssembler;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportComparisonInputDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportImageStorage;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClientV2;
@@ -41,6 +44,7 @@ public class MonthlyReportGenerationListenerV2 {
     private static final String MONTHLY_REPORT_V2_LLM_MODEL = "GEMINI_2_5_FLASH";
 
     private final MonthlyQueryRepository monthlyQueryRepository;
+    private final MonthlyReportV2Repository monthlyReportV2Repository;
 
     private final MonthlyReportLlmClientV2 monthlyReportLlmClientV2;
     private final OpenAiImageClient openAiImageClient;
@@ -108,6 +112,29 @@ public class MonthlyReportGenerationListenerV2 {
             return;
         }
 
+        MonthlyReportComparisonInputDto comparisonInput = null;
+        if (event.previousReportId() != null) {
+            try {
+                comparisonInput = monthlyReportV2Repository.findById(event.previousReportId())
+                        .filter(previousReport -> previousReport.getUser() != null
+                                && event.userId().equals(previousReport.getUser().getId()))
+                        .map(previousReport -> MonthlyReportComparisonInputAssembler.assemble(
+                                previousReport,
+                                emotionStats
+                        ))
+                        .orElseThrow();
+            } catch (Exception e) {
+                log.error("[MONTHLY_REPORT][COMPARISON_INPUT_FAILED] userId={}, reportId={}, previousReportId={}",
+                        event.userId(), event.reportId(), event.previousReportId(), e);
+                monthlyReportTxServiceV2.failAndRefundMonthly(
+                        event.userId(),
+                        event.reportId(),
+                        event.crystalLogId()
+                );
+                return;
+            }
+        }
+
         AiMonthlyReportResultDto dto;
         Long generationLogId = reportGenerationLogRecorder.start(
                 event.userId(),
@@ -125,7 +152,7 @@ public class MonthlyReportGenerationListenerV2 {
                     weeklySummaries,
                     representativeEntries,
                     emotionStats,
-                    event.previousReportId() != null
+                    comparisonInput
             );
             reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {

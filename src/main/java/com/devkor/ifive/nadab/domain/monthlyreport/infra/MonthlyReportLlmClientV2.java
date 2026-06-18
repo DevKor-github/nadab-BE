@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.infra;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportComparisonInputDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2Content;
 import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeReportInputAssembler;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
@@ -53,7 +54,7 @@ public class MonthlyReportLlmClientV2 {
             String weeklySummaries,
             String representativeEntries,
             TypeEmotionStatsContent emotionStats,
-            boolean exists) {
+            MonthlyReportComparisonInputDto comparisonInput) {
         String prompt = monthlyReportPromptLoader.loadV2BaselinePrompt()
                 .replace("{monthStartDate}", monthStartDate)
                 .replace("{monthEndDate}", monthEndDate)
