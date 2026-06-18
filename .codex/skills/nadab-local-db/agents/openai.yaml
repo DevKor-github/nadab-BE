@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nadab Local DB"
+  short_description: "Safely inspect and query the local Nadab PostgreSQL database"
+  default_prompt: "Use $nadab-local-db to inspect the local Nadab database safely."

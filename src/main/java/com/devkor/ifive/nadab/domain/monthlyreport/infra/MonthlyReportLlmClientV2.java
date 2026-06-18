@@ -26,6 +26,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -43,16 +44,20 @@ public class MonthlyReportLlmClientV2 {
     private static final int MAX_DISCOVERED = 400;
     private static final int MIN_DISCOVERED = 150;
 
+    private static final int MAX_COMMENT = 400;
+    private static final int MIN_COMMENT = 150;
+
     private static final int MAX_EMOTION = 200;
     private static final int MIN_EMOTION = 50;
 
     private static final int MIN_SUMMARY = 8;
     private static final int MAX_SUMMARY = 30;
 
-    private static final int MIN_COMPARISON_EMOTION_TREND = 20;
-    private static final int MAX_COMPARISON_EMOTION_TREND = 55;
-    private static final int MAX_COMPARISON_EMOTION = 100;
-    private static final int MAX_COMPARISON_BOLD_SEGMENTS = 3;
+    private static final int MIN_COMPARISON_EMOTION_TREND = 5;
+    private static final int MAX_COMPARISON_EMOTION_TREND = 80;
+    private static final int MIN_COMPARISON_EMOTION = 40;
+    private static final int MAX_COMPARISON_EMOTION = 150;
+    private static final int MAX_COMPARISON_BOLD_SEGMENTS = 4;
 
     public AiMonthlyReportResultDto generate(
             String monthStartDate,
@@ -92,15 +97,15 @@ public class MonthlyReportLlmClientV2 {
 
             MonthlyReportV2Content monthlyReportContent = result.content();
 
-            StyledText discoveredStyled = monthlyReportContent.discovered();
-            StyledText commentStyled = monthlyReportContent.comment();
+            StyledText discoveredStyled = normalizeStyledTextSegments(monthlyReportContent.discovered());
+            StyledText commentStyled = normalizeStyledTextSegments(monthlyReportContent.comment());
             String summary = monthlyReportContent.summary();
             String commentSummary = monthlyReportContent.commentSummary();
             String dominantKeyword = monthlyReportContent.dominantKeyword();
             String emotionTrend = monthlyReportContent.emotionTrend();
 
             TypeTextContent emotionStatsContent = result.emotionSummaryContent();
-            StyledText styledText = emotionStatsContent.styledText();
+            StyledText styledText = normalizeStyledTextSegments(emotionStatsContent.styledText());
 
             if (discoveredStyled == null || commentStyled == null || styledText == null
                     || isBlank(summary) || isBlank(commentSummary) || isBlank(dominantKeyword) || isBlank(emotionTrend)) {
@@ -114,9 +119,9 @@ public class MonthlyReportLlmClientV2 {
             validateStyledText(commentStyled, true);
             validateStyledText(styledText, false);
 
-            String discovered = monthlyReportContent.discovered().plainText();
-            String comment = monthlyReportContent.comment().plainText();
-            String emotion = emotionStatsContent.styledText().plainText();
+            String discovered = discoveredStyled.plainText();
+            String comment = commentStyled.plainText();
+            String emotion = styledText.plainText();
 
             if (isBlank(discovered) || isBlank(comment)  || isBlank(emotion)) {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
@@ -125,11 +130,22 @@ public class MonthlyReportLlmClientV2 {
             validateLength(discovered, comment, emotion, comparisonInput != null);
 
             if (comparisonInput != null) {
-                validateComparisonEmotionTrend(emotionTrend, dominantKeyword);
+                validateComparisonEmotionTrend(emotionTrend);
                 validateComparisonEmotionSummary(styledText, dominantKeyword);
             }
 
-            return result;
+            MonthlyReportV2Content normalizedContent = new MonthlyReportV2Content(
+                    summary,
+                    commentSummary,
+                    dominantKeyword,
+                    emotionTrend,
+                    discoveredStyled,
+                    commentStyled
+            );
+            return new AiMonthlyReportResultDto(
+                    normalizedContent,
+                    new TypeTextContent(styledText)
+            );
 
         } catch (AiResponseParseException e) {
             throw e;
@@ -322,6 +338,46 @@ public class MonthlyReportLlmClientV2 {
         return s == null || s.trim().isEmpty();
     }
 
+    StyledText normalizeStyledTextSegments(StyledText styledText) {
+        if (styledText == null || styledText.segments() == null) {
+            return styledText;
+        }
+
+        List<Segment> normalized = new ArrayList<>();
+        StringBuilder leadingWhitespace = new StringBuilder();
+
+        for (Segment segment : styledText.segments()) {
+            if (segment == null || segment.text() == null || segment.text().isEmpty()) {
+                continue;
+            }
+
+            String text = segment.text();
+            if (text.isBlank()) {
+                if (normalized.isEmpty()) {
+                    leadingWhitespace.append(text);
+                } else {
+                    int lastIndex = normalized.size() - 1;
+                    Segment previous = normalized.get(lastIndex);
+                    normalized.set(lastIndex, new Segment(
+                            previous.text() + text,
+                            previous.marks()
+                    ));
+                }
+                continue;
+            }
+
+            if (!leadingWhitespace.isEmpty()) {
+                text = leadingWhitespace + text;
+                leadingWhitespace.setLength(0);
+            }
+
+            List<Mark> marks = segment.marks() == null ? List.of() : segment.marks();
+            normalized.add(new Segment(text, marks));
+        }
+
+        return new StyledText(List.copyOf(normalized));
+    }
+
     private void validateStyledText(StyledText st, boolean isDiscovered) {
         if (st.segments() == null || st.segments().isEmpty()) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
@@ -364,23 +420,23 @@ public class MonthlyReportLlmClientV2 {
         if (dLen < MIN_DISCOVERED || dLen > MAX_DISCOVERED) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID);
         }
-        if (cLen < MIN_DISCOVERED || cLen > MAX_DISCOVERED) {
-            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID);
+        if (cLen < MIN_COMMENT || cLen > MAX_COMMENT) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_COMMENT_LENGTH_INVALID);
         }
+        int minEmotion = comparison ? MIN_COMPARISON_EMOTION : MIN_EMOTION;
         int maxEmotion = comparison ? MAX_COMPARISON_EMOTION : MAX_EMOTION;
-        if (eLen < MIN_EMOTION || eLen > maxEmotion) {
-            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_IMPROVE_LENGTH_INVALID);
+        if (eLen < minEmotion || eLen > maxEmotion) {
+            throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_EMOTION_SUMMARY_LENGTH_INVALID);
         }
     }
 
-    void validateComparisonEmotionTrend(String emotionTrend, String dominantKeyword) {
+    void validateComparisonEmotionTrend(String emotionTrend) {
         String trend = emotionTrend.trim();
         if (trend.length() < MIN_COMPARISON_EMOTION_TREND
                 || trend.length() > MAX_COMPARISON_EMOTION_TREND
                 || trend.contains("\n")
                 || trend.contains("\r")
-                || containsDigit(trend)
-                || countOccurrences(trend, dominantKeyword) != 1) {
+                || containsDigit(trend)) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_SUMMARY_INVALID);
         }
     }
@@ -390,9 +446,6 @@ public class MonthlyReportLlmClientV2 {
 
         for (Segment segment : emotionSummary.segments()) {
             List<Mark> marks = segment.marks() == null ? List.of() : segment.marks();
-            if (marks.contains(Mark.HIGHLIGHT)) {
-                throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_SEGMENT_INVALID);
-            }
             if (marks.contains(Mark.BOLD)) {
                 boldSegments++;
             }
@@ -400,7 +453,7 @@ public class MonthlyReportLlmClientV2 {
 
         if (boldSegments == 0
                 || boldSegments > MAX_COMPARISON_BOLD_SEGMENTS
-                || countOccurrences(emotionSummary.plainText(), dominantKeyword) != 1) {
+                || countOccurrences(emotionSummary.plainText(), dominantKeyword) == 0) {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_SEGMENT_INVALID);
         }
     }

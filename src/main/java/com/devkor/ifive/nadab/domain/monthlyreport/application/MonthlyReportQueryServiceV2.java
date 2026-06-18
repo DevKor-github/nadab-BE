@@ -151,9 +151,10 @@ public class MonthlyReportQueryServiceV2 {
                 imageUrl,
                 content.discovered(),
                 content.dominantKeyword(),
-                report.getEmotionStats() == null ? TypeContentFactory.emptyEmotionStats() : report.getEmotionStats().normalized(),
-                report.getEmotionSummaryContent() == null ? TypeContentFactory.emptyText() : report.getEmotionSummaryContent().normalized(),
                 content.emotionTrend(),
+                report.getEmotionStats() == null ? TypeContentFactory.emptyEmotionStats() : report.getEmotionStats().normalized(),
+                report.getEmotionComparison() == null ? null : report.getEmotionComparison().normalized(),
+                report.getEmotionSummaryContent() == null ? TypeContentFactory.emptyText() : report.getEmotionSummaryContent().normalized(),
                 content.comment(),
                 content.commentSummary(),
                 report.getInterestStats() == null ? MonthlyContentFactory.emptyInterestStats() : report.getInterestStats().normalized()

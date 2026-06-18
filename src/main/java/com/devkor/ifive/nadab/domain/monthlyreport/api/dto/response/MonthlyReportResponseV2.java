@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportComparisonType;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
@@ -32,14 +33,17 @@ public record MonthlyReportResponseV2(
         @Schema(description = "핵심 키워드")
         String dominantKeyword,
 
+        @Schema(description = "감정 흐름 요약")
+        String emotionTrend,
+
         @Schema(description = "감정 통계")
         TypeEmotionStatsContent emotionStats,
 
+        @Schema(description = "직전 월간 리포트 감정 비교 스냅샷. BASELINE인 경우 null", nullable = true)
+        MonthlyEmotionComparisonContent emotionComparison,
+
         @Schema(description = "감정 요약(styled)")
         TypeTextContent emotionSummaryContent,
-
-        @Schema(description = "감정 흐름 요약")
-        String emotionTrend,
 
         @Schema(description = "코멘트(styled)")
         StyledText comment,

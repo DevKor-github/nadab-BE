@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyInt
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyReportComparisonInputAssembler;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportComparisonInputDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
@@ -183,7 +184,8 @@ public class MonthlyReportGenerationListenerV2 {
                     dto.content(),
                     dto.emotionSummaryContent(),
                     emotionStats,
-                    interestStats
+                    interestStats,
+                    MonthlyEmotionComparisonContent.from(comparisonInput)
             );
             reportGenerationLogRecorder.succeed(textConfirmLogId);
 

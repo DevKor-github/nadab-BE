@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReserveResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.*;
@@ -123,7 +124,8 @@ public class MonthlyReportTxServiceV2 {
             MonthlyReportV2Content content,
             TypeTextContent emotionSummaryContent,
             TypeEmotionStatsContent emotionStats,
-            InterestStatsContent interestStats
+            InterestStatsContent interestStats,
+            MonthlyEmotionComparisonContent emotionComparison
     ) {
         MonthlyReportV2Content contentNormalized = content.normalized();
         TypeTextContent emotionSummaryContentNormalized = emotionSummaryContent.normalized();
@@ -137,12 +139,16 @@ public class MonthlyReportTxServiceV2 {
         String emotionSummaryContentJson;
         String emotionStatsJson;
         String interestStatsJson;
+        String emotionComparisonJson;
 
         try {
             contentJson = objectMapper.writeValueAsString(contentNormalized);
             emotionSummaryContentJson = objectMapper.writeValueAsString(emotionSummaryContentNormalized);
             emotionStatsJson = objectMapper.writeValueAsString(emotionStats.normalized());
             interestStatsJson = objectMapper.writeValueAsString(interestStatsNormalized);
+            emotionComparisonJson = emotionComparison == null
+                    ? null
+                    : objectMapper.writeValueAsString(emotionComparison.normalized());
         } catch (Exception e) {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
@@ -155,6 +161,7 @@ public class MonthlyReportTxServiceV2 {
                 dominantKeyword,
                 emotionStatsJson,
                 interestStatsJson,
+                emotionComparisonJson,
                 MonthlyReportStatus.TEXT_COMPLETED.name()
         );
     }

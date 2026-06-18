@@ -189,6 +189,8 @@ public enum ErrorCode {
 
     MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 discovered 길이가 제한을 만족하지 않습니다"),
     MONTHLY_REPORT_IMPROVE_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 improve 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_COMMENT_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 comment 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_EMOTION_SUMMARY_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 emotionSummaryContent 길이가 제한을 만족하지 않습니다"),
     MONTHLY_REPORT_TOTAL_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 총 길이가 제한을 만족하지 않습니다"),
 
     MONTHLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),

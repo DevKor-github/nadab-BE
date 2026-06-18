@@ -194,7 +194,7 @@ public class MonthlyReportControllerV2 {
                     
                     다음은 각 페이지에서 활용되는 필드의 값에 대한 설명입니다. </br>
                     comparisonType: 최초 생성인지 이전 리포트가 존재하는지 여부입니다. </br>
-                    현재는 모두 최초 생성이기 때문에 "BASELINE"으로 고정되어 있고, 이전 리포트가 존재하는 경우에는 "COMPARISON"으로 반환될 예정입니다. </br>
+                    이전에 완료된 V2 월간 리포트가 없으면 "BASELINE", 있으면 "COMPARISON"으로 반환됩니다. </br>
                     
                     **<페이지 1>** </br>
                     summary : 월간 기록 요약 </br>
@@ -203,10 +203,15 @@ public class MonthlyReportControllerV2 {
                     
                     **<페이지 2>** </br>
                     dominantKeyword : 이번 달 요약 단어 </br>
+                    emotionTrend : BASELINE은 "NOT_SUPPORTED", COMPARISON은 주요 감정의 변동 양상 </br>
                     emotionStats.emotions : 감정에 대한 통계가 빈도 기준 내림차순으로 정렬되어 있습니다. </br>
+                    emotionComparison : 직전 월간 리포트 감정 비교 스냅샷이며 BASELINE인 경우 null입니다. </br>
+                    - emotionComparison.previousReportId : 비교 대상인 직전 완료 리포트 ID </br>
+                    - emotionComparison.previousMonth : 비교 대상 월 </br>
+                    - emotionComparison.previousEmotionStats : 직전 리포트의 감정 통계 </br>
+                    - emotionComparison.positivePercentPointChange : 현재와 직전 리포트의 긍정 감정 비율 차이(%p) </br>
+                    
                     emotionSummaryContent.styledText.segments : 감정 분석 텍스트 </br>
-                   
-                    emotionTrend : "NOT_SUPPORTED" (현재는 고정. 변동 양상은 최초 생성 월간 리포트에서는 지원되지 않음. 이후 업데이트 예정) </br>
                     
                     **<페이지 3>** </br>
                     commentSummary : 나답의 한 마디 요약 </br>
