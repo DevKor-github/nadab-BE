@@ -19,6 +19,8 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
+import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -79,9 +81,17 @@ public class MonthlyReportTxServiceV2 {
 
     public MonthlyReserveResultDto reserveMonthlyAndPublish(User user) {
 
-        boolean exists = monthlyReportV2Repository.existsByUserIdAndStatus(user.getId(), MonthlyReportStatus.COMPLETED);
+        MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
+        Long previousReportId = monthlyReportV2Repository
+                .findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                        user.getId(),
+                        MonthlyReportStatus.COMPLETED,
+                        range.monthStartDate()
+                )
+                .map(MonthlyReportV2::getId)
+                .orElse(null);
 
-        MonthlyReserveResultDto reserve = this.reserveMonthly(user, exists);
+        MonthlyReserveResultDto reserve = this.reserveMonthly(user, previousReportId != null);
 
         monthlyReportV2Repository.updateStatus(reserve.reportId(), MonthlyReportStatus.IN_PROGRESS);
 
@@ -90,7 +100,7 @@ public class MonthlyReportTxServiceV2 {
                 reserve.reportId(),
                 user.getId(),
                 reserve.crystalLogId(),
-                exists
+                previousReportId
         ));
 
         return reserve;

@@ -14,14 +14,18 @@ import java.util.Optional;
 
 public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2, Long> {
 
-    boolean existsByUserIdAndStatus(Long userId, MonthlyReportStatus status);
-
     Optional<MonthlyReportV2> findByUserIdAndMonthStartDate(Long userId, LocalDate monthStartDate);
 
     Optional<MonthlyReportV2> findByUserIdAndMonthStartDateAndStatus(
             Long userId,
             LocalDate monthStartDate,
             MonthlyReportStatus status
+    );
+
+    Optional<MonthlyReportV2> findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+            Long userId,
+            MonthlyReportStatus status,
+            LocalDate monthStartDate
     );
 
     List<MonthlyReportV2> findAllByUserIdAndStatus(Long userId, MonthlyReportStatus status);

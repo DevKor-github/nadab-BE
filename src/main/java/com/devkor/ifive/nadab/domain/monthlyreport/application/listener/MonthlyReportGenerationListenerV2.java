@@ -125,7 +125,7 @@ public class MonthlyReportGenerationListenerV2 {
                     weeklySummaries,
                     representativeEntries,
                     emotionStats,
-                    event.exists()
+                    event.previousReportId() != null
             );
             reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
