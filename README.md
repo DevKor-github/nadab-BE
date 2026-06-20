@@ -36,8 +36,8 @@
 ### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/DevKor-github/morae-BE.git
-cd morae-BE
+git clone https://github.com/DevKor-github/nadab-BE.git
+cd nadab-BE
 ```
 
 커밋 도구를 사용하려면 Node.js를 설치한 뒤 패키지를 설치합니다.
