@@ -1,7 +1,7 @@
 # Nadab Backend
 
 <p align="center">
-  <img src="docs/images/nadab-banner.png" alt="Nadab 서비스 소개" width="850">
+  <img src="docs/images/nadab-banner.png" alt="Nadab 서비스 소개" width="500">
 </p>
 
 사용자의 일상 답변을 바탕으로 AI 일간·주간·월간·유형 리포트를 생성하고, 친구·소셜 상호작용과 운영 기능을 제공하는 Spring Boot 백엔드 서버입니다.
