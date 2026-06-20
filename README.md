@@ -1,6 +1,18 @@
 # Nadab Backend
 
+<p align="center">
+  <img src="docs/images/nadab-banner.png" alt="Nadab 서비스 소개" width="850">
+</p>
+
 사용자의 일상 답변을 바탕으로 AI 일간·주간·월간·유형 리포트를 생성하고, 친구·소셜 상호작용과 운영 기능을 제공하는 Spring Boot 백엔드 서버입니다.
+
+---
+
+## 서비스 링크
+
+- [App Store](https://apps.apple.com/us/app/%EB%82%98%EB%8B%B5-ai-%EC%9E%90%EA%B8%B0%EC%84%B1%EC%B0%B0-%EA%B8%B0%EB%A1%9D-%EB%B0%8F-%EA%B0%90%EC%A0%95-%EB%B6%84%EC%84%9D-%EC%9D%BC%EA%B8%B0/id6761776437)
+- [Google Play](https://play.google.com/store/apps/details?id=com.nadab.app)
+- [Web](https://www.nadab.app/)
 
 ---
 
