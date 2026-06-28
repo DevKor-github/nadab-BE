@@ -20,12 +20,12 @@ class MonthlySocialSummaryContentTest {
         MonthlySocialSummaryContent normalized = content.normalized();
 
         assertThat(normalized.month()).isEqualTo(12);
-        assertThat(normalized.likeRanking()).extracting(MonthlySocialRankingItem::rank)
+        assertThat(normalized.likeRanking()).extracting(MonthlySocialRankingItem::displayOrder)
                 .containsExactly(1, 2, 3);
         assertThat(normalized.commentRanking()).isEmpty();
     }
 
     private MonthlySocialRankingItem item(int rank) {
-        return new MonthlySocialRankingItem(rank, (long) rank, "friend" + rank, null, null, rank, rank == 1);
+        return new MonthlySocialRankingItem(rank, (long) rank, "friend" + rank, null, null, rank == 1);
     }
 }

@@ -1,5 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialRankingItem;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportComparisonType;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
@@ -14,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,6 +49,38 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
         assertThat(reloaded.getSocialSummary().month()).isEqualTo(5);
         assertThat(reloaded.getSocialSummary().likeRanking()).isEmpty();
         assertThat(reloaded.getSocialSummary().commentRanking()).isEmpty();
+    }
+
+    @Test
+    void update_social_summary_saves_display_order_and_joint_top_rank() {
+        User user = new UserBuilder(em).build();
+        MonthlyReportV2 report = monthlyReportV2Repository.save(MonthlyReportV2.createPending(
+                user,
+                LocalDate.of(2026, 5, 1),
+                LocalDate.of(2026, 5, 31),
+                LocalDate.of(2026, 6, 1),
+                MonthlyReportComparisonType.BASELINE
+        ));
+        report.updateSocialSummary(new MonthlySocialSummaryContent(
+                true,
+                5,
+                List.of(
+                        new MonthlySocialRankingItem(1, 10L, "가", null, null, true),
+                        new MonthlySocialRankingItem(2, 11L, "나", null, null, true)
+                ),
+                List.of(new MonthlySocialRankingItem(1, 12L, "다", null, null, true))
+        ));
+        em.flush();
+        em.clear();
+
+        MonthlyReportV2 reloaded = monthlyReportV2Repository.findById(report.getId()).orElseThrow();
+
+        assertThat(reloaded.getSocialSummary().visible()).isTrue();
+        assertThat(reloaded.getSocialSummary().likeRanking())
+                .extracting(MonthlySocialRankingItem::displayOrder)
+                .containsExactly(1, 2);
+        assertThat(reloaded.getSocialSummary().likeRanking())
+                .allMatch(MonthlySocialRankingItem::topRank);
     }
 
     @Test
