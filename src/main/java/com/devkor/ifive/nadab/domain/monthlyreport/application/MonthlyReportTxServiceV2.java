@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReserveResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.*;
@@ -125,11 +126,13 @@ public class MonthlyReportTxServiceV2 {
             TypeTextContent emotionSummaryContent,
             TypeEmotionStatsContent emotionStats,
             InterestStatsContent interestStats,
-            MonthlyEmotionComparisonContent emotionComparison
+            MonthlyEmotionComparisonContent emotionComparison,
+            MonthlySocialSummaryContent socialSummary
     ) {
         MonthlyReportV2Content contentNormalized = content.normalized();
         TypeTextContent emotionSummaryContentNormalized = emotionSummaryContent.normalized();
         InterestStatsContent interestStatsNormalized = interestStats.normalized();
+        MonthlySocialSummaryContent socialSummaryNormalized = socialSummary.normalized();
 
         String summary = contentNormalized.summary();
         String commentSummary = contentNormalized.commentSummary();
@@ -140,6 +143,7 @@ public class MonthlyReportTxServiceV2 {
         String emotionStatsJson;
         String interestStatsJson;
         String emotionComparisonJson;
+        String socialSummaryJson;
 
         try {
             contentJson = objectMapper.writeValueAsString(contentNormalized);
@@ -149,6 +153,7 @@ public class MonthlyReportTxServiceV2 {
             emotionComparisonJson = emotionComparison == null
                     ? null
                     : objectMapper.writeValueAsString(emotionComparison.normalized());
+            socialSummaryJson = objectMapper.writeValueAsString(socialSummaryNormalized);
         } catch (Exception e) {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
@@ -162,6 +167,7 @@ public class MonthlyReportTxServiceV2 {
                 emotionStatsJson,
                 interestStatsJson,
                 emotionComparisonJson,
+                socialSummaryJson,
                 MonthlyReportStatus.TEXT_COMPLETED.name()
         );
     }

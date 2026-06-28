@@ -1,10 +1,14 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyContentFactory;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyReportV2ContentFactory;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.PendingMonthlyReportServiceV2;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
@@ -24,6 +28,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -98,6 +103,42 @@ class MonthlyReportTxServiceV2Test {
                 ArgumentCaptor.forClass(MonthlyReportGenerationRequestedEventDtoV2.class);
         verify(eventPublisher).publishEvent(captor.capture());
         assertThat(captor.getValue().previousReportId()).isNull();
+    }
+
+    @Test
+    void confirm_monthly_text_serializes_social_summary_in_same_update() throws Exception {
+        when(objectMapper.writeValueAsString(any()))
+                .thenReturn(
+                        "contentJson",
+                        "emotionSummaryJson",
+                        "emotionStatsJson",
+                        "interestStatsJson",
+                        "socialSummaryJson"
+                );
+
+        service.confirmMonthlyText(
+                20L,
+                MonthlyReportV2ContentFactory.empty(),
+                TypeContentFactory.emptyText(),
+                TypeContentFactory.emptyEmotionStats(),
+                MonthlyContentFactory.emptyInterestStats(),
+                null,
+                MonthlySocialSummaryContent.empty(5)
+        );
+
+        verify(monthlyReportV2Repository).updateContent(
+                eq(20L),
+                eq("contentJson"),
+                eq("emotionSummaryJson"),
+                eq(""),
+                eq(""),
+                eq(""),
+                eq("emotionStatsJson"),
+                eq("interestStatsJson"),
+                eq(null),
+                eq("socialSummaryJson"),
+                eq(MonthlyReportStatus.TEXT_COMPLETED.name())
+        );
     }
 
     private void prepareReservation(User user, boolean hasPreviousReport) {

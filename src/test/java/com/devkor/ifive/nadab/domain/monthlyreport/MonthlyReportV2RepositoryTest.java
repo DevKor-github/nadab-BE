@@ -111,6 +111,13 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
         assertThat(reloaded.getEmotionComparison().previousMonth()).isEqualTo(4);
         assertThat(reloaded.getEmotionComparison().previousEmotionStats().positivePercent()).isEqualTo(57);
         assertThat(reloaded.getEmotionComparison().positivePercentPointChange()).isEqualTo(14);
+        assertThat(reloaded.getSocialSummary().visible()).isTrue();
+        assertThat(reloaded.getSocialSummary().likeRanking()).singleElement()
+                .satisfies(item -> {
+                    assertThat(item.displayOrder()).isEqualTo(1);
+                    assertThat(item.nickname()).isEqualTo("가");
+                    assertThat(item.topRank()).isTrue();
+                });
     }
 
     @Test
@@ -147,6 +154,7 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 "{\"totalCount\":10,\"dominantEmotionCode\":\"ACHIEVEMENT\",\"positivePercent\":71,\"emotions\":[]}",
                 "{\"interests\":[]}",
                 emotionComparisonJson,
+                "{\"visible\":true,\"month\":5,\"likeRanking\":[{\"displayOrder\":1,\"userId\":10,\"nickname\":\"가\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}],\"commentRanking\":[{\"displayOrder\":1,\"userId\":11,\"nickname\":\"나\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}]}",
                 MonthlyReportStatus.TEXT_COMPLETED.name()
         );
     }

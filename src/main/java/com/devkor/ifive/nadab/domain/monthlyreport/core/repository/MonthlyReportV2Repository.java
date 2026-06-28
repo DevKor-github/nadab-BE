@@ -60,6 +60,7 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
            emotion_stats = CAST(:emotionStatsJson AS jsonb),
            interest_stats = CAST(:interestStatsJson AS jsonb),
            emotion_comparison = CAST(:emotionComparisonJson AS jsonb),
+           social_summary = CAST(:socialSummaryJson AS jsonb),
            summary = :summary,
            comment_summary = :commentSummary,
            dominant_keyword = :dominantKeyword,
@@ -77,6 +78,7 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
             @Param("emotionStatsJson") String emotionStatsJson,
             @Param("interestStatsJson") String interestStatsJson,
             @Param("emotionComparisonJson") String emotionComparisonJson,
+            @Param("socialSummaryJson") String socialSummaryJson,
             @Param("status") String status
     );
 

@@ -8,12 +8,14 @@ import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRep
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportComparisonInputDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlySocialSummaryService;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportImageStorage;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClientV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.OpenAiImageClient;
@@ -53,6 +55,7 @@ public class MonthlyReportGenerationListenerV2 {
 
     private final MonthlyReportTxServiceV2 monthlyReportTxServiceV2;
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
+    private final MonthlySocialSummaryService monthlySocialSummaryService;
     private final ReportGenerationLogRecorder reportGenerationLogRecorder;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -104,6 +107,20 @@ public class MonthlyReportGenerationListenerV2 {
             );
         } catch (Exception e) {
             log.error("[MONTHLY_REPORT][INTEREST_STATS_FAILED] userId={}, reportId={}",
+                    event.userId(), event.reportId(), e);
+            monthlyReportTxServiceV2.failAndRefundMonthly(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+            return;
+        }
+
+        MonthlySocialSummaryContent socialSummary;
+        try {
+            socialSummary = monthlySocialSummaryService.buildSocialSummary(event.userId(), range);
+        } catch (Exception e) {
+            log.error("[MONTHLY_REPORT][SOCIAL_SUMMARY_FAILED] userId={}, reportId={}",
                     event.userId(), event.reportId(), e);
             monthlyReportTxServiceV2.failAndRefundMonthly(
                     event.userId(),
@@ -185,7 +202,8 @@ public class MonthlyReportGenerationListenerV2 {
                     dto.emotionSummaryContent(),
                     emotionStats,
                     interestStats,
-                    MonthlyEmotionComparisonContent.from(comparisonInput)
+                    MonthlyEmotionComparisonContent.from(comparisonInput),
+                    socialSummary
             );
             reportGenerationLogRecorder.succeed(textConfirmLogId);
 
