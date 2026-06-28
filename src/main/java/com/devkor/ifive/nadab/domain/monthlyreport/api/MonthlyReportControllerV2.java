@@ -217,6 +217,17 @@ public class MonthlyReportControllerV2 {
                     commentSummary : 나답의 한 마디 요약 </br>
                     comment.segments : 나답의 한 마디 텍스트 </br>
                     interestStats.interests : 카테고리(관심사)에 대한 통계가 빈도 기준 내림차순으로 정렬되어 있습니다. </br>
+
+                    **<페이지 4>** </br>
+                    socialSummary.visible : 월간 소셜 페이지 노출 여부 </br>
+                    socialSummary.month : 집계 대상 월 </br>
+                    socialSummary.likeRanking : 내 DailyReport에 좋아요를 많이 누른 친구 최대 3명 </br>
+                    socialSummary.commentRanking : 내 DailyReport에 댓글·대댓글을 많이 작성한 친구 최대 3명 </br>
+                    - displayOrder : 화면 표시 순서(1~3) </br>
+                    - userId : 친구 사용자 ID </br>
+                    - nickname : 친구 닉네임 </br>
+                    - profileImageUrl : 친구 프로필 이미지 URL </br>
+                    - topRank : 공동 1위를 포함한 1위 강조 여부 </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

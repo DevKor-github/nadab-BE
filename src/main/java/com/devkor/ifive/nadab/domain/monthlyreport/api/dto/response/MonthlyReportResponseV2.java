@@ -52,6 +52,9 @@ public record MonthlyReportResponseV2(
         String commentSummary,
 
         @Schema(description = "관심사 통계")
-        InterestStatsContent interestStats
+        InterestStatsContent interestStats,
+
+        @Schema(description = "월간 소셜 반응 요약")
+        MonthlySocialSummaryResponse socialSummary
 ) {
 }

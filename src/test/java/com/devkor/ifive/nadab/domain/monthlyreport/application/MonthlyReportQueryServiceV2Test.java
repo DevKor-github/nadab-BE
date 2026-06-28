@@ -2,6 +2,8 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialRankingItem;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportComparisonType;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
@@ -9,9 +11,11 @@ import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReport
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
+import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +82,45 @@ class MonthlyReportQueryServiceV2Test {
     }
 
     @Test
+    void 소셜_요약의_프로필_식별자를_URL로_변환한다() throws Exception {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(1L);
+
+        MonthlySocialSummaryContent socialSummary = new MonthlySocialSummaryContent(
+                true,
+                5,
+                List.of(new MonthlySocialRankingItem(1, 2L, "가", "custom-key", null, true)),
+                List.of(new MonthlySocialRankingItem(1, 3L, "나", null, DefaultProfileType.DEFAULT, true))
+        );
+        MonthlyReportV2 report = mock(MonthlyReportV2.class);
+        when(report.getUser()).thenReturn(user);
+        when(report.getMonthStartDate()).thenReturn(LocalDate.of(2026, 5, 1));
+        when(report.getStatus()).thenReturn(MonthlyReportStatus.COMPLETED);
+        when(report.getComparisonType()).thenReturn(MonthlyReportComparisonType.BASELINE);
+        when(report.getSocialSummary()).thenReturn(socialSummary);
+        when(monthlyReportV2Repository.findById(7L)).thenReturn(Optional.of(report));
+        when(profileImageUrlBuilder.buildUrl("custom-key")).thenReturn("https://cdn/custom-key");
+        when(profileImageUrlBuilder.buildDefaultUrl(DefaultProfileType.DEFAULT))
+                .thenReturn("https://cdn/default/DEFAULT.png");
+
+        MonthlyReportResponseV2 response = service.getMonthlyReportById(1L, 7L);
+
+        assertThat(response.socialSummary().visible()).isTrue();
+        assertThat(response.socialSummary().likeRanking()).singleElement().satisfies(item -> {
+            assertThat(item.displayOrder()).isEqualTo(1);
+            assertThat(item.userId()).isEqualTo(2L);
+            assertThat(item.profileImageUrl()).isEqualTo("https://cdn/custom-key");
+            assertThat(item.topRank()).isTrue();
+        });
+        assertThat(response.socialSummary().commentRanking()).singleElement()
+                .satisfies(item -> assertThat(item.profileImageUrl())
+                        .isEqualTo("https://cdn/default/DEFAULT.png"));
+        String responseJson = new ObjectMapper().writeValueAsString(response.socialSummary());
+        assertThat(responseJson).contains("profileImageUrl");
+        assertThat(responseJson).doesNotContain("profileImageKey", "defaultProfileType");
+    }
+
+    @Test
     void BASELINE_리포트는_감정_비교_스냅샷을_null로_반환한다() {
         User user = mock(User.class);
         when(user.getId()).thenReturn(1L);
@@ -92,5 +135,9 @@ class MonthlyReportQueryServiceV2Test {
         MonthlyReportResponseV2 response = service.getMonthlyReportById(1L, 7L);
 
         assertThat(response.emotionComparison()).isNull();
+        assertThat(response.socialSummary().visible()).isFalse();
+        assertThat(response.socialSummary().month()).isEqualTo(5);
+        assertThat(response.socialSummary().likeRanking()).isEmpty();
+        assertThat(response.socialSummary().commentRanking()).isEmpty();
     }
 }

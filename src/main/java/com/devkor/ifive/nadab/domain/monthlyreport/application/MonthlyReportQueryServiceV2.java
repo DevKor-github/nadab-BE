@@ -4,8 +4,12 @@ import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportIte
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupItemV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlySocialRankingItemResponse;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlySocialSummaryResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.ReportListTypeV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyContentFactory;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialRankingItem;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
@@ -157,7 +161,35 @@ public class MonthlyReportQueryServiceV2 {
                 report.getEmotionSummaryContent() == null ? TypeContentFactory.emptyText() : report.getEmotionSummaryContent().normalized(),
                 content.comment(),
                 content.commentSummary(),
-                report.getInterestStats() == null ? MonthlyContentFactory.emptyInterestStats() : report.getInterestStats().normalized()
+                report.getInterestStats() == null ? MonthlyContentFactory.emptyInterestStats() : report.getInterestStats().normalized(),
+                toSocialSummaryResponse(report)
+        );
+    }
+
+    private MonthlySocialSummaryResponse toSocialSummaryResponse(MonthlyReportV2 report) {
+        MonthlySocialSummaryContent socialSummary = report.getSocialSummary() == null
+                ? MonthlySocialSummaryContent.empty(report.getMonthStartDate().getMonthValue())
+                : report.getSocialSummary().normalized();
+
+        return new MonthlySocialSummaryResponse(
+                socialSummary.visible(),
+                socialSummary.month(),
+                socialSummary.likeRanking().stream().map(this::toSocialRankingItemResponse).toList(),
+                socialSummary.commentRanking().stream().map(this::toSocialRankingItemResponse).toList()
+        );
+    }
+
+    private MonthlySocialRankingItemResponse toSocialRankingItemResponse(MonthlySocialRankingItem item) {
+        String profileImageUrl = item.profileImageKey() != null
+                ? profileImageUrlBuilder.buildUrl(item.profileImageKey())
+                : profileImageUrlBuilder.buildDefaultUrl(item.defaultProfileType());
+
+        return new MonthlySocialRankingItemResponse(
+                item.displayOrder(),
+                item.userId(),
+                item.nickname(),
+                profileImageUrl,
+                item.topRank()
         );
     }
 
