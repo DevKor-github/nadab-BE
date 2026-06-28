@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.CurrentMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportLocatorResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
@@ -47,6 +48,7 @@ public class MonthlyReportQueryServiceV2 {
     private final WeeklyReportRepository weeklyReportRepository;
     private final UserRepository userRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final MonthlyReportLocatorResolver monthlyReportLocatorResolver;
 
     public List<AllReportItemResponseV2> getAllReports(Long userId, ReportListTypeV2 type) {
         if (!userRepository.existsById(userId)) {
@@ -124,14 +126,28 @@ public class MonthlyReportQueryServiceV2 {
         }
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
-        MonthlyReportLocatorResponse report = monthlyReportV2Repository
-                .findByUserIdAndMonthStartDate(userId, range.monthStartDate())
-                .map(this::toLocatorResponse)
-                .or(() -> monthlyReportRepository.findByUserIdAndMonthStartDate(userId, range.monthStartDate())
-                        .map(this::toLocatorResponse))
+        MonthlyReportLocatorResponse report = monthlyReportLocatorResolver
+                .findByMonth(userId, range.monthStartDate())
+                .orElse(null);
+        MonthRangeDto previousRange = MonthRangeCalculator.getTwoMonthsAgoRange();
+        MonthlyReportLocatorResponse previousReport = monthlyReportLocatorResolver
+                .findCompletedByMonth(userId, previousRange.monthStartDate())
                 .orElse(null);
 
-        return new MyMonthlyReportLookupResponseV2(report, null);
+        return new MyMonthlyReportLookupResponseV2(report, previousReport);
+    }
+
+    public CurrentMonthlyReportLookupResponseV2 getCurrentMonthlyReport(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
+        MonthlyReportLocatorResponse report = monthlyReportLocatorResolver
+                .findByMonth(userId, range.monthStartDate())
+                .orElse(null);
+
+        return new CurrentMonthlyReportLookupResponseV2(report);
     }
 
     public MonthlyReportResponseV2 getMonthlyReportById(Long userId, Long id) {
@@ -193,24 +209,6 @@ public class MonthlyReportQueryServiceV2 {
                 item.nickname(),
                 profileImageUrl,
                 item.topRank()
-        );
-    }
-
-    private MonthlyReportLocatorResponse toLocatorResponse(MonthlyReportV2 report) {
-        return new MonthlyReportLocatorResponse(
-                report.getId(),
-                2,
-                report.getMonthStartDate().getMonthValue(),
-                report.getStatus() == null ? MonthlyReportStatus.PENDING : report.getStatus()
-        );
-    }
-
-    private MonthlyReportLocatorResponse toLocatorResponse(MonthlyReport report) {
-        return new MonthlyReportLocatorResponse(
-                report.getId(),
-                1,
-                report.getMonthStartDate().getMonthValue(),
-                report.getStatus() == null ? MonthlyReportStatus.PENDING : report.getStatus()
         );
     }
 

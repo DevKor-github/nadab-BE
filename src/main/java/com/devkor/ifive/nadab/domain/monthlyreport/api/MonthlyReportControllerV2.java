@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.api;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.CurrentMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
@@ -12,6 +13,7 @@ import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -172,6 +174,17 @@ public class MonthlyReportControllerV2 {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         MyMonthlyReportLookupResponseV2 response = monthlyReportQueryServiceV2.getMyMonthlyReport(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @Hidden
+    @GetMapping("/current")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponseDto<CurrentMonthlyReportLookupResponseV2>> getCurrentMonthlyReport(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        CurrentMonthlyReportLookupResponseV2 response =
+                monthlyReportQueryServiceV2.getCurrentMonthlyReport(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 

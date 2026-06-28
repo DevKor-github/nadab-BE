@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportLocatorResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialRankingItem;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
@@ -15,6 +16,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
+import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,8 @@ class MonthlyReportQueryServiceV2Test {
     private UserRepository userRepository;
     @Mock
     private ProfileImageUrlBuilder profileImageUrlBuilder;
+    @Mock
+    private MonthlyReportLocatorResolver monthlyReportLocatorResolver;
 
     private MonthlyReportQueryServiceV2 service;
 
@@ -53,8 +57,44 @@ class MonthlyReportQueryServiceV2Test {
                 monthlyReportV2Repository,
                 weeklyReportRepository,
                 userRepository,
-                profileImageUrlBuilder
+                profileImageUrlBuilder,
+                monthlyReportLocatorResolver
         );
+    }
+
+    @Test
+    void 현재와_지지난달_월간_리포트_위치_정보를_반환한다() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+        LocalDate currentMonth = MonthRangeCalculator.getLastMonthRange().monthStartDate();
+        LocalDate previousMonth = MonthRangeCalculator.getTwoMonthsAgoRange().monthStartDate();
+        MonthlyReportLocatorResponse current = new MonthlyReportLocatorResponse(
+                20L, 2, currentMonth.getMonthValue(), MonthlyReportStatus.IN_PROGRESS
+        );
+        MonthlyReportLocatorResponse previous = new MonthlyReportLocatorResponse(
+                10L, 1, previousMonth.getMonthValue(), MonthlyReportStatus.COMPLETED
+        );
+        when(monthlyReportLocatorResolver.findByMonth(1L, currentMonth)).thenReturn(Optional.of(current));
+        when(monthlyReportLocatorResolver.findCompletedByMonth(1L, previousMonth))
+                .thenReturn(Optional.of(previous));
+
+        var response = service.getMyMonthlyReport(1L);
+
+        assertThat(response.report()).isEqualTo(current);
+        assertThat(response.previousReport()).isEqualTo(previous);
+    }
+
+    @Test
+    void 숨김_단일_조회는_지난달_리포트만_반환한다() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+        LocalDate currentMonth = MonthRangeCalculator.getLastMonthRange().monthStartDate();
+        MonthlyReportLocatorResponse current = new MonthlyReportLocatorResponse(
+                20L, 2, currentMonth.getMonthValue(), MonthlyReportStatus.COMPLETED
+        );
+        when(monthlyReportLocatorResolver.findByMonth(1L, currentMonth)).thenReturn(Optional.of(current));
+
+        var response = service.getCurrentMonthlyReport(1L);
+
+        assertThat(response.report()).isEqualTo(current);
     }
 
     @Test
