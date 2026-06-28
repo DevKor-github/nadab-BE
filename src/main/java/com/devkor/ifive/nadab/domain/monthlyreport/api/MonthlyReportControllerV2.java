@@ -137,13 +137,15 @@ public class MonthlyReportControllerV2 {
     @Operation(
             summary = "나의 월간 리포트 조회 V2",
             description = """
-                    사용자의 (지난 달에 대한) 월간 리포트를 조회합니다. </br>
+                    사용자의 지난달·지지난달 월간 리포트 위치 정보를 조회합니다. </br>
                     
-                    report: 존재하지 않으면 null, 존재하면 id와 version을 반환합니다. </br>
+                    report: 지난달 리포트이며 존재하지 않으면 null입니다. </br>
+                    previousReport: 지지난달 완료 리포트이며 존재하지 않으면 null입니다. </br>
+                    각 항목은 reportId, version, month, status를 반환합니다. </br>
                     
                     version 규칙:
-                    - monthly_reports - 1인 경우 : GET /api/v1/monthly-report/{id}로 조회 (기존의 레거시 버전)
-                    - monthly_reports - 2인 경우 : GET /api/v2/monthly-report/{id}로 조회 (새로운 V2 버전)
+                    - version 1인 경우 : GET /api/v1/monthly-report/{reportId}로 조회 (기존의 레거시 버전)
+                    - version 2인 경우 : GET /api/v2/monthly-report/{reportId}로 조회 (새로운 V2 버전)
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
