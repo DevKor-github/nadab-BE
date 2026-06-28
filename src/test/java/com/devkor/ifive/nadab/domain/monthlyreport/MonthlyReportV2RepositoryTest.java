@@ -28,6 +28,27 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
     TestEntityManager em;
 
     @Test
+    void create_pending_initializes_empty_social_summary_for_report_month() {
+        User user = new UserBuilder(em).build();
+        MonthlyReportV2 report = monthlyReportV2Repository.save(MonthlyReportV2.createPending(
+                user,
+                LocalDate.of(2026, 5, 1),
+                LocalDate.of(2026, 5, 31),
+                LocalDate.of(2026, 6, 1),
+                MonthlyReportComparisonType.BASELINE
+        ));
+        em.flush();
+        em.clear();
+
+        MonthlyReportV2 reloaded = monthlyReportV2Repository.findById(report.getId()).orElseThrow();
+
+        assertThat(reloaded.getSocialSummary().visible()).isFalse();
+        assertThat(reloaded.getSocialSummary().month()).isEqualTo(5);
+        assertThat(reloaded.getSocialSummary().likeRanking()).isEmpty();
+        assertThat(reloaded.getSocialSummary().commentRanking()).isEmpty();
+    }
+
+    @Test
     void update_content_saves_emotion_comparison_snapshot() {
         User user = new UserBuilder(em).build();
         MonthlyReportV2 report = monthlyReportV2Repository.save(MonthlyReportV2.createPending(
