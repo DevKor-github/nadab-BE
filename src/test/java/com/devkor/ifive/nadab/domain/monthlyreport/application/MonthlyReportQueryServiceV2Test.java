@@ -17,6 +17,7 @@ import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
+import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,29 @@ class MonthlyReportQueryServiceV2Test {
         var response = service.getCurrentMonthlyReport(1L);
 
         assertThat(response.report()).isEqualTo(current);
+    }
+
+    @Test
+    void 연도_경계에서_1월의_이전_리포트로_전년도_12월을_조회한다() {
+        MonthRangeDto january = new MonthRangeDto(
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 1, 31)
+        );
+        MonthlyReportLocatorResponse current = new MonthlyReportLocatorResponse(
+                20L, 2, 1, MonthlyReportStatus.COMPLETED
+        );
+        MonthlyReportLocatorResponse previous = new MonthlyReportLocatorResponse(
+                10L, 1, 12, MonthlyReportStatus.COMPLETED
+        );
+        when(monthlyReportLocatorResolver.findByMonth(1L, LocalDate.of(2026, 1, 1)))
+                .thenReturn(Optional.of(current));
+        when(monthlyReportLocatorResolver.findCompletedByMonth(1L, LocalDate.of(2025, 12, 1)))
+                .thenReturn(Optional.of(previous));
+
+        var response = service.getMyMonthlyReport(1L, january);
+
+        assertThat(response.report()).isEqualTo(current);
+        assertThat(response.previousReport()).isEqualTo(previous);
     }
 
     @Test

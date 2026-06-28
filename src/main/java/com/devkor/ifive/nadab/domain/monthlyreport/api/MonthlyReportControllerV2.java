@@ -143,7 +143,10 @@ public class MonthlyReportControllerV2 {
                     
                     report: 지난달 리포트이며 존재하지 않으면 null입니다. </br>
                     previousReport: 지지난달 완료 리포트이며 존재하지 않으면 null입니다. </br>
+                    두 슬롯은 서로 독립적으로 null일 수 있습니다. </br>
                     각 항목은 reportId, version, month, status를 반환합니다. </br>
+                    report.status: PENDING | IN_PROGRESS | TEXT_COMPLETED | COMPLETED | FAILED </br>
+                    previousReport.status: 존재하는 경우 항상 COMPLETED </br>
                     
                     version 규칙:
                     - version 1인 경우 : GET /api/v1/monthly-report/{reportId}로 조회 (기존의 레거시 버전)

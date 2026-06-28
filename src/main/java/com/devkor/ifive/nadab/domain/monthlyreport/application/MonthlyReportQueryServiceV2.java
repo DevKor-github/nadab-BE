@@ -126,10 +126,16 @@ public class MonthlyReportQueryServiceV2 {
         }
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
+        return getMyMonthlyReport(userId, range);
+    }
+
+    MyMonthlyReportLookupResponseV2 getMyMonthlyReport(Long userId, MonthRangeDto range) {
         MonthlyReportLocatorResponse report = monthlyReportLocatorResolver
                 .findByMonth(userId, range.monthStartDate())
                 .orElse(null);
-        MonthRangeDto previousRange = MonthRangeCalculator.getTwoMonthsAgoRange();
+        MonthRangeDto previousRange = MonthRangeCalculator.monthRangeOf(
+                range.monthStartDate().minusMonths(1)
+        );
         MonthlyReportLocatorResponse previousReport = monthlyReportLocatorResolver
                 .findCompletedByMonth(userId, previousRange.monthStartDate())
                 .orElse(null);
