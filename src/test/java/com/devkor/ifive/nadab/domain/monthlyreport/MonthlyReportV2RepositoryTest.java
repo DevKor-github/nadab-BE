@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.monthlyreport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialRankingItem;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyReportV2ContentFactory;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageColorPalette;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportComparisonType;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportImageStatus;
@@ -88,12 +89,16 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
     }
 
     @Test
-    void saves_variant_and_finds_three_most_recent_completed_variants() {
+    void saves_visual_preset_and_finds_three_most_recent_completed_values() {
         User user = new UserBuilder(em).build();
-        completedReport(user, LocalDate.of(2026, 2, 1), MonthlyImageStylePreset.INK_WASH);
-        completedReport(user, LocalDate.of(2026, 3, 1), MonthlyImageStylePreset.GLASS_AND_LIGHT);
-        completedReport(user, LocalDate.of(2026, 4, 1), MonthlyImageStylePreset.PAPER_CUT_LAYERS);
-        MonthlyReportV2 may = completedReport(user, LocalDate.of(2026, 5, 1), MonthlyImageStylePreset.BOTANICAL_COLLAGE);
+        completedReport(user, LocalDate.of(2026, 2, 1), MonthlyImageStylePreset.INK_WASH,
+                MonthlyImageColorPalette.FOREST_MIST);
+        completedReport(user, LocalDate.of(2026, 3, 1), MonthlyImageStylePreset.GLASS_AND_LIGHT,
+                MonthlyImageColorPalette.OCEAN_LIGHT);
+        completedReport(user, LocalDate.of(2026, 4, 1), MonthlyImageStylePreset.PAPER_CUT_LAYERS,
+                MonthlyImageColorPalette.SUNSET_CLAY);
+        MonthlyReportV2 may = completedReport(user, LocalDate.of(2026, 5, 1),
+                MonthlyImageStylePreset.BOTANICAL_COLLAGE, MonthlyImageColorPalette.MOON_VIOLET);
         MonthlyReportV2 current = monthlyReportV2Repository.save(MonthlyReportV2.createPending(
                 user,
                 LocalDate.of(2026, 6, 1),
@@ -109,6 +114,12 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 current.getId(),
                 PageRequest.of(0, 3)
         );
+        List<MonthlyImageColorPalette> recentPalettes =
+                monthlyReportV2Repository.findRecentCompletedImageColorPalettes(
+                        user.getId(),
+                        current.getId(),
+                        PageRequest.of(0, 3)
+                );
         MonthlyReportV2 reloadedMay = monthlyReportV2Repository.findById(may.getId()).orElseThrow();
 
         assertThat(recent).containsExactly(
@@ -116,7 +127,13 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 MonthlyImageStylePreset.PAPER_CUT_LAYERS,
                 MonthlyImageStylePreset.GLASS_AND_LIGHT
         );
+        assertThat(recentPalettes).containsExactly(
+                MonthlyImageColorPalette.MOON_VIOLET,
+                MonthlyImageColorPalette.SUNSET_CLAY,
+                MonthlyImageColorPalette.OCEAN_LIGHT
+        );
         assertThat(reloadedMay.getImagePromptVariant()).isEqualTo(MonthlyImageStylePreset.BOTANICAL_COLLAGE);
+        assertThat(reloadedMay.getImageColorPalette()).isEqualTo(MonthlyImageColorPalette.MOON_VIOLET);
     }
 
     @Test
@@ -198,7 +215,8 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
     private MonthlyReportV2 completedReport(
             User user,
             LocalDate monthStartDate,
-            MonthlyImageStylePreset preset
+            MonthlyImageStylePreset preset,
+            MonthlyImageColorPalette colorPalette
     ) {
         MonthlyReportV2 report = MonthlyReportV2.create(
                 user,
@@ -211,6 +229,7 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 MonthlyReportComparisonType.COMPARISON
         );
         report.assignImagePromptVariant(preset);
+        report.assignImageColorPalette(colorPalette);
         return monthlyReportV2Repository.save(report);
     }
 }

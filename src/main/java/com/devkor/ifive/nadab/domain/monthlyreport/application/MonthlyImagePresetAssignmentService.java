@@ -1,6 +1,9 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyImageColorPaletteSelector;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyImagePresetSelector;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImageVisualPreset;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageColorPalette;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
@@ -24,29 +27,66 @@ public class MonthlyImagePresetAssignmentService {
     private final MonthlyReportV2Repository monthlyReportV2Repository;
 
     public MonthlyImageStylePreset getOrAssign(Long userId, Long reportId) {
+        return getOrAssignVisualPreset(userId, reportId).stylePreset();
+    }
+
+    public MonthlyImageVisualPreset getOrAssignVisualPreset(Long userId, Long reportId) {
         MonthlyReportV2 report = monthlyReportV2Repository.findById(reportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
         if (report.getUser() == null || report.getUser().getId() == null
                 || !report.getUser().getId().equals(userId)) {
             throw new ForbiddenException(ErrorCode.MONTHLY_REPORT_ACCESS_FORBIDDEN);
         }
-        if (report.getImagePromptVariant() != null) {
-            return report.getImagePromptVariant();
-        }
+        MonthlyImageStylePreset stylePreset = getOrAssignStylePreset(userId, reportId, report);
+        MonthlyImageColorPalette colorPalette = getOrAssignColorPalette(userId, reportId, report);
+        return new MonthlyImageVisualPreset(stylePreset, colorPalette);
+    }
 
-        List<MonthlyImageStylePreset> recentPresets =
-                monthlyReportV2Repository.findRecentCompletedImagePromptVariants(
-                        userId,
-                        reportId,
-                        PageRequest.of(0, RECENT_PRESET_LIMIT)
-                );
-        MonthlyImageStylePreset selected = MonthlyImagePresetSelector.select(
-                userId,
-                reportId,
-                report.getMonthStartDate(),
-                recentPresets
-        );
-        report.assignImagePromptVariant(selected);
-        return selected;
+    private MonthlyImageStylePreset getOrAssignStylePreset(
+            Long userId,
+            Long reportId,
+            MonthlyReportV2 report
+    ) {
+        if (report.getImagePromptVariant() == null) {
+            List<MonthlyImageStylePreset> recentPresets =
+                    monthlyReportV2Repository.findRecentCompletedImagePromptVariants(
+                            userId,
+                            reportId,
+                            PageRequest.of(0, RECENT_PRESET_LIMIT)
+                    );
+            MonthlyImageStylePreset selected = MonthlyImagePresetSelector.select(
+                    userId,
+                    reportId,
+                    report.getMonthStartDate(),
+                    recentPresets
+            );
+            report.assignImagePromptVariant(selected);
+            return selected;
+        }
+        return report.getImagePromptVariant();
+    }
+
+    private MonthlyImageColorPalette getOrAssignColorPalette(
+            Long userId,
+            Long reportId,
+            MonthlyReportV2 report
+    ) {
+        if (report.getImageColorPalette() == null) {
+            List<MonthlyImageColorPalette> recentPalettes =
+                    monthlyReportV2Repository.findRecentCompletedImageColorPalettes(
+                            userId,
+                            reportId,
+                            PageRequest.of(0, RECENT_PRESET_LIMIT)
+                    );
+            MonthlyImageColorPalette selected = MonthlyImageColorPaletteSelector.select(
+                    userId,
+                    reportId,
+                    report.getMonthStartDate(),
+                    recentPalettes
+            );
+            report.assignImageColorPalette(selected);
+            return selected;
+        }
+        return report.getImageColorPalette();
     }
 }

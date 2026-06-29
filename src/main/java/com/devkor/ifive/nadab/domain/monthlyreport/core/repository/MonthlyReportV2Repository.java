@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.monthlyreport.core.repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportImageStatus;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageColorPalette;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -42,6 +43,21 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
         order by mr.monthStartDate desc, mr.id desc
         """)
     List<MonthlyImageStylePreset> findRecentCompletedImagePromptVariants(
+            @Param("userId") Long userId,
+            @Param("reportId") Long reportId,
+            Pageable pageable
+    );
+
+    @Query("""
+        select mr.imageColorPalette
+        from MonthlyReportV2 mr
+        where mr.user.id = :userId
+          and mr.id <> :reportId
+          and mr.status = com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus.COMPLETED
+          and mr.imageColorPalette is not null
+        order by mr.monthStartDate desc, mr.id desc
+        """)
+    List<MonthlyImageColorPalette> findRecentCompletedImageColorPalettes(
             @Param("userId") Long userId,
             @Param("reportId") Long reportId,
             Pageable pageable

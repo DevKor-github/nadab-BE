@@ -59,6 +59,10 @@ public class MonthlyReportV2 extends CreatableEntity {
     private MonthlyImageStylePreset imagePromptVariant;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "image_color_palette", length = 40)
+    private MonthlyImageColorPalette imageColorPalette;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "image_status", nullable = false, length = 16)
     private MonthlyReportImageStatus imageStatus;
 
@@ -153,6 +157,12 @@ public class MonthlyReportV2 extends CreatableEntity {
     public void assignImagePromptVariant(MonthlyImageStylePreset imagePromptVariant) {
         if (this.imagePromptVariant == null) {
             this.imagePromptVariant = imagePromptVariant;
+        }
+    }
+
+    public void assignImageColorPalette(MonthlyImageColorPalette imageColorPalette) {
+        if (this.imageColorPalette == null) {
+            this.imageColorPalette = imageColorPalette;
         }
     }
 }
