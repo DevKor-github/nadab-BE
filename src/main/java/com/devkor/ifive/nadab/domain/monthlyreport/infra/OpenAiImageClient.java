@@ -1,6 +1,8 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.infra;
 
+import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyImagePromptComposer;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.OpenAiImageGenerateRequestDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.OpenAiImageGenerateResponseDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2Content;
@@ -26,6 +28,7 @@ public class OpenAiImageClient {
 
     private final WebClient.Builder webClientBuilder;
     private final MonthlyReportPromptLoader monthlyReportPromptLoader;
+    private final MonthlyImagePromptComposer monthlyImagePromptComposer;
 
     @Value("${openai.api-key}")
     private String apiKey;
@@ -42,6 +45,10 @@ public class OpenAiImageClient {
     @Value("${openai.image.output-format}")
     private String outputFormat;
 
+    public String generateBase64Image(Long userId, MonthlyImagePromptContext context) {
+        return generateBase64Image(userId, monthlyImagePromptComposer.compose(context));
+    }
+
     public String generateBase64Image(Long userId, AiMonthlyReportResultDto dto, MonthRangeDto range) {
         MonthlyReportV2Content content = dto.content();
 
@@ -53,6 +60,11 @@ public class OpenAiImageClient {
                         range.monthStartDate(),
                         range.monthEndDate()
                 );
+
+        return generateBase64Image(userId, prompt);
+    }
+
+    private String generateBase64Image(Long userId, String prompt) {
 
         OpenAiImageGenerateRequestDto request = new OpenAiImageGenerateRequestDto(
                 model,
