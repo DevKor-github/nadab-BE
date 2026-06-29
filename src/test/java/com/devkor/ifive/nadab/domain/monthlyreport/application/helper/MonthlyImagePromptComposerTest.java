@@ -8,6 +8,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,6 +80,57 @@ class MonthlyImagePromptComposerTest {
                 .contains("Do not default to lavender, pink, beige, peach")
                 .doesNotContain(palette.name())
                 .doesNotContain("feel calm, warm");
+    }
+
+    @Test
+    void all_style_and_palette_combinations_produce_distinct_prompts() {
+        Set<String> prompts = new HashSet<>();
+
+        for (MonthlyImageStylePreset style : MonthlyImageStylePreset.values()) {
+            for (MonthlyImageColorPalette palette : MonthlyImageColorPalette.values()) {
+                prompts.add(composer.compose(new MonthlyImagePromptContext(
+                        "summary",
+                        "comment",
+                        "keyword",
+                        LocalDate.of(2026, 5, 1),
+                        LocalDate.of(2026, 5, 31),
+                        style,
+                        palette
+                )));
+            }
+        }
+
+        assertThat(prompts).hasSize(
+                MonthlyImageStylePreset.values().length * MonthlyImageColorPalette.values().length
+        );
+    }
+
+    @Test
+    void every_palette_contains_recognizable_core_color_tokens() {
+        Map<MonthlyImageColorPalette, String[]> expectedColors = Map.of(
+                MonthlyImageColorPalette.FOREST_MIST, new String[]{"sage green", "deep teal"},
+                MonthlyImageColorPalette.OCEAN_LIGHT, new String[]{"cobalt blue", "clear cyan"},
+                MonthlyImageColorPalette.SUNSET_CLAY, new String[]{"terracotta", "burnt orange"},
+                MonthlyImageColorPalette.MOON_VIOLET, new String[]{"indigo", "violet"},
+                MonthlyImageColorPalette.CITRUS_BREEZE, new String[]{"lemon yellow", "fresh mint"},
+                MonthlyImageColorPalette.EARTH_NEUTRAL, new String[]{"ivory", "stone gray"},
+                MonthlyImageColorPalette.JEWEL_GLOW, new String[]{"emerald", "sapphire"},
+                MonthlyImageColorPalette.ROSE_DAWN, new String[]{"rose", "peach"}
+        );
+
+        expectedColors.forEach((palette, colors) -> {
+            String prompt = composer.compose(new MonthlyImagePromptContext(
+                    "summary",
+                    "comment",
+                    "keyword",
+                    LocalDate.of(2026, 5, 1),
+                    LocalDate.of(2026, 5, 31),
+                    MonthlyImageStylePreset.MINIMAL_GEOMETRY,
+                    palette
+            ));
+
+            assertThat(prompt).contains(colors);
+        });
     }
 
     private MonthlyImagePromptContext context(
