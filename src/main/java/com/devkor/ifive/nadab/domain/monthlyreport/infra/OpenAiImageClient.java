@@ -1,17 +1,13 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.infra;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyImagePromptComposer;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.OpenAiImageGenerateRequestDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.OpenAiImageGenerateResponseDto;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2Content;
-import com.devkor.ifive.nadab.global.core.prompt.monthly.MonthlyReportPromptLoader;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
-import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +23,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class OpenAiImageClient {
 
     private final WebClient.Builder webClientBuilder;
-    private final MonthlyReportPromptLoader monthlyReportPromptLoader;
     private final MonthlyImagePromptComposer monthlyImagePromptComposer;
 
     @Value("${openai.api-key}")
@@ -47,21 +42,6 @@ public class OpenAiImageClient {
 
     public String generateBase64Image(Long userId, MonthlyImagePromptContext context) {
         return generateBase64Image(userId, monthlyImagePromptComposer.compose(context));
-    }
-
-    public String generateBase64Image(Long userId, AiMonthlyReportResultDto dto, MonthRangeDto range) {
-        MonthlyReportV2Content content = dto.content();
-
-        String prompt = monthlyReportPromptLoader.loadImagePrompt()
-                .formatted(
-                        safe(content.summary()),
-                        safe(content.commentSummary()),
-                        safe(content.dominantKeyword()),
-                        range.monthStartDate(),
-                        range.monthEndDate()
-                );
-
-        return generateBase64Image(userId, prompt);
     }
 
     private String generateBase64Image(Long userId, String prompt) {
@@ -120,10 +100,6 @@ public class OpenAiImageClient {
                     userId, e.getMessage(), e);
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
-    }
-
-    private String safe(String value) {
-        return value == null || value.isBlank() ? "Not provided" : value;
     }
 
     private String truncate(String value) {

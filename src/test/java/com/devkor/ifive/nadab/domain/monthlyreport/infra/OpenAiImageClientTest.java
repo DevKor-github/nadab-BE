@@ -3,7 +3,6 @@ package com.devkor.ifive.nadab.domain.monthlyreport.infra;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyImagePromptComposer;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
-import com.devkor.ifive.nadab.global.core.prompt.monthly.MonthlyReportPromptLoader;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -33,14 +32,13 @@ class OpenAiImageClientTest {
         ));
         WebClient.Builder webClientBuilder = WebClient.builder().exchangeFunction(exchangeFunction);
         MonthlyImagePromptComposer composer = mock(MonthlyImagePromptComposer.class);
-        MonthlyReportPromptLoader promptLoader = mock(MonthlyReportPromptLoader.class);
         MonthlyImagePromptContext context = new MonthlyImagePromptContext(
                 "요약", "코멘트", "키워드",
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31),
                 MonthlyImageStylePreset.INK_WASH
         );
         when(composer.compose(context)).thenReturn("composed-prompt");
-        OpenAiImageClient client = new OpenAiImageClient(webClientBuilder, promptLoader, composer);
+        OpenAiImageClient client = new OpenAiImageClient(webClientBuilder, composer);
         ReflectionTestUtils.setField(client, "apiKey", "test-key");
         ReflectionTestUtils.setField(client, "model", "test-model");
         ReflectionTestUtils.setField(client, "size", "1024x1024");
