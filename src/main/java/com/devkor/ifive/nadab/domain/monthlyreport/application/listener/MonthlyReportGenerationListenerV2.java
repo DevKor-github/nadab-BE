@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application.listener;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyImagePresetAssignmentService;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxServiceV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyInterestStatsCalculator;
@@ -10,8 +11,10 @@ import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsCon
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportComparisonInputDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
@@ -54,6 +57,7 @@ public class MonthlyReportGenerationListenerV2 {
     private final MonthlyReportImageStorage monthlyReportImageStorage;
 
     private final MonthlyReportTxServiceV2 monthlyReportTxServiceV2;
+    private final MonthlyImagePresetAssignmentService monthlyImagePresetAssignmentService;
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
     private final MonthlySocialSummaryService monthlySocialSummaryService;
     private final ReportGenerationLogRecorder reportGenerationLogRecorder;
@@ -231,7 +235,19 @@ public class MonthlyReportGenerationListenerV2 {
                 null
         );
         try {
-            String base64Image = openAiImageClient.generateBase64Image(event.userId(), dto, range);
+            MonthlyImageStylePreset imageStylePreset = monthlyImagePresetAssignmentService.getOrAssign(
+                    event.userId(),
+                    event.reportId()
+            );
+            MonthlyImagePromptContext imagePromptContext = MonthlyImagePromptContext.from(
+                    dto,
+                    range,
+                    imageStylePreset
+            );
+            String base64Image = openAiImageClient.generateBase64Image(
+                    event.userId(),
+                    imagePromptContext
+            );
             imageKey = monthlyReportImageStorage.uploadBase64Webp(
                     event.userId(),
                     event.reportId(),
