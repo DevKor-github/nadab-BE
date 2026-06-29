@@ -5,7 +5,9 @@ import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxSe
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImageVisualPreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageColorPalette;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2Content;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
@@ -76,8 +78,11 @@ class MonthlyReportGenerationListenerV2Test {
                 .thenReturn(MonthlySocialSummaryContent.empty(1));
         when(monthlyReportLlmClientV2.generate(any(), any(), any(), any(), any(), any()))
                 .thenReturn(result);
-        when(monthlyImagePresetAssignmentService.getOrAssign(1L, 10L))
-                .thenReturn(MonthlyImageStylePreset.INK_WASH);
+        when(monthlyImagePresetAssignmentService.getOrAssignVisualPreset(1L, 10L))
+                .thenReturn(new MonthlyImageVisualPreset(
+                        MonthlyImageStylePreset.INK_WASH,
+                        MonthlyImageColorPalette.OCEAN_LIGHT
+                ));
         when(openAiImageClient.generateBase64Image(anyLong(), any(MonthlyImagePromptContext.class)))
                 .thenReturn("base64-image");
         when(monthlyReportImageStorage.uploadBase64Webp(1L, 10L, "base64-image"))
@@ -93,6 +98,7 @@ class MonthlyReportGenerationListenerV2Test {
         assertThat(context.commentSummary()).isEqualTo("코멘트 요약");
         assertThat(context.dominantKeyword()).isEqualTo("성장");
         assertThat(context.stylePreset()).isEqualTo(MonthlyImageStylePreset.INK_WASH);
+        assertThat(context.colorPalette()).isEqualTo(MonthlyImageColorPalette.OCEAN_LIGHT);
         verify(monthlyReportTxServiceV2).confirmMonthly(10L, 100L, "monthly/1/10.webp");
     }
 
@@ -119,7 +125,7 @@ class MonthlyReportGenerationListenerV2Test {
                 .thenReturn(MonthlySocialSummaryContent.empty(1));
         when(monthlyReportLlmClientV2.generate(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new AiMonthlyReportResultDto(content, null));
-        when(monthlyImagePresetAssignmentService.getOrAssign(1L, 10L))
+        when(monthlyImagePresetAssignmentService.getOrAssignVisualPreset(1L, 10L))
                 .thenThrow(new IllegalStateException("preset assignment failed"));
 
         listener.handle(event);

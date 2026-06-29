@@ -12,9 +12,9 @@ import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionCo
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImageVisualPreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportComparisonInputDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
-import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
@@ -235,14 +235,14 @@ public class MonthlyReportGenerationListenerV2 {
                 null
         );
         try {
-            MonthlyImageStylePreset imageStylePreset = monthlyImagePresetAssignmentService.getOrAssign(
+            MonthlyImageVisualPreset imageVisualPreset = monthlyImagePresetAssignmentService.getOrAssignVisualPreset(
                     event.userId(),
                     event.reportId()
             );
             MonthlyImagePromptContext imagePromptContext = MonthlyImagePromptContext.from(
                     dto,
                     range,
-                    imageStylePreset
+                    imageVisualPreset
             );
             String base64Image = openAiImageClient.generateBase64Image(
                     event.userId(),

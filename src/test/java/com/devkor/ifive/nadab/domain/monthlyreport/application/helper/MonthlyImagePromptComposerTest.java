@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application.helper;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageColorPalette;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +56,29 @@ class MonthlyImagePromptComposerTest {
                 .contains("Dominant keyword: Not provided");
     }
 
+    @ParameterizedTest
+    @EnumSource(MonthlyImageColorPalette.class)
+    void composes_a_distinct_direction_for_every_color_palette(MonthlyImageColorPalette palette) {
+        MonthlyImagePromptContext context = new MonthlyImagePromptContext(
+                "summary",
+                "comment",
+                "keyword",
+                LocalDate.of(2026, 5, 1),
+                LocalDate.of(2026, 5, 31),
+                MonthlyImageStylePreset.MINIMAL_GEOMETRY,
+                palette
+        );
+
+        String prompt = composer.compose(context);
+
+        assertThat(prompt)
+                .contains("Color direction:")
+                .contains("The specified color direction is mandatory.")
+                .contains("Do not default to lavender, pink, beige, peach")
+                .doesNotContain(palette.name())
+                .doesNotContain("feel calm, warm");
+    }
+
     private MonthlyImagePromptContext context(
             MonthlyImageStylePreset preset,
             String summary,
@@ -67,7 +91,8 @@ class MonthlyImagePromptComposerTest {
                 dominantKeyword,
                 LocalDate.of(2026, 5, 1),
                 LocalDate.of(2026, 5, 31),
-                preset
+                preset,
+                MonthlyImageColorPalette.OCEAN_LIGHT
         );
     }
 }

@@ -103,9 +103,9 @@ class MonthlyImagePresetAssignmentServiceTest {
                 1L, 10L, PageRequest.of(0, 3)
         )).thenReturn(List.of(MonthlyImageColorPalette.OCEAN_LIGHT));
 
-        MonthlyImageStylePreset result = service.getOrAssign(1L, 10L);
+        MonthlyImageVisualPreset result = service.getOrAssignVisualPreset(1L, 10L);
 
-        assertThat(result).isEqualTo(MonthlyImageStylePreset.INK_WASH);
+        assertThat(result.stylePreset()).isEqualTo(MonthlyImageStylePreset.INK_WASH);
         verify(monthlyReportV2Repository, never()).findRecentCompletedImagePromptVariants(
                 1L, 10L, PageRequest.of(0, 3)
         );
@@ -117,7 +117,7 @@ class MonthlyImagePresetAssignmentServiceTest {
         MonthlyReportV2 report = report(2L);
         when(monthlyReportV2Repository.findById(10L)).thenReturn(Optional.of(report));
 
-        assertThatThrownBy(() -> service.getOrAssign(1L, 10L))
+        assertThatThrownBy(() -> service.getOrAssignVisualPreset(1L, 10L))
                 .isInstanceOfSatisfying(ForbiddenException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MONTHLY_REPORT_ACCESS_FORBIDDEN));
     }

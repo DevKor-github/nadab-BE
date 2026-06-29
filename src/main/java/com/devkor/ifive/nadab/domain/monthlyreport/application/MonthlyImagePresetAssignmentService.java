@@ -26,10 +26,6 @@ public class MonthlyImagePresetAssignmentService {
 
     private final MonthlyReportV2Repository monthlyReportV2Repository;
 
-    public MonthlyImageStylePreset getOrAssign(Long userId, Long reportId) {
-        return getOrAssignVisualPreset(userId, reportId).stylePreset();
-    }
-
     public MonthlyImageVisualPreset getOrAssignVisualPreset(Long userId, Long reportId) {
         MonthlyReportV2 report = monthlyReportV2Repository.findById(reportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
