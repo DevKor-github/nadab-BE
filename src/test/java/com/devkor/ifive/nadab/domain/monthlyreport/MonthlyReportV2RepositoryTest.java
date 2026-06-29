@@ -2,7 +2,10 @@ package com.devkor.ifive.nadab.domain.monthlyreport;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialRankingItem;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyReportV2ContentFactory;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportComparisonType;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportImageStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -81,6 +85,38 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 .containsExactly(1, 2);
         assertThat(reloaded.getSocialSummary().likeRanking())
                 .allMatch(MonthlySocialRankingItem::topRank);
+    }
+
+    @Test
+    void saves_variant_and_finds_three_most_recent_completed_variants() {
+        User user = new UserBuilder(em).build();
+        completedReport(user, LocalDate.of(2026, 2, 1), MonthlyImageStylePreset.INK_WASH);
+        completedReport(user, LocalDate.of(2026, 3, 1), MonthlyImageStylePreset.GLASS_AND_LIGHT);
+        completedReport(user, LocalDate.of(2026, 4, 1), MonthlyImageStylePreset.PAPER_CUT_LAYERS);
+        MonthlyReportV2 may = completedReport(user, LocalDate.of(2026, 5, 1), MonthlyImageStylePreset.BOTANICAL_COLLAGE);
+        MonthlyReportV2 current = monthlyReportV2Repository.save(MonthlyReportV2.createPending(
+                user,
+                LocalDate.of(2026, 6, 1),
+                LocalDate.of(2026, 6, 30),
+                LocalDate.of(2026, 7, 1),
+                MonthlyReportComparisonType.COMPARISON
+        ));
+        em.flush();
+        em.clear();
+
+        List<MonthlyImageStylePreset> recent = monthlyReportV2Repository.findRecentCompletedImagePromptVariants(
+                user.getId(),
+                current.getId(),
+                PageRequest.of(0, 3)
+        );
+        MonthlyReportV2 reloadedMay = monthlyReportV2Repository.findById(may.getId()).orElseThrow();
+
+        assertThat(recent).containsExactly(
+                MonthlyImageStylePreset.BOTANICAL_COLLAGE,
+                MonthlyImageStylePreset.PAPER_CUT_LAYERS,
+                MonthlyImageStylePreset.GLASS_AND_LIGHT
+        );
+        assertThat(reloadedMay.getImagePromptVariant()).isEqualTo(MonthlyImageStylePreset.BOTANICAL_COLLAGE);
     }
 
     @Test
@@ -157,5 +193,24 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 "{\"visible\":true,\"month\":5,\"likeRanking\":[{\"displayOrder\":1,\"userId\":10,\"nickname\":\"가\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}],\"commentRanking\":[{\"displayOrder\":1,\"userId\":11,\"nickname\":\"나\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}]}",
                 MonthlyReportStatus.TEXT_COMPLETED.name()
         );
+    }
+
+    private MonthlyReportV2 completedReport(
+            User user,
+            LocalDate monthStartDate,
+            MonthlyImageStylePreset preset
+    ) {
+        MonthlyReportV2 report = MonthlyReportV2.create(
+                user,
+                monthStartDate,
+                monthStartDate.withDayOfMonth(monthStartDate.lengthOfMonth()),
+                MonthlyReportV2ContentFactory.empty(),
+                monthStartDate.plusMonths(1),
+                MonthlyReportStatus.COMPLETED,
+                MonthlyReportImageStatus.COMPLETED,
+                MonthlyReportComparisonType.COMPARISON
+        );
+        report.assignImagePromptVariant(preset);
+        return monthlyReportV2Repository.save(report);
     }
 }

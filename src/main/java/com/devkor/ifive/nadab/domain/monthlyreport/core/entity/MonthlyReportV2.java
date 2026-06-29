@@ -55,6 +55,10 @@ public class MonthlyReportV2 extends CreatableEntity {
     private String imageKey;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "image_prompt_variant", length = 40)
+    private MonthlyImageStylePreset imagePromptVariant;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "image_status", nullable = false, length = 16)
     private MonthlyReportImageStatus imageStatus;
 
@@ -144,5 +148,11 @@ public class MonthlyReportV2 extends CreatableEntity {
         this.socialSummary = socialSummary == null
                 ? MonthlySocialSummaryContent.empty(monthStartDate.getMonthValue())
                 : socialSummary.normalized();
+    }
+
+    public void assignImagePromptVariant(MonthlyImageStylePreset imagePromptVariant) {
+        if (this.imagePromptVariant == null) {
+            this.imagePromptVariant = imagePromptVariant;
+        }
     }
 }
