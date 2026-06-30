@@ -86,6 +86,10 @@ jobs:
             MONTHLY_V2_BASELINE_PROMPT_B64="${{ secrets.MONTHLY_V2_BASELINE_PROMPT_B64 }}"
             MONTHLY_V2_BASELINE_PROMPT="$(printf '%s' "$MONTHLY_V2_BASELINE_PROMPT_B64" | base64 -d | tr -d '\r')"
             export MONTHLY_V2_BASELINE_PROMPT
+
+            MONTHLY_V2_COMPARISON_PROMPT_B64="${{ secrets.MONTHLY_V2_COMPARISON_PROMPT_B64 }}"
+            MONTHLY_V2_COMPARISON_PROMPT="$(printf '%s' "$MONTHLY_V2_COMPARISON_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export MONTHLY_V2_COMPARISON_PROMPT
             
             EVIDENCE_CARD_PROMPT_B64="${{ secrets.EVIDENCE_CARD_PROMPT_B64 }}"
             EVIDENCE_CARD_PROMPT="$(printf '%s' "$EVIDENCE_CARD_PROMPT_B64" | base64 -d | tr -d '\r')"
