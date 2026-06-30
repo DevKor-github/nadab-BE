@@ -85,20 +85,6 @@ class MonthlyReportQueryServiceV2Test {
     }
 
     @Test
-    void 숨김_단일_조회는_지난달_리포트만_반환한다() {
-        when(userRepository.existsById(1L)).thenReturn(true);
-        LocalDate currentMonth = MonthRangeCalculator.getLastMonthRange().monthStartDate();
-        MonthlyReportLocatorResponse current = new MonthlyReportLocatorResponse(
-                20L, 2, currentMonth.getMonthValue(), MonthlyReportStatus.COMPLETED
-        );
-        when(monthlyReportLocatorResolver.findByMonth(1L, currentMonth)).thenReturn(Optional.of(current));
-
-        var response = service.getCurrentMonthlyReport(1L);
-
-        assertThat(response.report()).isEqualTo(current);
-    }
-
-    @Test
     void 연도_경계에서_1월의_이전_리포트로_전년도_12월을_조회한다() {
         MonthRangeDto january = new MonthRangeDto(
                 LocalDate.of(2026, 1, 1),

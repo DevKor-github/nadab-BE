@@ -1,7 +1,6 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
-import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.CurrentMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportLocatorResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
@@ -141,19 +140,6 @@ public class MonthlyReportQueryServiceV2 {
                 .orElse(null);
 
         return new MyMonthlyReportLookupResponseV2(report, previousReport);
-    }
-
-    public CurrentMonthlyReportLookupResponseV2 getCurrentMonthlyReport(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
-        }
-
-        MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
-        MonthlyReportLocatorResponse report = monthlyReportLocatorResolver
-                .findByMonth(userId, range.monthStartDate())
-                .orElse(null);
-
-        return new CurrentMonthlyReportLookupResponseV2(report);
     }
 
     public MonthlyReportResponseV2 getMonthlyReportById(Long userId, Long id) {
