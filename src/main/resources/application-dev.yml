@@ -63,5 +63,6 @@ cors:
     - http://localhost:5173
     - ${FRONTEND_DEV_URL}
     - ${FRONTEND_DEV_URL_2}
+    - ${FRONTEND_DEV_URL_3}
     - ${SWAGGER_ORIGIN_PUBLIC_IP}
     - ${SWAGGER_ORIGIN_DOMAIN}
