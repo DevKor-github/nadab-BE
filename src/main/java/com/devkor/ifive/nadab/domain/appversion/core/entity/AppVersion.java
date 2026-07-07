@@ -56,4 +56,8 @@ public class AppVersion extends AuditableEntity {
     public void updateSummary(String summary) {
         this.summary = summary;
     }
+
+    public void updateVersion(String version) {
+        this.version = version;
+    }
 }
