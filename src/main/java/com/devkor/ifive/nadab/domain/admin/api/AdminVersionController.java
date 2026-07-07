@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.admin.api;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionCreateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionItemUpsertRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionSummaryUpdateRequest;
+import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionUpdateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminLatestVersionsResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionCreateResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionItemCreateResponse;
@@ -53,6 +54,15 @@ public class AdminVersionController {
             @RequestBody @Valid AdminVersionSummaryUpdateRequest request
     ) {
         adminVersionCommandService.updateSummary(appVersionId, request.summary());
+        return ApiResponseEntity.noContent();
+    }
+
+    @PutMapping("/{appVersionId}/version")
+    public ResponseEntity<ApiResponseDto<Void>> updateVersion(
+            @PathVariable Long appVersionId,
+            @RequestBody @Valid AdminVersionUpdateRequest request
+    ) {
+        adminVersionCommandService.updateVersion(appVersionId, request.version());
         return ApiResponseEntity.noContent();
     }
 

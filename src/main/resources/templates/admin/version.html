@@ -177,6 +177,24 @@
             font-size: 15px;
         }
 
+        .version-editor {
+            display: grid;
+            grid-template-columns: minmax(140px, 220px) auto;
+            gap: 8px;
+            align-items: end;
+        }
+
+        .version-editor.confirmed-ui input {
+            opacity: 0.58;
+        }
+
+        @media (max-width: 640px) {
+            .version-editor {
+                grid-template-columns: 1fr;
+                width: 100%;
+            }
+        }
+
         .items-table {
             width: 100%;
             border-collapse: collapse;
@@ -287,7 +305,7 @@
             </div>
             <div>
                 <label class="field-label" for="version">Version</label>
-                <input id="version" type="text" maxlength="30" placeholder="e.g. 1.2.1" required/>
+                <input id="version" type="text" maxlength="30" pattern="\d+\.\d+\.\d+" title="Use major.minor.patch format." placeholder="e.g. 1.2.1" required/>
             </div>
             <div>
                 <label class="field-label" for="createSummary">Summary</label>
@@ -449,7 +467,18 @@
         versionListEl.innerHTML = versions.map((version) => `
             <section class="version-card" data-version-id="${version.id}">
                 <div class="version-head">
-                    <strong>${escapeHtml(version.platform)} / ${escapeHtml(version.version)}</strong>
+                    <strong>${escapeHtml(version.platform)}</strong>
+                    <div class="version-editor confirmed-ui">
+                        <div>
+                            <label class="field-label">Version</label>
+                            <input class="version-value" type="text" maxlength="30" pattern="\\d+\\.\\d+\\.\\d+" title="Use major.minor.patch format." value="${escapeHtml(version.version)}" data-original="${escapeHtml(version.version)}" disabled/>
+                        </div>
+                        <div class="btn-row">
+                            <button type="button" class="btn btn-ghost" data-action="edit-version">Edit</button>
+                            <button type="button" class="btn btn-primary is-hidden" data-action="save-version">Save Version</button>
+                            <button type="button" class="btn btn-ghost is-hidden" data-action="cancel-version">Cancel</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="summary-editor confirmed-ui">
                     <label class="field-label">Summary</label>
@@ -509,6 +538,27 @@
         }
     }
 
+    function toggleVersionEditMode(versionEditor, editing) {
+        const versionInput = versionEditor.querySelector('.version-value');
+        const editBtn = versionEditor.querySelector('[data-action="edit-version"]');
+        const saveBtn = versionEditor.querySelector('[data-action="save-version"]');
+        const cancelBtn = versionEditor.querySelector('[data-action="cancel-version"]');
+
+        versionInput.disabled = !editing;
+        editBtn.classList.toggle('is-hidden', editing);
+        saveBtn.classList.toggle('is-hidden', !editing);
+        cancelBtn.classList.toggle('is-hidden', !editing);
+
+        if (editing) {
+            versionEditor.classList.remove('confirmed-ui');
+            versionEditor.classList.add('draft-ui');
+            versionInput.focus();
+        } else {
+            versionEditor.classList.remove('draft-ui');
+            versionEditor.classList.add('confirmed-ui');
+        }
+    }
+
     function toggleItemEditMode(row, editing) {
         const titleInput = row.querySelector('.item-title');
         const descriptionInput = row.querySelector('.item-description');
@@ -561,6 +611,12 @@
             summaryEditor.classList.add('draft-ui');
         }
 
+        const versionEditor = target.closest('.version-editor');
+        if (versionEditor) {
+            versionEditor.classList.remove('confirmed-ui');
+            versionEditor.classList.add('draft-ui');
+        }
+
         const row = target.closest('tr[data-item-id], tr[data-new-item]');
         if (row) {
             row.classList.remove('confirmed-ui');
@@ -610,6 +666,32 @@
         const appVersionId = Number(versionCard.dataset.versionId);
 
         try {
+            if (action === 'edit-version') {
+                const versionEditor = versionCard.querySelector('.version-editor');
+                toggleVersionEditMode(versionEditor, true);
+                return;
+            }
+
+            if (action === 'cancel-version') {
+                const versionEditor = versionCard.querySelector('.version-editor');
+                const versionInput = versionEditor.querySelector('.version-value');
+                versionInput.value = versionInput.dataset.original ?? '';
+                toggleVersionEditMode(versionEditor, false);
+                return;
+            }
+
+            if (action === 'save-version') {
+                const confirmed = await showConfirmPopup('Save version?');
+                if (!confirmed) {
+                    return;
+                }
+                const version = versionCard.querySelector('.version-value').value.trim();
+                await request('PUT', `/admin/api/versions/${appVersionId}/version`, {version});
+                await loadVersions();
+                await showResultPopup('Version saved.');
+                return;
+            }
+
             if (action === 'edit-summary') {
                 const summaryEditor = versionCard.querySelector('.summary-editor');
                 toggleSummaryEditMode(summaryEditor, true);

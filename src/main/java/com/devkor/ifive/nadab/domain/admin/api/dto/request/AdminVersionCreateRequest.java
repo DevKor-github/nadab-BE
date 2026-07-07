@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.admin.api.dto.request;
 import com.devkor.ifive.nadab.domain.appversion.core.entity.AppPlatform;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record AdminVersionCreateRequest(
@@ -11,6 +12,7 @@ public record AdminVersionCreateRequest(
 
         @NotBlank(message = "버전은 필수입니다.")
         @Size(max = 30, message = "버전은 30자 이하여야 합니다.")
+        @Pattern(regexp = "\\d+\\.\\d+\\.\\d+", message = "Version must use major.minor.patch format.")
         String version,
 
         @NotNull(message = "요약은 null일 수 없습니다.")

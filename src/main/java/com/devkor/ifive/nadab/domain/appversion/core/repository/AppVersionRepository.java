@@ -13,4 +13,10 @@ public interface AppVersionRepository extends JpaRepository<AppVersion, Long> {
     Optional<AppVersion> findByPlatformAndIsLatestTrue(AppPlatform platform);
 
     boolean existsByPlatformAndVersion(AppPlatform platform, String version);
+
+    boolean existsByPlatformAndVersionAndIdNot(AppPlatform platform, String version, Long id);
+
+    List<AppVersion> findByPlatform(AppPlatform platform);
+
+    List<AppVersion> findByPlatformAndIdNot(AppPlatform platform, Long id);
 }
