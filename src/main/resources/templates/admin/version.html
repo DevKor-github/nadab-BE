@@ -78,6 +78,19 @@
             color: var(--muted);
         }
 
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .panel-head .panel-title {
+            margin: 0;
+        }
+
         .grid {
             display: grid;
             gap: 10px;
@@ -318,7 +331,10 @@
     </div>
 
     <div class="panel">
-        <h2 class="panel-title">Current Latest Versions</h2>
+        <div class="panel-head">
+            <h2 class="panel-title">Current Latest Versions</h2>
+            <a href="/admin/tabs/app-version-history" class="btn btn-ghost">View History</a>
+        </div>
         <div id="versionList" class="version-list"></div>
     </div>
 </div>

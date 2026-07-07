@@ -5,8 +5,10 @@ import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionItemUpser
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionSummaryUpdateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionUpdateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminLatestVersionsResponse;
+import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionHistoryResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionCreateResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionItemCreateResponse;
+import com.devkor.ifive.nadab.domain.appversion.core.entity.AppPlatform;
 import com.devkor.ifive.nadab.domain.admin.application.AdminVersionCommandService;
 import com.devkor.ifive.nadab.domain.admin.application.AdminVersionItemCommandService;
 import com.devkor.ifive.nadab.domain.admin.application.AdminVersionQueryService;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Hidden
@@ -38,6 +41,13 @@ public class AdminVersionController {
     @GetMapping("/latest")
     public ResponseEntity<ApiResponseDto<AdminLatestVersionsResponse>> getLatestVersions() {
         return ApiResponseEntity.ok(adminVersionQueryService.getLatestVersions());
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponseDto<AdminVersionHistoryResponse>> getVersionHistory(
+            @RequestParam(required = false) AppPlatform platform
+    ) {
+        return ApiResponseEntity.ok(adminVersionQueryService.getVersionHistory(platform));
     }
 
     @PostMapping

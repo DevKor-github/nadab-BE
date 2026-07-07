@@ -19,4 +19,8 @@ public interface AppVersionRepository extends JpaRepository<AppVersion, Long> {
     List<AppVersion> findByPlatform(AppPlatform platform);
 
     List<AppVersion> findByPlatformAndIdNot(AppPlatform platform, Long id);
+
+    List<AppVersion> findAllByOrderByCreatedAtDescIdDesc();
+
+    List<AppVersion> findByPlatformOrderByCreatedAtDescIdDesc(AppPlatform platform);
 }

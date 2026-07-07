@@ -20,4 +20,9 @@ public class AdminPageController {
     public String adminVersionPage() {
         return "admin/version";
     }
+
+    @GetMapping("/admin/tabs/app-version-history")
+    public String adminVersionHistoryPage() {
+        return "admin/version-history";
+    }
 }
