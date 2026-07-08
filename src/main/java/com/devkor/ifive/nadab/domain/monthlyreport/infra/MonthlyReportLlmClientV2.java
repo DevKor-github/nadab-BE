@@ -11,8 +11,11 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsageExtractor;
 import com.devkor.ifive.nadab.global.shared.reportcontent.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -59,7 +63,7 @@ public class MonthlyReportLlmClientV2 {
     private static final int MAX_COMPARISON_EMOTION = 150;
     private static final int MAX_COMPARISON_BOLD_SEGMENTS = 4;
 
-    public AiMonthlyReportResultDto generate(
+    public LlmGenerationResult<AiMonthlyReportResultDto> generate(
             String monthStartDate,
             String monthEndDate,
             String weeklySummaries,
@@ -77,11 +81,13 @@ public class MonthlyReportLlmClientV2 {
 
         ChatClient client = llmRouter.route(provider);
 
-        String content = switch (provider) {
+        LlmGenerationResult<String> generationResult = switch (provider) {
             case OPENAI -> callOpenAi(client, prompt);
             case CLAUDE -> callClaude(client, prompt);
             case GEMINI -> callGemini(client, prompt);
         };
+        String content = generationResult.content();
+        LlmTokenUsage tokenUsage = generationResult.tokenUsage();
 
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
@@ -142,9 +148,12 @@ public class MonthlyReportLlmClientV2 {
                     discoveredStyled,
                     commentStyled
             );
-            return new AiMonthlyReportResultDto(
-                    normalizedContent,
-                    new TypeTextContent(styledText)
+            return new LlmGenerationResult<>(
+                    new AiMonthlyReportResultDto(
+                            normalizedContent,
+                            new TypeTextContent(styledText)
+                    ),
+                    tokenUsage
             );
 
         } catch (AiResponseParseException e) {
@@ -188,7 +197,7 @@ public class MonthlyReportLlmClientV2 {
         }
     }
 
-    private String callOpenAi(ChatClient client, String prompt) {
+    private LlmGenerationResult<String> callOpenAi(ChatClient client, String prompt) {
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(OpenAiApi.ChatModel.GPT_5_MINI)
                 .reasoningEffort("medium")
@@ -196,34 +205,36 @@ public class MonthlyReportLlmClientV2 {
                 .build();
 
         try {
-            return client.prompt()
+            ChatResponse response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
+            return new LlmGenerationResult<>(extractContent(response), LlmTokenUsageExtractor.extract(response));
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
     }
 
-    private String callClaude(ChatClient client, String prompt) {
+    private LlmGenerationResult<String> callClaude(ChatClient client, String prompt) {
         AnthropicChatOptions options = AnthropicChatOptions.builder()
                 .model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU)
                 .temperature(0.3)
                 .build();
 
         try {
-            return client.prompt()
+            ChatResponse response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
+            return new LlmGenerationResult<>(extractContent(response), LlmTokenUsageExtractor.extract(response));
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
     }
 
-    private String callGemini(ChatClient client, String prompt) {
+    private LlmGenerationResult<String> callGemini(ChatClient client, String prompt) {
         GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
                 .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
                 .responseMimeType("application/json")
@@ -231,11 +242,12 @@ public class MonthlyReportLlmClientV2 {
                 .build();
 
         try {
-            return client.prompt()
+            ChatResponse response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
+            return new LlmGenerationResult<>(extractContent(response), LlmTokenUsageExtractor.extract(response));
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
@@ -333,6 +345,13 @@ public class MonthlyReportLlmClientV2 {
     }
 
      */
+
+    private String extractContent(ChatResponse response) {
+        if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
+            return null;
+        }
+        return response.getResult().getOutput().getText();
+    }
 
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
