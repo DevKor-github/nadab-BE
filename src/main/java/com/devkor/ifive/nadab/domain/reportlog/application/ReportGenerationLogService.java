@@ -52,6 +52,17 @@ public class ReportGenerationLogService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordTokenUsage(
+            Long logId,
+            Long inputTokens,
+            Long outputTokens,
+            Long totalTokens
+    ) {
+        reportGenerationLogRepository.findById(logId)
+                .ifPresent(log -> log.recordTokenUsage(inputTokens, outputTokens, totalTokens));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long logId, Exception exception) {
         Integer externalHttpStatus = extractExternalHttpStatus(exception);
         String externalErrorCode = extractExternalErrorCode(exception);

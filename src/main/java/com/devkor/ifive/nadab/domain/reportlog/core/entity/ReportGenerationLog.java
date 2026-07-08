@@ -76,6 +76,15 @@ public class ReportGenerationLog extends CreatableEntity {
     @Column(name = "elapsed_ms")
     private Long elapsedMs;
 
+    @Column(name = "input_tokens")
+    private Long inputTokens;
+
+    @Column(name = "output_tokens")
+    private Long outputTokens;
+
+    @Column(name = "total_tokens")
+    private Long totalTokens;
+
     @Column(name = "started_at", nullable = false)
     private OffsetDateTime startedAt;
 
@@ -105,6 +114,16 @@ public class ReportGenerationLog extends CreatableEntity {
     public void succeed() {
         this.status = ReportGenerationLogStatus.SUCCEEDED;
         finish();
+    }
+
+    public void recordTokenUsage(
+            Long inputTokens,
+            Long outputTokens,
+            Long totalTokens
+    ) {
+        this.inputTokens = inputTokens;
+        this.outputTokens = outputTokens;
+        this.totalTokens = totalTokens;
     }
 
     public void fail(

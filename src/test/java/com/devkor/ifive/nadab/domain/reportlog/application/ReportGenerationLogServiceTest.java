@@ -82,6 +82,36 @@ class ReportGenerationLogServiceTest {
     }
 
     @Test
+    void record_token_usage_updates_token_fields() {
+        // given
+        ReportGenerationLog log = startLog();
+        when(reportGenerationLogRepository.findById(1L)).thenReturn(Optional.of(log));
+
+        // when
+        reportGenerationLogService.recordTokenUsage(1L, 100L, 50L, 150L);
+
+        // then
+        assertThat(log.getInputTokens()).isEqualTo(100L);
+        assertThat(log.getOutputTokens()).isEqualTo(50L);
+        assertThat(log.getTotalTokens()).isEqualTo(150L);
+    }
+
+    @Test
+    void record_token_usage_allows_null_values() {
+        // given
+        ReportGenerationLog log = startLog();
+        when(reportGenerationLogRepository.findById(1L)).thenReturn(Optional.of(log));
+
+        // when
+        reportGenerationLogService.recordTokenUsage(1L, null, null, null);
+
+        // then
+        assertThat(log.getInputTokens()).isNull();
+        assertThat(log.getOutputTokens()).isNull();
+        assertThat(log.getTotalTokens()).isNull();
+    }
+
+    @Test
     void fail_marks_log_failed_with_external_status() {
         // given
         ReportGenerationLog log = startLog();

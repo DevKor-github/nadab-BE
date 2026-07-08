@@ -52,6 +52,23 @@ public class ReportGenerationLogRecorder {
         }
     }
 
+    public void recordTokenUsage(
+            Long logId,
+            Long inputTokens,
+            Long outputTokens,
+            Long totalTokens
+    ) {
+        if (logId == null) {
+            return;
+        }
+
+        try {
+            reportGenerationLogService.recordTokenUsage(logId, inputTokens, outputTokens, totalTokens);
+        } catch (Exception e) {
+            log.warn("[REPORT_GENERATION_LOG][TOKEN_USAGE_FAILED] logId={}", logId, e);
+        }
+    }
+
     public void fail(Long logId, Exception exception) {
         if (logId == null) {
             return;

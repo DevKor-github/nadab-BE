@@ -81,6 +81,26 @@ class ReportGenerationLogRepositoryTest extends PostgresIntegrationTestSupport {
                 .containsOnly(ReportGenerationLogStatus.FAILED);
     }
 
+    @Test
+    void save_token_usage() {
+        // given
+        User user = new UserBuilder(em).build();
+        ReportGenerationLog log = startLog(user, ReportGenerationType.DAILY, 101L, ReportGenerationStep.DAILY_GENERATE);
+        log.recordTokenUsage(100L, 50L, 150L);
+        ReportGenerationLog saved = reportGenerationLogRepository.save(log);
+
+        em.flush();
+        em.clear();
+
+        // when
+        ReportGenerationLog found = reportGenerationLogRepository.findById(saved.getId()).orElseThrow();
+
+        // then
+        assertThat(found.getInputTokens()).isEqualTo(100L);
+        assertThat(found.getOutputTokens()).isEqualTo(50L);
+        assertThat(found.getTotalTokens()).isEqualTo(150L);
+    }
+
     private ReportGenerationLog startLog(
             User user,
             ReportGenerationType reportType,
