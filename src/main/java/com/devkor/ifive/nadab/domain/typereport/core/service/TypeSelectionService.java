@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeSelectionResultDto;
 import com.devkor.ifive.nadab.domain.typereport.infra.TypeSelectLlmClient;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class TypeSelectionService {
 
     private final TypeSelectLlmClient llmClient;
 
-    public TypeSelectionResultDto select(
+    public LlmGenerationResult<TypeSelectionResultDto> select(
             List<AnalysisTypeCandidateDto> candidates,
             PatternExtractionResultDto patternResult
     ) {
@@ -47,12 +48,12 @@ public class TypeSelectionService {
         String candidatesText = TypeSelectionInputAssembler.assembleCandidates(candidates);
         String patternsText = TypeSelectionInputAssembler.assemblePatterns(patternResult);
 
-        JsonNode raw = llmClient.selectTypeRawJson(candidatesText, patternsText);
+        LlmGenerationResult<JsonNode> rawResult = llmClient.selectTypeRawJson(candidatesText, patternsText);
 
-        TypeSelectionResultDto dto = toDto(raw);
+        TypeSelectionResultDto dto = toDto(rawResult.content());
         validate(dto, candidateCodes, validEvidenceIds);
 
-        return dto;
+        return new LlmGenerationResult<>(dto, rawResult.tokenUsage());
     }
 
     private TypeSelectionResultDto toDto(JsonNode raw) {

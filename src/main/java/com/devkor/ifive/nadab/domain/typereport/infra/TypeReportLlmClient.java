@@ -5,8 +5,11 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsageExtractor;
 import com.devkor.ifive.nadab.global.shared.reportcontent.Mark;
 import com.devkor.ifive.nadab.global.shared.reportcontent.Segment;
 import com.devkor.ifive.nadab.global.shared.reportcontent.StyledText;
@@ -20,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.stereotype.Component;
@@ -56,7 +60,7 @@ public class TypeReportLlmClient {
             "패턴", "분석", "데이터", "기록", "습관", "장점", "단점", "모습", "결국", "보여집니다", "확인됩니다"
     };
 
-    public JsonNode generateRaw(String selectedType, String patterns, String evidenceCards, String emotionStats) {
+    public LlmGenerationResult<JsonNode> generateRaw(String selectedType, String patterns, String evidenceCards, String emotionStats) {
         if (blank(selectedType) || blank(patterns) || blank(evidenceCards) || blank(emotionStats)) {
             throw new AiResponseParseException(ErrorCode.TYPE_REPORT_GENERATE_INPUT_EMPTY);
         }
@@ -75,16 +79,18 @@ public class TypeReportLlmClient {
                 .temperature(0.0)
                 .build();
 
-        String content;
+        ChatResponse response;
         try {
-            content = client.prompt()
+            response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
+        String content = extractContent(response);
+        LlmTokenUsage tokenUsage = LlmTokenUsageExtractor.extract(response);
 
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
@@ -95,7 +101,7 @@ public class TypeReportLlmClient {
             if (raw.isObject()) {
                 hydrateTypeAnalysisIfMissing((ObjectNode) raw);
             }
-            return raw;
+            return new LlmGenerationResult<>(raw, tokenUsage);
         } catch (AiResponseParseException e) {
             throw e;
         } catch (Exception e) {
@@ -103,11 +109,11 @@ public class TypeReportLlmClient {
         }
     }
 
-    public JsonNode rewriteOnly(JsonNode raw) {
+    public LlmGenerationResult<JsonNode> rewriteOnly(JsonNode raw) {
         return enforceLength(raw);
     }
 
-    private JsonNode enforceLength(JsonNode raw) {
+    private LlmGenerationResult<JsonNode> enforceLength(JsonNode raw) {
         if (raw == null || raw.isNull() || !raw.isObject()) {
             throw new AiResponseParseException(ErrorCode.TYPE_REPORT_REWRITE_INPUT_SCHEMA_INVALID);
         }
@@ -116,14 +122,14 @@ public class TypeReportLlmClient {
 
         JsonNode personasNode = root.get("personas");
         if (personasNode == null || !personasNode.isArray()) {
-            return root;
+            return new LlmGenerationResult<>(root, LlmTokenUsage.empty());
         }
         validateRichContentsIfPresent(root);
 
         TypeTextContent sourceTypeAnalysisContent = parseTypeTextContentOrFallback(root.get("typeAnalysisContent"), "");
         String typeAnalysis = sourceTypeAnalysisContent.plainText().trim();
         if (blank(typeAnalysis)) {
-            return root;
+            return new LlmGenerationResult<>(root, LlmTokenUsage.empty());
         }
         root.put("typeAnalysis", typeAnalysis);
         ArrayNode personasArr = (ArrayNode) personasNode;
@@ -140,13 +146,17 @@ public class TypeReportLlmClient {
             badP2 = isOutOfRange(getPersonaContent(personasArr.get(1)).length(), MIN_PERSONA_CONTENT, MAX_PERSONA_CONTENT);
         }
 
-        if (!badTA && !badP1 && !badP2) return root;
+        if (!badTA && !badP1 && !badP2) return new LlmGenerationResult<>(root, LlmTokenUsage.empty());
 
         ChatClient rewriteClient = llmRouter.route(REWRITE_PROVIDER);
+        LlmTokenUsage tokenUsage = LlmTokenUsage.empty();
 
         if (badTA) {
             log.debug("[TypeReportRewrite] typeAnalysis invalid. len={}, twoParagraph={}", typeAnalysis.length(), validTwoParagraphs(typeAnalysis));
-            StyledText rewritten = rewriteTypeAnalysis(rewriteClient, sourceTypeAnalysisContent.styledText());
+            LlmGenerationResult<StyledText> rewriteResult =
+                    rewriteTypeAnalysis(rewriteClient, sourceTypeAnalysisContent.styledText());
+            StyledText rewritten = rewriteResult.content();
+            tokenUsage = tokenUsage.plus(rewriteResult.tokenUsage());
             validateStyledText(rewritten, true);
             TypeTextContent rewrittenContent = new TypeTextContent(rewritten).normalized();
             root.set("typeAnalysisContent", objectMapper.valueToTree(rewrittenContent));
@@ -157,14 +167,18 @@ public class TypeReportLlmClient {
             ObjectNode p0 = (ObjectNode) personasArr.get(0);
             String in = safeText(p0.get("content"));
             log.debug("[TypeReportRewrite] personas[0].content invalid. len={}", in.length());
-            p0.put("content", rewritePersonaContent(rewriteClient, in, 1));
+            LlmGenerationResult<String> rewriteResult = rewritePersonaContent(rewriteClient, in, 1);
+            p0.put("content", rewriteResult.content());
+            tokenUsage = tokenUsage.plus(rewriteResult.tokenUsage());
         }
 
         if (personasArr.size() >= 2 && badP2 && personasArr.get(1).isObject()) {
             ObjectNode p1 = (ObjectNode) personasArr.get(1);
             String in = safeText(p1.get("content"));
             log.debug("[TypeReportRewrite] personas[1].content invalid. len={}", in.length());
-            p1.put("content", rewritePersonaContent(rewriteClient, in, 2));
+            LlmGenerationResult<String> rewriteResult = rewritePersonaContent(rewriteClient, in, 2);
+            p1.put("content", rewriteResult.content());
+            tokenUsage = tokenUsage.plus(rewriteResult.tokenUsage());
         }
 
         // ===== rewrite 후 검증(원인별 코드로) =====
@@ -195,7 +209,7 @@ public class TypeReportLlmClient {
             }
         }
 
-        return root;
+        return new LlmGenerationResult<>(root, tokenUsage);
     }
 
     private void validateRichContentsIfPresent(ObjectNode root) {
@@ -273,7 +287,7 @@ public class TypeReportLlmClient {
         }
     }
 
-    private StyledText rewriteTypeAnalysis(ChatClient client, StyledText in) {
+    private LlmGenerationResult<StyledText> rewriteTypeAnalysis(ChatClient client, StyledText in) {
         StyledText inputStyled = in == null ? new StyledText(List.of(new Segment("", List.of()))) : in.normalized();
         String jsonInput;
         try {
@@ -312,12 +326,14 @@ public class TypeReportLlmClient {
                 .temperature(0.0)
                 .build();
 
-        String out;
+        ChatResponse response;
         try {
-            out = client.prompt().user(prompt).options(options).call().content();
+            response = client.prompt().user(prompt).options(options).call().chatResponse();
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE, e);
         }
+        String out = extractContent(response);
+        LlmTokenUsage tokenUsage = LlmTokenUsageExtractor.extract(response);
 
         if (out == null || out.isBlank()) {
             throw new AiServiceUnavailableException(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE);
@@ -328,7 +344,7 @@ public class TypeReportLlmClient {
             if (rewritten == null || rewritten.segments() == null || rewritten.segments().isEmpty()) {
                 throw new AiResponseParseException(ErrorCode.TYPE_REPORT_REWRITE_OUTPUT_EMPTY);
             }
-            return rewritten;
+            return new LlmGenerationResult<>(rewritten, tokenUsage);
         } catch (AiResponseParseException e) {
             throw e;
         } catch (JsonParseException e) {
@@ -369,7 +385,7 @@ public class TypeReportLlmClient {
         }
     }
 
-    private String rewritePersonaContent(ChatClient client, String in, int personaIndex) {
+    private LlmGenerationResult<String> rewritePersonaContent(ChatClient client, String in, int personaIndex) {
         String prompt = """
         아래 'personas[%d].content' 본문은 의미는 유지하되 글자수 규칙을 맞춰야 해요.
         의미는 유지하면서 글자수(공백 포함)를 최소 %d자 ~ 최대 %d자로 맞춰서 다시 써줘요.
@@ -406,12 +422,14 @@ public class TypeReportLlmClient {
                 .temperature(0.0)
                 .build();
 
-        String out;
+        ChatResponse response;
         try {
-            out = client.prompt().user(prompt).options(options).call().content();
+            response = client.prompt().user(prompt).options(options).call().chatResponse();
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE, e);
         }
+        String out = extractContent(response);
+        LlmTokenUsage tokenUsage = LlmTokenUsageExtractor.extract(response);
 
         if (out == null || out.isBlank()) {
             throw new AiServiceUnavailableException(ErrorCode.TYPE_REPORT_REWRITE_NO_RESPONSE);
@@ -421,7 +439,7 @@ public class TypeReportLlmClient {
             JsonNode node = objectMapper.readTree(out);
             String text = safeText(node.get("text")).trim();
             if (blank(text)) throw new AiResponseParseException(ErrorCode.TYPE_REPORT_REWRITE_OUTPUT_EMPTY);
-            return text;
+            return new LlmGenerationResult<>(text, tokenUsage);
         } catch (AiResponseParseException e) {
             throw e;
         } catch (JsonParseException e) {
@@ -457,6 +475,13 @@ public class TypeReportLlmClient {
     private String safeText(JsonNode node) {
         if (node == null || node.isNull() || !node.isTextual()) return "";
         return node.asText();
+    }
+
+    private String extractContent(ChatResponse response) {
+        if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
+            return null;
+        }
+        return response.getResult().getOutput().getText();
     }
 
     private boolean blank(String s) {

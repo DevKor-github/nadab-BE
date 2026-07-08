@@ -7,6 +7,8 @@ import com.devkor.ifive.nadab.domain.typereport.infra.TypeEvidenceCardLlmClient;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,17 +23,17 @@ public class EvidenceCardGenerationService {
 
     private final TypeEvidenceCardLlmClient llmClient;
 
-    public List<EvidenceCardDto> generate(List<DailyEntryDto> recentEntries) {
+    public LlmGenerationResult<List<EvidenceCardDto>> generate(List<DailyEntryDto> recentEntries) {
         List<DailyEntryWithIdDto> withIds = EvidenceEntriesAssembler.attachIds(recentEntries);
-        if (withIds.isEmpty()) return List.of();
+        if (withIds.isEmpty()) return new LlmGenerationResult<>(List.of(), LlmTokenUsage.empty());
 
         String entriesText = EvidenceEntriesAssembler.assembleForPrompt(withIds);
 
-        List<Map<String, String>> raw = llmClient.generateRawCardsJsonArray(entriesText);
+        LlmGenerationResult<List<Map<String, String>>> rawResult = llmClient.generateRawCardsJsonArray(entriesText);
 
-        List<EvidenceCardDto> cards = mapAndValidate(withIds, raw);
+        List<EvidenceCardDto> cards = mapAndValidate(withIds, rawResult.content());
 
-        return cards;
+        return new LlmGenerationResult<>(cards, rawResult.tokenUsage());
     }
 
     private List<EvidenceCardDto> mapAndValidate(List<DailyEntryWithIdDto> withIds, List<Map<String, String>> raw) {
