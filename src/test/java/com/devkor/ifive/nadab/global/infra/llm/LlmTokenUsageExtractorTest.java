@@ -6,6 +6,7 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 
 import java.util.List;
 
@@ -30,6 +31,35 @@ class LlmTokenUsageExtractorTest {
         assertThat(usage.inputTokens()).isEqualTo(100L);
         assertThat(usage.outputTokens()).isEqualTo(50L);
         assertThat(usage.totalTokens()).isEqualTo(150L);
+        assertThat(usage.thinkingTokens()).isNull();
+    }
+
+    @Test
+    void extract_maps_google_genai_thinking_tokens() {
+        // given
+        GoogleGenAiUsage googleUsage = new GoogleGenAiUsage(
+                3163,
+                369,
+                6710,
+                3178,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        // when
+        LlmTokenUsage usage = LlmTokenUsageExtractor.extract(googleUsage);
+
+        // then
+        assertThat(usage.inputTokens()).isEqualTo(3163L);
+        assertThat(usage.outputTokens()).isEqualTo(369L);
+        assertThat(usage.totalTokens()).isEqualTo(6710L);
+        assertThat(usage.thinkingTokens()).isEqualTo(3178L);
     }
 
     @Test
@@ -41,6 +71,8 @@ class LlmTokenUsageExtractorTest {
         assertThat(usage.inputTokens()).isNull();
         assertThat(usage.outputTokens()).isNull();
         assertThat(usage.totalTokens()).isNull();
+        assertThat(usage.thinkingTokens()).isNull();
+        assertThat(usage.thinkingTokens()).isNull();
     }
 
     @Test
@@ -86,18 +118,20 @@ class LlmTokenUsageExtractorTest {
         assertThat(usage.inputTokens()).isNull();
         assertThat(usage.outputTokens()).isEqualTo(50L);
         assertThat(usage.totalTokens()).isNull();
+        assertThat(usage.thinkingTokens()).isNull();
     }
 
     @Test
     void token_usage_plus_sums_existing_values_and_preserves_missing_values() {
         // when
-        LlmTokenUsage usage = new LlmTokenUsage(100L, null, 150L)
-                .plus(new LlmTokenUsage(30L, 20L, null));
+        LlmTokenUsage usage = new LlmTokenUsage(100L, null, 150L, 10L)
+                .plus(new LlmTokenUsage(30L, 20L, null, 5L));
 
         // then
         assertThat(usage.inputTokens()).isEqualTo(130L);
         assertThat(usage.outputTokens()).isEqualTo(20L);
         assertThat(usage.totalTokens()).isEqualTo(150L);
+        assertThat(usage.thinkingTokens()).isEqualTo(15L);
     }
 
     @Test
@@ -110,5 +144,6 @@ class LlmTokenUsageExtractorTest {
         assertThat(result.tokenUsage().inputTokens()).isNull();
         assertThat(result.tokenUsage().outputTokens()).isNull();
         assertThat(result.tokenUsage().totalTokens()).isNull();
+        assertThat(result.tokenUsage().thinkingTokens()).isNull();
     }
 }

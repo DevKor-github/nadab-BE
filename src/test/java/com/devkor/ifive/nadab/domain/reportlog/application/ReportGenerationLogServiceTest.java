@@ -88,12 +88,13 @@ class ReportGenerationLogServiceTest {
         when(reportGenerationLogRepository.findById(1L)).thenReturn(Optional.of(log));
 
         // when
-        reportGenerationLogService.recordTokenUsage(1L, 100L, 50L, 150L);
+        reportGenerationLogService.recordTokenUsage(1L, 100L, 50L, 150L, 30L);
 
         // then
         assertThat(log.getInputTokens()).isEqualTo(100L);
         assertThat(log.getOutputTokens()).isEqualTo(50L);
         assertThat(log.getTotalTokens()).isEqualTo(150L);
+        assertThat(log.getThinkingTokens()).isEqualTo(30L);
     }
 
     @Test
@@ -103,12 +104,13 @@ class ReportGenerationLogServiceTest {
         when(reportGenerationLogRepository.findById(1L)).thenReturn(Optional.of(log));
 
         // when
-        reportGenerationLogService.recordTokenUsage(1L, null, null, null);
+        reportGenerationLogService.recordTokenUsage(1L, null, null, null, null);
 
         // then
         assertThat(log.getInputTokens()).isNull();
         assertThat(log.getOutputTokens()).isNull();
         assertThat(log.getTotalTokens()).isNull();
+        assertThat(log.getThinkingTokens()).isNull();
     }
 
     @Test

@@ -85,6 +85,9 @@ public class ReportGenerationLog extends CreatableEntity {
     @Column(name = "total_tokens")
     private Long totalTokens;
 
+    @Column(name = "thinking_tokens")
+    private Long thinkingTokens;
+
     @Column(name = "started_at", nullable = false)
     private OffsetDateTime startedAt;
 
@@ -119,11 +122,13 @@ public class ReportGenerationLog extends CreatableEntity {
     public void recordTokenUsage(
             Long inputTokens,
             Long outputTokens,
-            Long totalTokens
+            Long totalTokens,
+            Long thinkingTokens
     ) {
         this.inputTokens = inputTokens;
         this.outputTokens = outputTokens;
         this.totalTokens = totalTokens;
+        this.thinkingTokens = thinkingTokens;
     }
 
     public void fail(

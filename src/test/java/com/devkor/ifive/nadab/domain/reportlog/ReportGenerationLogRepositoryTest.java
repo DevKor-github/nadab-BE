@@ -86,7 +86,7 @@ class ReportGenerationLogRepositoryTest extends PostgresIntegrationTestSupport {
         // given
         User user = new UserBuilder(em).build();
         ReportGenerationLog log = startLog(user, ReportGenerationType.DAILY, 101L, ReportGenerationStep.DAILY_GENERATE);
-        log.recordTokenUsage(100L, 50L, 150L);
+        log.recordTokenUsage(100L, 50L, 150L, 30L);
         ReportGenerationLog saved = reportGenerationLogRepository.save(log);
 
         em.flush();
@@ -99,6 +99,7 @@ class ReportGenerationLogRepositoryTest extends PostgresIntegrationTestSupport {
         assertThat(found.getInputTokens()).isEqualTo(100L);
         assertThat(found.getOutputTokens()).isEqualTo(50L);
         assertThat(found.getTotalTokens()).isEqualTo(150L);
+        assertThat(found.getThinkingTokens()).isEqualTo(30L);
     }
 
     private ReportGenerationLog startLog(

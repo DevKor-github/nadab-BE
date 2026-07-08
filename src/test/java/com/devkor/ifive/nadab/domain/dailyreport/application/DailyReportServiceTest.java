@@ -137,7 +137,7 @@ class DailyReportServiceTest {
         assertThat(response.balanceAfter()).isEqualTo(110L);
 
         InOrder inOrder = inOrder(reportGenerationLogRecorder);
-        inOrder.verify(reportGenerationLogRecorder).recordTokenUsage(generationLogId, 100L, 50L, 150L);
+        inOrder.verify(reportGenerationLogRecorder).recordTokenUsage(generationLogId, 100L, 50L, 150L, null);
         inOrder.verify(reportGenerationLogRecorder).succeed(generationLogId);
     }
 
@@ -170,7 +170,7 @@ class DailyReportServiceTest {
         dailyReportService.generateDailyReport(userId, new DailyReportRequest(20L, "answer", null, null));
 
         // then
-        verify(reportGenerationLogRecorder).recordTokenUsage(generationLogId, null, null, null);
+        verify(reportGenerationLogRecorder).recordTokenUsage(generationLogId, null, null, null, null);
     }
 
     private User user(Long id) {

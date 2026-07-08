@@ -56,10 +56,11 @@ public class ReportGenerationLogService {
             Long logId,
             Long inputTokens,
             Long outputTokens,
-            Long totalTokens
+            Long totalTokens,
+            Long thinkingTokens
     ) {
         reportGenerationLogRepository.findById(logId)
-                .ifPresent(log -> log.recordTokenUsage(inputTokens, outputTokens, totalTokens));
+                .ifPresent(log -> log.recordTokenUsage(inputTokens, outputTokens, totalTokens, thinkingTokens));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

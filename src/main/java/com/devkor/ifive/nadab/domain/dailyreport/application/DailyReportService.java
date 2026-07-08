@@ -114,7 +114,8 @@ public class DailyReportService {
                     generationLogId,
                     tokenUsage.inputTokens(),
                     tokenUsage.outputTokens(),
-                    tokenUsage.totalTokens()
+                    tokenUsage.totalTokens(),
+                    tokenUsage.thinkingTokens()
             );
             reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
