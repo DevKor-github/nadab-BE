@@ -28,7 +28,9 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,7 +106,16 @@ public class DailyReportService {
 
         AiDailyReportResultDto dto;
         try {
-            dto = dailyReportLlmClient.generate(question.getQuestionText(), answerEntry);
+            LlmGenerationResult<AiDailyReportResultDto> generationResult =
+                    dailyReportLlmClient.generate(question.getQuestionText(), answerEntry);
+            dto = generationResult.content();
+            LlmTokenUsage tokenUsage = generationResult.tokenUsage();
+            reportGenerationLogRecorder.recordTokenUsage(
+                    generationLogId,
+                    tokenUsage.inputTokens(),
+                    tokenUsage.outputTokens(),
+                    tokenUsage.totalTokens()
+            );
             reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
             reportGenerationLogRecorder.fail(generationLogId, e);
