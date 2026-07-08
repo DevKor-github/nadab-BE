@@ -29,7 +29,9 @@ import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeEmotionSt
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
@@ -168,13 +170,22 @@ public class MonthlyReportGenerationListenerV2 {
         );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
-            dto = monthlyReportLlmClientV2.generate(
+            LlmGenerationResult<AiMonthlyReportResultDto> generationResult = monthlyReportLlmClientV2.generate(
                     range.monthStartDate().toString(),
                     range.monthEndDate().toString(),
                     weeklySummaries,
                     representativeEntries,
                     emotionStats,
                     comparisonInput
+            );
+            dto = generationResult.content();
+            LlmTokenUsage tokenUsage = generationResult.tokenUsage();
+            reportGenerationLogRecorder.recordTokenUsage(
+                    generationLogId,
+                    tokenUsage.inputTokens(),
+                    tokenUsage.outputTokens(),
+                    tokenUsage.totalTokens(),
+                    tokenUsage.thinkingTokens()
             );
             reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {

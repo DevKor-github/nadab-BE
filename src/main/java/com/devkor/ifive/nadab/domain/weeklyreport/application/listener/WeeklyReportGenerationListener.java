@@ -10,7 +10,9 @@ import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.WeeklyReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyQueryRepository;
 import com.devkor.ifive.nadab.domain.weeklyreport.infra.WeeklyReportLlmClient;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import com.devkor.ifive.nadab.global.shared.reportcontent.AiReportResultDto;
 import com.devkor.ifive.nadab.global.shared.util.WeekRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.WeekRangeDto;
@@ -58,7 +60,17 @@ public class WeeklyReportGenerationListener {
         );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
-            dto = weeklyReportLlmClient.generate(range.weekStartDate().toString(), range.weekEndDate().toString(), entries);
+            LlmGenerationResult<AiReportResultDto> generationResult =
+                    weeklyReportLlmClient.generate(range.weekStartDate().toString(), range.weekEndDate().toString(), entries);
+            dto = generationResult.content();
+            LlmTokenUsage tokenUsage = generationResult.tokenUsage();
+            reportGenerationLogRecorder.recordTokenUsage(
+                    generationLogId,
+                    tokenUsage.inputTokens(),
+                    tokenUsage.outputTokens(),
+                    tokenUsage.totalTokens(),
+                    tokenUsage.thinkingTokens()
+            );
             reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
             reportGenerationLogRecorder.fail(generationLogId, e);

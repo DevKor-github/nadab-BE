@@ -10,12 +10,16 @@ import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsageExtractor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -36,7 +40,7 @@ public class DailyReportLlmClient {
 
     private final LlmProvider provider = LlmProvider.OPENAI;
 
-    public AiDailyReportResultDto generate(String question, AnswerEntry answerEntry) {
+    public LlmGenerationResult<AiDailyReportResultDto> generate(String question, AnswerEntry answerEntry) {
 
         String answer = answerEntry.getContent();
 
@@ -59,12 +63,15 @@ public class DailyReportLlmClient {
         UserMessage userMessage = buildUserMessage(prompt, withImagePrompt,answerEntry);
 
         String content;
+        LlmTokenUsage tokenUsage;
         try {
-            content = chatClient.prompt()
+            ChatResponse response = chatClient.prompt()
                     .messages(userMessage)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
+            content = extractContent(response);
+            tokenUsage = LlmTokenUsageExtractor.extract(response);
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
@@ -85,15 +92,25 @@ public class DailyReportLlmClient {
                 throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
             }
 
-            return new AiDailyReportResultDto(
-                    message,
-                    emotion
+            return new LlmGenerationResult<>(
+                    new AiDailyReportResultDto(
+                            message,
+                            emotion
+                    ),
+                    tokenUsage
             );
 
         } catch (Exception e) {
             // GPT가 JSON 형식을 지키지 못했을 경우 대비
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
+    }
+
+    private String extractContent(ChatResponse response) {
+        if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
+            return null;
+        }
+        return response.getResult().getOutput().getText();
     }
 
     private UserMessage buildUserMessage(String prompt, String withImagePrompt, AnswerEntry answerEntry) {

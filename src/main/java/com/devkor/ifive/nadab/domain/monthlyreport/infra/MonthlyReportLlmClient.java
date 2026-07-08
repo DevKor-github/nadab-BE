@@ -5,8 +5,11 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsageExtractor;
 import com.devkor.ifive.nadab.global.shared.reportcontent.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -47,7 +51,7 @@ public class MonthlyReportLlmClient {
     private static final int MIN_SUMMARY = 8;
     private static final int MAX_SUMMARY = 30;
 
-    public AiReportResultDto generate(
+    public LlmGenerationResult<AiReportResultDto> generate(
             String monthStartDate, String monthEndDate, String weeklySummaries, String representativeEntries) {
         String prompt = monthlyReportPromptLoader.loadV1Prompt()
                 .replace("{monthStartDate}", monthStartDate)
@@ -57,11 +61,13 @@ public class MonthlyReportLlmClient {
 
         ChatClient client = llmRouter.route(provider);
 
-        String content = switch (provider) {
+        LlmGenerationResult<String> generationResult = switch (provider) {
             case OPENAI -> callOpenAi(client, prompt);
             case CLAUDE -> callClaude(client, prompt);
             case GEMINI -> callGemini(client, prompt);
         };
+        String content = generationResult.content();
+        LlmTokenUsage tokenUsage = generationResult.tokenUsage();
 
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_NO_RESPONSE);
@@ -97,11 +103,14 @@ public class MonthlyReportLlmClient {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_AI_JSON_MISSING_FIELDS);
             }
 
-            AiReportResultDto dto = enforceLength(new AiReportResultDto(reportContent, discovered, improve));
+            LlmGenerationResult<AiReportResultDto> lengthResult =
+                    enforceLength(new AiReportResultDto(reportContent, discovered, improve));
+            AiReportResultDto dto = lengthResult.content();
+            tokenUsage = tokenUsage.plus(lengthResult.tokenUsage());
 
             validateLength(dto);
 
-            return dto;
+            return new LlmGenerationResult<>(dto, tokenUsage);
 
         } catch (AiResponseParseException e) {
             throw e;
@@ -110,7 +119,7 @@ public class MonthlyReportLlmClient {
         }
     }
 
-    private String callOpenAi(ChatClient client, String prompt) {
+    private LlmGenerationResult<String> callOpenAi(ChatClient client, String prompt) {
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(OpenAiApi.ChatModel.GPT_5_MINI)
                 .reasoningEffort("medium")
@@ -118,34 +127,36 @@ public class MonthlyReportLlmClient {
                 .build();
 
         try {
-            return client.prompt()
+            ChatResponse response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
+            return new LlmGenerationResult<>(extractContent(response), LlmTokenUsageExtractor.extract(response));
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
     }
 
-    private String callClaude(ChatClient client, String prompt) {
+    private LlmGenerationResult<String> callClaude(ChatClient client, String prompt) {
         AnthropicChatOptions options = AnthropicChatOptions.builder()
                 .model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU)
                 .temperature(0.3)
                 .build();
 
         try {
-            return client.prompt()
+            ChatResponse response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
+            return new LlmGenerationResult<>(extractContent(response), LlmTokenUsageExtractor.extract(response));
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
     }
 
-    private String callGemini(ChatClient client, String prompt) {
+    private LlmGenerationResult<String> callGemini(ChatClient client, String prompt) {
         GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
                 .model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
                 .responseMimeType("application/json")
@@ -153,17 +164,18 @@ public class MonthlyReportLlmClient {
                 .build();
 
         try {
-            return client.prompt()
+            ChatResponse response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
+            return new LlmGenerationResult<>(extractContent(response), LlmTokenUsageExtractor.extract(response));
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_NO_RESPONSE, e);
         }
     }
 
-    private AiReportResultDto enforceLength(AiReportResultDto dto) {
+    private LlmGenerationResult<AiReportResultDto> enforceLength(AiReportResultDto dto) {
         ReportContent c = dto.content();
 
         int dLen = dto.discovered().length();
@@ -172,15 +184,24 @@ public class MonthlyReportLlmClient {
         boolean badD = dLen < MIN_DISCOVERED || dLen > MAX_DISCOVERED;
         boolean badI = iLen < MIN_IMPROVE || iLen > MAX_IMPROVE;
 
-        if (!badD && !badI) return dto;
+        if (!badD && !badI) return new LlmGenerationResult<>(dto, LlmTokenUsage.empty());
 
         ChatClient rewriteClient = llmRouter.route(REWRITE_PROVIDER);
 
         StyledText d = c.discovered();
         StyledText i = c.improve();
+        LlmTokenUsage tokenUsage = LlmTokenUsage.empty();
 
-        if (badD) d = rewriteStyled(rewriteClient, d, true);
-        if (badI) i = rewriteStyled(rewriteClient, i, false);
+        if (badD) {
+            LlmGenerationResult<StyledText> rewriteResult = rewriteStyled(rewriteClient, d, true);
+            d = rewriteResult.content();
+            tokenUsage = tokenUsage.plus(rewriteResult.tokenUsage());
+        }
+        if (badI) {
+            LlmGenerationResult<StyledText> rewriteResult = rewriteStyled(rewriteClient, i, false);
+            i = rewriteResult.content();
+            tokenUsage = tokenUsage.plus(rewriteResult.tokenUsage());
+        }
 
         ReportContent newContent = new ReportContent(c.summary(), d, i);
         String newD = newContent.discovered().plainText();
@@ -193,10 +214,10 @@ public class MonthlyReportLlmClient {
             throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_REWRITE_FORMAT_INVALID);
         }
 
-        return new AiReportResultDto(newContent, newD, newI);
+        return new LlmGenerationResult<>(new AiReportResultDto(newContent, newD, newI), tokenUsage);
     }
 
-    private StyledText rewriteStyled(ChatClient client, StyledText in, boolean isDiscovered) {
+    private LlmGenerationResult<StyledText> rewriteStyled(ChatClient client, StyledText in, boolean isDiscovered) {
         int min = isDiscovered ? MIN_DISCOVERED : MIN_IMPROVE;
         int max = isDiscovered ? MAX_DISCOVERED : MAX_IMPROVE;
         int maxHl = isDiscovered ? MAX_HL_DISCOVERED : MAX_HL_IMPROVE;
@@ -229,19 +250,21 @@ public class MonthlyReportLlmClient {
                     .temperature(0.0)
                     .build();
 
-            String out;
+            ChatResponse response;
             try {
-                out = client.prompt().user(prompt).options(options).call().content();
+                response = client.prompt().user(prompt).options(options).call().chatResponse();
             } catch (Exception e) {
                 throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_REWRITE_NO_RESPONSE, e);
             }
+            String out = extractContent(response);
+            LlmTokenUsage tokenUsage = LlmTokenUsageExtractor.extract(response);
 
             if (out == null || out.isBlank()) {
                 throw new AiServiceUnavailableException(ErrorCode.AI_REWRITE_NO_RESPONSE);
             }
 
             try {
-                return objectMapper.readValue(out, StyledText.class);
+                return new LlmGenerationResult<>(objectMapper.readValue(out, StyledText.class), tokenUsage);
             } catch (Exception e) {
                 throw new AiResponseParseException(ErrorCode.MONTHLY_REPORT_REWRITE_JSON_MAPPING_FAILED);
             }
@@ -251,6 +274,13 @@ public class MonthlyReportLlmClient {
         } catch (JsonProcessingException e) {
             throw new AiResponseParseException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private String extractContent(ChatResponse response) {
+        if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
+            return null;
+        }
+        return response.getResult().getOutput().getText();
     }
 
     private boolean isBlank(String s) {

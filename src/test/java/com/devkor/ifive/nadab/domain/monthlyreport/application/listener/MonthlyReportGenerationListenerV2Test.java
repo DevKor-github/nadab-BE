@@ -18,10 +18,13 @@ import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportImageStora
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClientV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.OpenAiImageClient;
 import com.devkor.ifive.nadab.domain.reportlog.application.ReportGenerationLogRecorder;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import com.devkor.ifive.nadab.global.shared.reportcontent.StyledText;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,6 +35,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -76,8 +80,10 @@ class MonthlyReportGenerationListenerV2Test {
         when(monthlyWeeklySummariesService.buildWeeklySummaries(anyLong(), any())).thenReturn("");
         when(monthlySocialSummaryService.buildSocialSummary(anyLong(), any()))
                 .thenReturn(MonthlySocialSummaryContent.empty(1));
+        when(reportGenerationLogRecorder.start(anyLong(), any(), anyLong(), any(), any(), any()))
+                .thenReturn(200L, 201L, 202L, 203L);
         when(monthlyReportLlmClientV2.generate(any(), any(), any(), any(), any(), any()))
-                .thenReturn(result);
+                .thenReturn(new LlmGenerationResult<>(result, new LlmTokenUsage(100L, 50L, 150L, 30L)));
         when(monthlyImagePresetAssignmentService.getOrAssignVisualPreset(1L, 10L))
                 .thenReturn(new MonthlyImageVisualPreset(
                         MonthlyImageStylePreset.INK_WASH,
@@ -99,6 +105,9 @@ class MonthlyReportGenerationListenerV2Test {
         assertThat(context.dominantKeyword()).isEqualTo("성장");
         assertThat(context.stylePreset()).isEqualTo(MonthlyImageStylePreset.INK_WASH);
         assertThat(context.colorPalette()).isEqualTo(MonthlyImageColorPalette.OCEAN_LIGHT);
+        InOrder inOrder = inOrder(reportGenerationLogRecorder);
+        inOrder.verify(reportGenerationLogRecorder).recordTokenUsage(200L, 100L, 50L, 150L, 30L);
+        inOrder.verify(reportGenerationLogRecorder).succeed(200L);
         verify(monthlyReportTxServiceV2).confirmMonthly(10L, 100L, "monthly/1/10.webp");
     }
 
@@ -123,8 +132,10 @@ class MonthlyReportGenerationListenerV2Test {
         when(monthlyWeeklySummariesService.buildWeeklySummaries(anyLong(), any())).thenReturn("");
         when(monthlySocialSummaryService.buildSocialSummary(anyLong(), any()))
                 .thenReturn(MonthlySocialSummaryContent.empty(1));
+        when(reportGenerationLogRecorder.start(anyLong(), any(), anyLong(), any(), any(), any()))
+                .thenReturn(200L, 201L);
         when(monthlyReportLlmClientV2.generate(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new AiMonthlyReportResultDto(content, null));
+                .thenReturn(new LlmGenerationResult<>(new AiMonthlyReportResultDto(content, null), LlmTokenUsage.empty()));
         when(monthlyImagePresetAssignmentService.getOrAssignVisualPreset(1L, 10L))
                 .thenThrow(new IllegalStateException("preset assignment failed"));
 
