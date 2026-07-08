@@ -24,6 +24,7 @@ import com.devkor.ifive.nadab.global.shared.reportcontent.StyledText;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -34,6 +35,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -103,7 +105,9 @@ class MonthlyReportGenerationListenerV2Test {
         assertThat(context.dominantKeyword()).isEqualTo("성장");
         assertThat(context.stylePreset()).isEqualTo(MonthlyImageStylePreset.INK_WASH);
         assertThat(context.colorPalette()).isEqualTo(MonthlyImageColorPalette.OCEAN_LIGHT);
-        verify(reportGenerationLogRecorder).recordTokenUsage(200L, 100L, 50L, 150L, 30L);
+        InOrder inOrder = inOrder(reportGenerationLogRecorder);
+        inOrder.verify(reportGenerationLogRecorder).recordTokenUsage(200L, 100L, 50L, 150L, 30L);
+        inOrder.verify(reportGenerationLogRecorder).succeed(200L);
         verify(monthlyReportTxServiceV2).confirmMonthly(10L, 100L, "monthly/1/10.webp");
     }
 
