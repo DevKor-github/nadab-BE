@@ -189,6 +189,8 @@ public enum ErrorCode {
 
     MONTHLY_REPORT_DISCOVERED_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 discovered 길이가 제한을 만족하지 않습니다"),
     MONTHLY_REPORT_IMPROVE_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 improve 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_COMMENT_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 comment 길이가 제한을 만족하지 않습니다"),
+    MONTHLY_REPORT_EMOTION_SUMMARY_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 emotionSummaryContent 길이가 제한을 만족하지 않습니다"),
     MONTHLY_REPORT_TOTAL_LENGTH_INVALID(HttpStatus.BAD_GATEWAY, "월간 리포트 총 길이가 제한을 만족하지 않습니다"),
 
     MONTHLY_REPORT_REWRITE_JSON_MAPPING_FAILED(HttpStatus.BAD_GATEWAY, "월간 리포트 리라이트 응답 JSON을 매핑할 수 없습니다"),
@@ -430,8 +432,12 @@ public enum ErrorCode {
     APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전을 찾을 수 없습니다"),
     APP_VERSION_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "앱 버전 항목을 찾을 수 없습니다"),
 
+    // 400 Bad Request
+    APP_VERSION_INVALID_FORMAT(HttpStatus.BAD_REQUEST, "앱 버전은 major.minor.patch 형식이어야 합니다"),
+
     // 409 Conflict
     APP_VERSION_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 플랫폼의 같은 버전이 이미 존재합니다"),
+    APP_VERSION_MUST_BE_GREATER_THAN_EXISTING(HttpStatus.CONFLICT, "앱 버전은 같은 플랫폼의 다른 모든 버전보다 높아야 합니다"),
     APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED(HttpStatus.CONFLICT, "같은 버전 내 displayOrder가 중복됩니다"),
 
     // ==================== ADMIN (어드민) ====================

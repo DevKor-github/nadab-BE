@@ -167,6 +167,11 @@ public class MonthlyReportController {
                             content = @Content(schema = @Schema(implementation = MonthlyReportResponse.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
+                            responseCode = "403",
+                            description = "- ErrorCode: MONTHLY_REPORT_ACCESS_FORBIDDEN - 본인 월간 리포트만 조회 가능",
+                            content = @Content
+                    ),
+                    @ApiResponse(
                             responseCode = "404",
                             description = "- ErrorCode: MONTHLY_REPORT_NOT_FOUND - 월간 리포트를 찾을 수 없음",
                             content = @Content
@@ -174,9 +179,10 @@ public class MonthlyReportController {
             }
     )
     public ResponseEntity<ApiResponseDto<MonthlyReportResponse>> getMonthlyReportById(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id
     ) {
-        MonthlyReportResponse response = monthlyReportQueryService.getMonthlyReportById(id);
+        MonthlyReportResponse response = monthlyReportQueryService.getMonthlyReportById(principal.getId(), id);
         return ApiResponseEntity.ok(response);
     }
 }

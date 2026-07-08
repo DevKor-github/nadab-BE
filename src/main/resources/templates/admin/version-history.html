@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>NADAB Admin Version History</title>
+    <style>
+        :root {
+            --bg: #10141b;
+            --surface: #181e28;
+            --surface-2: #202837;
+            --border: #2e3748;
+            --text: #e8edf8;
+            --muted: #9ca5bc;
+            --primary: #4b8bff;
+            --success: #4caf7d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .page {
+            max-width: 1180px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-link {
+            text-decoration: none;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            background: var(--surface-2);
+        }
+
+        .tab-link.active {
+            border-color: var(--primary);
+            background: rgba(75, 139, 255, 0.2);
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 16px;
+            color: var(--muted);
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: minmax(180px, 240px) auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        select {
+            width: 100%;
+            background: #121823;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border: 0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-ghost { background: var(--surface-2); color: var(--text); }
+
+        .history-table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .history-table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: collapse;
+        }
+
+        .history-table th,
+        .history-table td {
+            border-bottom: 1px solid var(--border);
+            padding: 10px;
+            vertical-align: top;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .history-table th {
+            color: var(--muted);
+            font-weight: 700;
+            background: #121823;
+        }
+
+        .history-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .summary-cell {
+            max-width: 260px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+        }
+
+        .items-cell {
+            min-width: 240px;
+        }
+
+        .items-list {
+            margin: 0;
+            padding-left: 16px;
+            display: grid;
+            gap: 6px;
+        }
+
+        .item-title {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .item-description {
+            color: var(--muted);
+            margin-top: 2px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 12px;
+            color: var(--muted);
+            background: var(--surface-2);
+        }
+
+        .badge-latest {
+            border-color: var(--success);
+            color: #dff6ea;
+            background: rgba(76, 175, 125, 0.18);
+        }
+
+        .empty {
+            color: var(--muted);
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 9999;
+            padding: 16px;
+        }
+
+        .popup-backdrop.open {
+            display: flex;
+        }
+
+        .popup {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .popup-title {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .popup-message {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .popup-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        @media (max-width: 700px) {
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <h1 class="title">Admin Console</h1>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+    </div>
+
+    <nav class="tabs">
+        <a href="/admin/tabs/app-versions" class="tab-link active">App Versions</a>
+    </nav>
+
+    <div class="panel">
+        <div class="panel-head">
+            <h2 class="panel-title">Version History</h2>
+            <a href="/admin/tabs/app-versions" class="btn btn-ghost">Back to App Versions</a>
+        </div>
+        <div class="toolbar">
+            <div>
+                <label class="field-label" for="platformFilter">Platform</label>
+                <select id="platformFilter">
+                    <option value="">All Platforms</option>
+                    <option value="IOS">IOS</option>
+                    <option value="ANDROID">ANDROID</option>
+                </select>
+            </div>
+            <div class="btn-row">
+                <button id="refreshBtn" class="btn btn-primary" type="button">Refresh</button>
+            </div>
+        </div>
+        <div id="historyContainer"></div>
+    </div>
+</div>
+
+<div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+        <h2 id="popupTitle" class="popup-title"></h2>
+        <p id="popupMessage" class="popup-message"></p>
+        <div class="popup-actions">
+            <button id="popupConfirmBtn" class="btn btn-primary" type="button">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const historyContainerEl = document.getElementById('historyContainer');
+    const platformFilterEl = document.getElementById('platformFilter');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const popupBackdropEl = document.getElementById('popupBackdrop');
+    const popupTitleEl = document.getElementById('popupTitle');
+    const popupMessageEl = document.getElementById('popupMessage');
+    const popupConfirmBtn = document.getElementById('popupConfirmBtn');
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function showResultPopup(message, isError = false) {
+        popupTitleEl.textContent = isError ? 'Error' : 'Done';
+        popupMessageEl.textContent = message;
+        popupBackdropEl.classList.add('open');
+
+        return new Promise((resolve) => {
+            popupConfirmBtn.onclick = () => {
+                popupBackdropEl.classList.remove('open');
+                popupConfirmBtn.onclick = null;
+                resolve(true);
+            };
+        });
+    }
+
+    async function request(method, url) {
+        const response = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'}
+        });
+
+        if (response.status === 401) {
+            location.replace('/admin/login');
+            return null;
+        }
+
+        if (!response.ok) {
+            let message = 'Request failed.';
+            try {
+                const errorBody = await response.json();
+                if (errorBody && errorBody.message) {
+                    message = errorBody.message;
+                }
+            } catch (e) {
+                // ignore
+            }
+            throw new Error(message);
+        }
+
+        return response.json();
+    }
+
+    function formatDateTime(value) {
+        if (!value) {
+            return '-';
+        }
+        return new Date(value).toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function renderItems(items) {
+        if (!items.length) {
+            return '<span class="empty">No items</span>';
+        }
+
+        return `
+            <ol class="items-list">
+                ${items.map((item) => `
+                    <li>
+                        <div class="item-title">${escapeHtml(item.displayOrder)}. ${escapeHtml(item.title)}</div>
+                        <div class="item-description">${escapeHtml(item.description)}</div>
+                    </li>
+                `).join('')}
+            </ol>
+        `;
+    }
+
+    function renderHistory(versions) {
+        if (!versions.length) {
+            historyContainerEl.innerHTML = '<div class="empty">No version history records.</div>';
+            return;
+        }
+
+        historyContainerEl.innerHTML = `
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Platform</th>
+                        <th>Version</th>
+                        <th>Status</th>
+                        <th>Summary</th>
+                        <th>Items</th>
+                        <th>Created</th>
+                        <th>Updated</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${versions.map((version) => `
+                        <tr>
+                            <td>${escapeHtml(version.id)}</td>
+                            <td>${escapeHtml(version.platform)}</td>
+                            <td><strong>${escapeHtml(version.version)}</strong></td>
+                            <td>
+                                <span class="badge ${version.isLatest ? 'badge-latest' : ''}">
+                                    ${version.isLatest ? 'Latest' : 'History'}
+                                </span>
+                            </td>
+                            <td class="summary-cell">${escapeHtml(version.summary)}</td>
+                            <td class="items-cell">${renderItems(version.items || [])}</td>
+                            <td>${escapeHtml(formatDateTime(version.createdAt))}</td>
+                            <td>${escapeHtml(formatDateTime(version.updatedAt))}</td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    async function loadHistory() {
+        const platform = platformFilterEl.value;
+        const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
+        const body = await request('GET', `/admin/api/versions/history${query}`);
+        if (!body) {
+            return;
+        }
+        renderHistory(body.data?.versions || []);
+    }
+
+    refreshBtn.addEventListener('click', async () => {
+        try {
+            await loadHistory();
+        } catch (e) {
+            await showResultPopup(e.message, true);
+        }
+    });
+
+    platformFilterEl.addEventListener('change', async () => {
+        try {
+            await loadHistory();
+        } catch (e) {
+            await showResultPopup(e.message, true);
+        }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/admin/api/logout', {method: 'POST'});
+        } finally {
+            location.replace('/admin/login');
+        }
+    });
+
+    loadHistory().catch(async (e) => {
+        await showResultPopup(e.message, true);
+    });
+</script>
+</body>
+</html>

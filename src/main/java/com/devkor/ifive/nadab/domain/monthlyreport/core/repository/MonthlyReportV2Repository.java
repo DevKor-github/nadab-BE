@@ -3,6 +3,9 @@ package com.devkor.ifive.nadab.domain.monthlyreport.core.repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportImageStatus;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageColorPalette;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyImageStylePreset;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,8 +17,6 @@ import java.util.Optional;
 
 public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2, Long> {
 
-    boolean existsByUserIdAndStatus(Long userId, MonthlyReportStatus status);
-
     Optional<MonthlyReportV2> findByUserIdAndMonthStartDate(Long userId, LocalDate monthStartDate);
 
     Optional<MonthlyReportV2> findByUserIdAndMonthStartDateAndStatus(
@@ -24,7 +25,43 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
             MonthlyReportStatus status
     );
 
+    Optional<MonthlyReportV2> findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+            Long userId,
+            MonthlyReportStatus status,
+            LocalDate monthStartDate
+    );
+
     List<MonthlyReportV2> findAllByUserIdAndStatus(Long userId, MonthlyReportStatus status);
+
+    @Query("""
+        select mr.imagePromptVariant
+        from MonthlyReportV2 mr
+        where mr.user.id = :userId
+          and mr.id <> :reportId
+          and mr.status = com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus.COMPLETED
+          and mr.imagePromptVariant is not null
+        order by mr.monthStartDate desc, mr.id desc
+        """)
+    List<MonthlyImageStylePreset> findRecentCompletedImagePromptVariants(
+            @Param("userId") Long userId,
+            @Param("reportId") Long reportId,
+            Pageable pageable
+    );
+
+    @Query("""
+        select mr.imageColorPalette
+        from MonthlyReportV2 mr
+        where mr.user.id = :userId
+          and mr.id <> :reportId
+          and mr.status = com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus.COMPLETED
+          and mr.imageColorPalette is not null
+        order by mr.monthStartDate desc, mr.id desc
+        """)
+    List<MonthlyImageColorPalette> findRecentCompletedImageColorPalettes(
+            @Param("userId") Long userId,
+            @Param("reportId") Long reportId,
+            Pageable pageable
+    );
 
     /**
      * PENDING -> FAILED 확정
@@ -55,6 +92,8 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
            emotion_summary_content = CAST(:emotionSummaryContentJson AS jsonb),
            emotion_stats = CAST(:emotionStatsJson AS jsonb),
            interest_stats = CAST(:interestStatsJson AS jsonb),
+           emotion_comparison = CAST(:emotionComparisonJson AS jsonb),
+           social_summary = CAST(:socialSummaryJson AS jsonb),
            summary = :summary,
            comment_summary = :commentSummary,
            dominant_keyword = :dominantKeyword,
@@ -71,6 +110,8 @@ public interface MonthlyReportV2Repository extends JpaRepository<MonthlyReportV2
             @Param("dominantKeyword") String dominantKeyword,
             @Param("emotionStatsJson") String emotionStatsJson,
             @Param("interestStatsJson") String interestStatsJson,
+            @Param("emotionComparisonJson") String emotionComparisonJson,
+            @Param("socialSummaryJson") String socialSummaryJson,
             @Param("status") String status
     );
 

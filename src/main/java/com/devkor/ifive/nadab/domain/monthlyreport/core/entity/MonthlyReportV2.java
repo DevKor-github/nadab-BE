@@ -1,8 +1,10 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyContentFactory;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyReportV2ContentFactory;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
@@ -53,6 +55,14 @@ public class MonthlyReportV2 extends CreatableEntity {
     private String imageKey;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "image_prompt_variant", length = 40)
+    private MonthlyImageStylePreset imagePromptVariant;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "image_color_palette", length = 40)
+    private MonthlyImageColorPalette imageColorPalette;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "image_status", nullable = false, length = 16)
     private MonthlyReportImageStatus imageStatus;
 
@@ -71,6 +81,14 @@ public class MonthlyReportV2 extends CreatableEntity {
     @Type(JsonType.class)
     @Column(name = "interest_stats", columnDefinition = "jsonb", nullable = false)
     private InterestStatsContent interestStats;
+
+    @Type(JsonType.class)
+    @Column(name = "emotion_comparison", columnDefinition = "jsonb")
+    private MonthlyEmotionComparisonContent emotionComparison;
+
+    @Type(JsonType.class)
+    @Column(name = "social_summary", columnDefinition = "jsonb", nullable = false)
+    private MonthlySocialSummaryContent socialSummary;
 
     @Column(name = "summary", nullable = false, length = 80)
     private String summary;
@@ -114,6 +132,7 @@ public class MonthlyReportV2 extends CreatableEntity {
         mr.emotionSummaryContent = TypeContentFactory.emptyText().normalized();
         mr.emotionStats = TypeContentFactory.emptyEmotionStats();
         mr.interestStats = MonthlyContentFactory.emptyInterestStats();
+        mr.socialSummary = MonthlySocialSummaryContent.empty(monthStartDate.getMonthValue());
 
         mr.comparisonType = comparisonType;
         mr.date = date;
@@ -127,5 +146,23 @@ public class MonthlyReportV2 extends CreatableEntity {
     ) {
         return create(user, monthStartDate, monthEndDate, MonthlyReportV2ContentFactory.empty(), date,
                 MonthlyReportStatus.PENDING, MonthlyReportImageStatus.PENDING, comparisonType);
+    }
+
+    public void updateSocialSummary(MonthlySocialSummaryContent socialSummary) {
+        this.socialSummary = socialSummary == null
+                ? MonthlySocialSummaryContent.empty(monthStartDate.getMonthValue())
+                : socialSummary.normalized();
+    }
+
+    public void assignImagePromptVariant(MonthlyImageStylePreset imagePromptVariant) {
+        if (this.imagePromptVariant == null) {
+            this.imagePromptVariant = imagePromptVariant;
+        }
+    }
+
+    public void assignImageColorPalette(MonthlyImageColorPalette imageColorPalette) {
+        if (this.imageColorPalette == null) {
+            this.imageColorPalette = imageColorPalette;
+        }
     }
 }

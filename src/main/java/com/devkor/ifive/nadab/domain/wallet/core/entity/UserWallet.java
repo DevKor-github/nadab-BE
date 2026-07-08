@@ -34,9 +34,13 @@ public class UserWallet extends AuditableEntity {
     private long version;
 
     public static UserWallet create(User user) {
+        return create(user, 0L);
+    }
+
+    public static UserWallet create(User user, long initialCrystalBalance) {
         UserWallet wallet = new UserWallet();
         wallet.user = user;
-        wallet.crystalBalance = 0L;
+        wallet.crystalBalance = initialCrystalBalance;
         return wallet;
     }
 }

@@ -5,12 +5,16 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
 import com.devkor.ifive.nadab.global.exception.ai.AiServiceUnavailableException;
 import com.devkor.ifive.nadab.global.infra.llm.LlmExceptionMapper;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmRouter;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsageExtractor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
@@ -25,7 +29,7 @@ public class TypePatternExtractLlmClient {
 
     private final LlmProvider provider = LlmProvider.OPENAI;
 
-    public JsonNode extractPatternsRawJson(String cardsText) {
+    public LlmGenerationResult<JsonNode> extractPatternsRawJson(String cardsText) {
         String prompt = promptLoader.loadPrompt().replace("{cards}", cardsText);
 
         ChatClient client = llmRouter.route(provider);
@@ -35,28 +39,37 @@ public class TypePatternExtractLlmClient {
                 .temperature(0.0)
                 .build();
 
-        String content;
+        ChatResponse response;
         try {
-            content = client.prompt()
+            response = client.prompt()
                     .user(prompt)
                     .options(options)
                     .call()
-                    .content();
+                    .chatResponse();
         } catch (Exception e) {
             throw LlmExceptionMapper.toUnavailable(ErrorCode.AI_PATTERN_EXTRACT_NO_RESPONSE, e);
         }
+        String content = extractContent(response);
+        LlmTokenUsage tokenUsage = LlmTokenUsageExtractor.extract(response);
 
         if (content == null || content.trim().isEmpty()) {
             throw new AiServiceUnavailableException(ErrorCode.AI_PATTERN_EXTRACT_NO_RESPONSE);
         }
 
         try {
-            return objectMapper.readTree(content);
+            return new LlmGenerationResult<>(objectMapper.readTree(content), tokenUsage);
         } catch (AiResponseParseException e) {
             throw e;
         } catch (Exception e) {
             // 파싱 실패 / LLM 이상 응답
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
+    }
+
+    private String extractContent(ChatResponse response) {
+        if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
+            return null;
+        }
+        return response.getResult().getOutput().getText();
     }
 }

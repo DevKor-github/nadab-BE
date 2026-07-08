@@ -2,6 +2,8 @@ package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReserveResultDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.*;
@@ -19,6 +21,8 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
+import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -79,9 +83,17 @@ public class MonthlyReportTxServiceV2 {
 
     public MonthlyReserveResultDto reserveMonthlyAndPublish(User user) {
 
-        boolean exists = monthlyReportV2Repository.existsByUserIdAndStatus(user.getId(), MonthlyReportStatus.COMPLETED);
+        MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
+        Long previousReportId = monthlyReportV2Repository
+                .findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                        user.getId(),
+                        MonthlyReportStatus.COMPLETED,
+                        range.monthStartDate()
+                )
+                .map(MonthlyReportV2::getId)
+                .orElse(null);
 
-        MonthlyReserveResultDto reserve = this.reserveMonthly(user, exists);
+        MonthlyReserveResultDto reserve = this.reserveMonthly(user, previousReportId != null);
 
         monthlyReportV2Repository.updateStatus(reserve.reportId(), MonthlyReportStatus.IN_PROGRESS);
 
@@ -90,7 +102,7 @@ public class MonthlyReportTxServiceV2 {
                 reserve.reportId(),
                 user.getId(),
                 reserve.crystalLogId(),
-                exists
+                previousReportId
         ));
 
         return reserve;
@@ -113,11 +125,14 @@ public class MonthlyReportTxServiceV2 {
             MonthlyReportV2Content content,
             TypeTextContent emotionSummaryContent,
             TypeEmotionStatsContent emotionStats,
-            InterestStatsContent interestStats
+            InterestStatsContent interestStats,
+            MonthlyEmotionComparisonContent emotionComparison,
+            MonthlySocialSummaryContent socialSummary
     ) {
         MonthlyReportV2Content contentNormalized = content.normalized();
         TypeTextContent emotionSummaryContentNormalized = emotionSummaryContent.normalized();
         InterestStatsContent interestStatsNormalized = interestStats.normalized();
+        MonthlySocialSummaryContent socialSummaryNormalized = socialSummary.normalized();
 
         String summary = contentNormalized.summary();
         String commentSummary = contentNormalized.commentSummary();
@@ -127,12 +142,18 @@ public class MonthlyReportTxServiceV2 {
         String emotionSummaryContentJson;
         String emotionStatsJson;
         String interestStatsJson;
+        String emotionComparisonJson;
+        String socialSummaryJson;
 
         try {
             contentJson = objectMapper.writeValueAsString(contentNormalized);
             emotionSummaryContentJson = objectMapper.writeValueAsString(emotionSummaryContentNormalized);
             emotionStatsJson = objectMapper.writeValueAsString(emotionStats.normalized());
             interestStatsJson = objectMapper.writeValueAsString(interestStatsNormalized);
+            emotionComparisonJson = emotionComparison == null
+                    ? null
+                    : objectMapper.writeValueAsString(emotionComparison.normalized());
+            socialSummaryJson = objectMapper.writeValueAsString(socialSummaryNormalized);
         } catch (Exception e) {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
@@ -145,6 +166,8 @@ public class MonthlyReportTxServiceV2 {
                 dominantKeyword,
                 emotionStatsJson,
                 interestStatsJson,
+                emotionComparisonJson,
+                socialSummaryJson,
                 MonthlyReportStatus.TEXT_COMPLETED.name()
         );
     }

@@ -9,6 +9,7 @@ import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReport
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
@@ -53,9 +54,13 @@ public class MonthlyReportQueryService {
         );
     }
 
-    public MonthlyReportResponse getMonthlyReportById(Long id) {
+    public MonthlyReportResponse getMonthlyReportById(Long userId, Long id) {
         MonthlyReport report = monthlyReportRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MONTHLY_REPORT_NOT_FOUND));
+        if (report.getUser() == null || report.getUser().getId() == null
+                || !report.getUser().getId().equals(userId)) {
+            throw new ForbiddenException(ErrorCode.MONTHLY_REPORT_ACCESS_FORBIDDEN);
+        }
 
         MonthRangeDto range = MonthRangeCalculator.monthRangeOf(report.getMonthStartDate());
 

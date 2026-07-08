@@ -4,6 +4,6 @@ public record MonthlyReportGenerationRequestedEventDtoV2(
         Long reportId,
         Long userId,
         Long crystalLogId,
-        boolean exists
+        Long previousReportId
 ) {
 }

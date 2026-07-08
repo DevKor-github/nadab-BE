@@ -24,7 +24,9 @@ import com.devkor.ifive.nadab.domain.typereport.core.service.TypeReportContentGe
 import com.devkor.ifive.nadab.domain.typereport.core.service.TypeSelectionService;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -125,7 +127,10 @@ public class TypeReportGenerationListener {
                 TYPE_REPORT_OPENAI_MODEL
         );
         try {
-            cards = evidenceCardGenerationService.generate(recentEntries);
+            LlmGenerationResult<List<EvidenceCardDto>> generationResult =
+                    evidenceCardGenerationService.generate(recentEntries);
+            cards = generationResult.content();
+            recordTokenUsage(evidenceLogId, generationResult.tokenUsage());
             reportGenerationLogRecorder.succeed(evidenceLogId);
         } catch (Exception e) {
             reportGenerationLogRecorder.fail(evidenceLogId, e);
@@ -146,7 +151,10 @@ public class TypeReportGenerationListener {
                 TYPE_REPORT_OPENAI_MODEL
         );
         try {
-            patterns = patternExtractionService.extract(cards);
+            LlmGenerationResult<PatternExtractionResultDto> generationResult =
+                    patternExtractionService.extract(cards);
+            patterns = generationResult.content();
+            recordTokenUsage(patternLogId, generationResult.tokenUsage());
             reportGenerationLogRecorder.succeed(patternLogId);
         } catch (Exception e) {
             reportGenerationLogRecorder.fail(patternLogId, e);
@@ -179,7 +187,10 @@ public class TypeReportGenerationListener {
                 TYPE_REPORT_OPENAI_MODEL
         );
         try {
-            selection = typeSelectionService.select(candidates, patterns);
+            LlmGenerationResult<TypeSelectionResultDto> generationResult =
+                    typeSelectionService.select(candidates, patterns);
+            selection = generationResult.content();
+            recordTokenUsage(selectionLogId, generationResult.tokenUsage());
             reportGenerationLogRecorder.succeed(selectionLogId);
         } catch (Exception e) {
             reportGenerationLogRecorder.fail(selectionLogId, e);
@@ -213,13 +224,15 @@ public class TypeReportGenerationListener {
                 TYPE_REPORT_GEMINI_MODEL
         );
         try {
-            content = typeReportContentGenerationService.generate(
+            LlmGenerationResult<TypeReportContentDto> generationResult = typeReportContentGenerationService.generate(
                     selectedType,
                     patterns,
                     cards,
                     emotionStats,
                     selection.analysisTypeCode()
             );
+            content = generationResult.content();
+            recordTokenUsage(contentLogId, generationResult.tokenUsage());
             reportGenerationLogRecorder.succeed(contentLogId);
         } catch (Exception e) {
             reportGenerationLogRecorder.fail(contentLogId, e);
@@ -281,5 +294,15 @@ public class TypeReportGenerationListener {
             case LOVE -> "사랑";
             case VALUES -> "가치관";
         };
+    }
+
+    private void recordTokenUsage(Long logId, LlmTokenUsage tokenUsage) {
+        reportGenerationLogRecorder.recordTokenUsage(
+                logId,
+                tokenUsage.inputTokens(),
+                tokenUsage.outputTokens(),
+                tokenUsage.totalTokens(),
+                tokenUsage.thinkingTokens()
+        );
     }
 }

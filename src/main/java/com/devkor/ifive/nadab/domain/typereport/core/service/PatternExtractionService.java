@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.typereport.core.dto.PatternExtractionResult
 import com.devkor.ifive.nadab.domain.typereport.infra.TypePatternExtractLlmClient;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class PatternExtractionService {
 
     private final TypePatternExtractLlmClient llmClient;
 
-    public PatternExtractionResultDto extract(List<EvidenceCardDto> cards) {
+    public LlmGenerationResult<PatternExtractionResultDto> extract(List<EvidenceCardDto> cards) {
         if (cards == null || cards.isEmpty()) {
             throw new AiResponseParseException(ErrorCode.PATTERN_RESULT_EMPTY);
         }
@@ -37,12 +38,12 @@ public class PatternExtractionService {
                 .collect(Collectors.toSet());
 
         String cardsText = EvidenceCardsAssembler.assembleForPrompt(cards);
-        JsonNode raw = llmClient.extractPatternsRawJson(cardsText);
+        LlmGenerationResult<JsonNode> rawResult = llmClient.extractPatternsRawJson(cardsText);
 
-        PatternExtractionResultDto dto = toDto(raw);
+        PatternExtractionResultDto dto = toDto(rawResult.content());
         validate(dto, validIds);
 
-        return dto;
+        return new LlmGenerationResult<>(dto, rawResult.tokenUsage());
     }
 
     private PatternExtractionResultDto toDto(JsonNode raw) {

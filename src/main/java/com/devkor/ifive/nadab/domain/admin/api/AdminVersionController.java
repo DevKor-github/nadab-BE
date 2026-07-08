@@ -3,9 +3,12 @@ package com.devkor.ifive.nadab.domain.admin.api;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionCreateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionItemUpsertRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionSummaryUpdateRequest;
+import com.devkor.ifive.nadab.domain.admin.api.dto.request.AdminVersionUpdateRequest;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminLatestVersionsResponse;
+import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionHistoryResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionCreateResponse;
 import com.devkor.ifive.nadab.domain.admin.api.dto.response.AdminVersionItemCreateResponse;
+import com.devkor.ifive.nadab.domain.appversion.core.entity.AppPlatform;
 import com.devkor.ifive.nadab.domain.admin.application.AdminVersionCommandService;
 import com.devkor.ifive.nadab.domain.admin.application.AdminVersionItemCommandService;
 import com.devkor.ifive.nadab.domain.admin.application.AdminVersionQueryService;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Hidden
@@ -39,6 +43,13 @@ public class AdminVersionController {
         return ApiResponseEntity.ok(adminVersionQueryService.getLatestVersions());
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponseDto<AdminVersionHistoryResponse>> getVersionHistory(
+            @RequestParam(required = false) AppPlatform platform
+    ) {
+        return ApiResponseEntity.ok(adminVersionQueryService.getVersionHistory(platform));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponseDto<AdminVersionCreateResponse>> createVersion(
             @RequestBody @Valid AdminVersionCreateRequest request
@@ -53,6 +64,15 @@ public class AdminVersionController {
             @RequestBody @Valid AdminVersionSummaryUpdateRequest request
     ) {
         adminVersionCommandService.updateSummary(appVersionId, request.summary());
+        return ApiResponseEntity.noContent();
+    }
+
+    @PutMapping("/{appVersionId}/version")
+    public ResponseEntity<ApiResponseDto<Void>> updateVersion(
+            @PathVariable Long appVersionId,
+            @RequestBody @Valid AdminVersionUpdateRequest request
+    ) {
+        adminVersionCommandService.updateVersion(appVersionId, request.version());
         return ApiResponseEntity.noContent();
     }
 

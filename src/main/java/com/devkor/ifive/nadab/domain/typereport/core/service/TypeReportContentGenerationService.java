@@ -11,6 +11,8 @@ import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReportContentDto;
 import com.devkor.ifive.nadab.domain.typereport.infra.TypeReportLlmClient;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ai.AiResponseParseException;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +38,7 @@ public class TypeReportContentGenerationService {
     private final TypeReportLlmClient llmClient;
     private final ObjectMapper objectMapper;
 
-    public TypeReportContentDto generate(
+    public LlmGenerationResult<TypeReportContentDto> generate(
             AnalysisTypeCandidateDto selectedType,
             PatternExtractionResultDto patterns,
             List<EvidenceCardDto> allCards,
@@ -56,19 +58,23 @@ public class TypeReportContentGenerationService {
         String evidenceCardsText = TypeReportInputAssembler.assembleEvidenceCards(representative);
         String emotionStatsText = TypeReportInputAssembler.assembleEmotionStats(emotionStats);
 
-        JsonNode raw = llmClient.generateRaw(selectedTypeText, patternsText, evidenceCardsText, emotionStatsText);
+        LlmGenerationResult<JsonNode> rawResult =
+                llmClient.generateRaw(selectedTypeText, patternsText, evidenceCardsText, emotionStatsText);
+        JsonNode raw = rawResult.content();
+        LlmTokenUsage tokenUsage = rawResult.tokenUsage();
 
         // 1차 파싱/검증
         try {
             TypeReportContentDto dto = toDto(raw);
             validate(dto, expectedAnalysisTypeCode);
-            return dto;
+            return new LlmGenerationResult<>(dto, tokenUsage);
         } catch (AiResponseParseException e) {
             // 리페어 1회
-            JsonNode repaired = llmClient.rewriteOnly(raw);
+            LlmGenerationResult<JsonNode> rewriteResult = llmClient.rewriteOnly(raw);
+            JsonNode repaired = rewriteResult.content();
             TypeReportContentDto dto2 = toDto(repaired);
             validate(dto2, expectedAnalysisTypeCode);
-            return dto2;
+            return new LlmGenerationResult<>(dto2, tokenUsage.plus(rewriteResult.tokenUsage()));
         }
     }
 

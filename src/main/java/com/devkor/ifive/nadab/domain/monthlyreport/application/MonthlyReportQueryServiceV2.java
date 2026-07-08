@@ -1,11 +1,15 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
-import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupItemV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportLocatorResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlySocialRankingItemResponse;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlySocialSummaryResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.ReportListTypeV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyContentFactory;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialRankingItem;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
@@ -43,6 +47,7 @@ public class MonthlyReportQueryServiceV2 {
     private final WeeklyReportRepository weeklyReportRepository;
     private final UserRepository userRepository;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final MonthlyReportLocatorResolver monthlyReportLocatorResolver;
 
     public List<AllReportItemResponseV2> getAllReports(Long userId, ReportListTypeV2 type) {
         if (!userRepository.existsById(userId)) {
@@ -120,11 +125,21 @@ public class MonthlyReportQueryServiceV2 {
         }
 
         MonthRangeDto range = MonthRangeCalculator.getLastMonthRange();
-        return monthlyReportV2Repository.findByUserIdAndMonthStartDate(userId, range.monthStartDate())
-                .map(this::toLookupResponse)
-                .or(() -> monthlyReportRepository.findByUserIdAndMonthStartDate(userId, range.monthStartDate())
-                        .map(this::toLookupResponse))
-                .orElseGet(() -> new MyMonthlyReportLookupResponseV2(null));
+        return getMyMonthlyReport(userId, range);
+    }
+
+    MyMonthlyReportLookupResponseV2 getMyMonthlyReport(Long userId, MonthRangeDto range) {
+        MonthlyReportLocatorResponse report = monthlyReportLocatorResolver
+                .findByMonth(userId, range.monthStartDate())
+                .orElse(null);
+        MonthRangeDto previousRange = MonthRangeCalculator.monthRangeOf(
+                range.monthStartDate().minusMonths(1)
+        );
+        MonthlyReportLocatorResponse previousReport = monthlyReportLocatorResolver
+                .findCompletedByMonth(userId, previousRange.monthStartDate())
+                .orElse(null);
+
+        return new MyMonthlyReportLookupResponseV2(report, previousReport);
     }
 
     public MonthlyReportResponseV2 getMonthlyReportById(Long userId, Long id) {
@@ -151,34 +166,41 @@ public class MonthlyReportQueryServiceV2 {
                 imageUrl,
                 content.discovered(),
                 content.dominantKeyword(),
-                report.getEmotionStats() == null ? TypeContentFactory.emptyEmotionStats() : report.getEmotionStats().normalized(),
-                report.getEmotionSummaryContent() == null ? TypeContentFactory.emptyText() : report.getEmotionSummaryContent().normalized(),
                 content.emotionTrend(),
+                report.getEmotionStats() == null ? TypeContentFactory.emptyEmotionStats() : report.getEmotionStats().normalized(),
+                report.getEmotionComparison() == null ? null : report.getEmotionComparison().normalized(),
+                report.getEmotionSummaryContent() == null ? TypeContentFactory.emptyText() : report.getEmotionSummaryContent().normalized(),
                 content.comment(),
                 content.commentSummary(),
-                report.getInterestStats() == null ? MonthlyContentFactory.emptyInterestStats() : report.getInterestStats().normalized()
+                report.getInterestStats() == null ? MonthlyContentFactory.emptyInterestStats() : report.getInterestStats().normalized(),
+                toSocialSummaryResponse(report)
         );
     }
 
-    private MyMonthlyReportLookupResponseV2 toLookupResponse(MonthlyReportV2 report) {
-        return new MyMonthlyReportLookupResponseV2(
-                new MyMonthlyReportLookupItemV2(
-                        report.getId(),
-                        2,
-                        report.getMonthStartDate().getMonthValue(),
-                        report.getStatus() == null ? MonthlyReportStatus.PENDING : report.getStatus()
-                )
+    private MonthlySocialSummaryResponse toSocialSummaryResponse(MonthlyReportV2 report) {
+        MonthlySocialSummaryContent socialSummary = report.getSocialSummary() == null
+                ? MonthlySocialSummaryContent.empty(report.getMonthStartDate().getMonthValue())
+                : report.getSocialSummary().normalized();
+
+        return new MonthlySocialSummaryResponse(
+                socialSummary.visible(),
+                socialSummary.month(),
+                socialSummary.likeRanking().stream().map(this::toSocialRankingItemResponse).toList(),
+                socialSummary.commentRanking().stream().map(this::toSocialRankingItemResponse).toList()
         );
     }
 
-    private MyMonthlyReportLookupResponseV2 toLookupResponse(MonthlyReport report) {
-        return new MyMonthlyReportLookupResponseV2(
-                new MyMonthlyReportLookupItemV2(
-                        report.getId(),
-                        1,
-                        report.getMonthStartDate().getMonthValue(),
-                        report.getStatus() == null ? MonthlyReportStatus.PENDING : report.getStatus()
-                )
+    private MonthlySocialRankingItemResponse toSocialRankingItemResponse(MonthlySocialRankingItem item) {
+        String profileImageUrl = item.profileImageKey() != null
+                ? profileImageUrlBuilder.buildUrl(item.profileImageKey())
+                : profileImageUrlBuilder.buildDefaultUrl(item.defaultProfileType());
+
+        return new MonthlySocialRankingItemResponse(
+                item.displayOrder(),
+                item.userId(),
+                item.nickname(),
+                profileImageUrl,
+                item.topRank()
         );
     }
 

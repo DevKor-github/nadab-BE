@@ -1,15 +1,24 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application.listener;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.DailyReportStatus;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyImagePresetAssignmentService;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.MonthlyReportTxServiceV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyInterestStatsCalculator;
+import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyReportComparisonInputAssembler;
 import com.devkor.ifive.nadab.domain.monthlyreport.application.helper.MonthlyRepresentativePicker;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.content.InterestStatsContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlyEmotionComparisonContent;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.content.MonthlySocialSummaryContent;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.AiMonthlyReportResultDto;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImagePromptContext;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyImageVisualPreset;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportComparisonInputDto;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.dto.MonthlyReportGenerationRequestedEventDtoV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyQueryRepository;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.repository.MonthlyReportV2Repository;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlyWeeklySummariesService;
+import com.devkor.ifive.nadab.domain.monthlyreport.core.service.MonthlySocialSummaryService;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportImageStorage;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.MonthlyReportLlmClientV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.infra.OpenAiImageClient;
@@ -20,7 +29,9 @@ import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeEmotionSt
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.weeklyreport.application.helper.WeeklyEntriesAssembler;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.dto.DailyEntryDto;
+import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
+import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
 import com.devkor.ifive.nadab.global.shared.util.dto.MonthRangeDto;
 import lombok.RequiredArgsConstructor;
@@ -41,13 +52,16 @@ public class MonthlyReportGenerationListenerV2 {
     private static final String MONTHLY_REPORT_V2_LLM_MODEL = "GEMINI_2_5_FLASH";
 
     private final MonthlyQueryRepository monthlyQueryRepository;
+    private final MonthlyReportV2Repository monthlyReportV2Repository;
 
     private final MonthlyReportLlmClientV2 monthlyReportLlmClientV2;
     private final OpenAiImageClient openAiImageClient;
     private final MonthlyReportImageStorage monthlyReportImageStorage;
 
     private final MonthlyReportTxServiceV2 monthlyReportTxServiceV2;
+    private final MonthlyImagePresetAssignmentService monthlyImagePresetAssignmentService;
     private final MonthlyWeeklySummariesService monthlyWeeklySummariesService;
+    private final MonthlySocialSummaryService monthlySocialSummaryService;
     private final ReportGenerationLogRecorder reportGenerationLogRecorder;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -108,6 +122,43 @@ public class MonthlyReportGenerationListenerV2 {
             return;
         }
 
+        MonthlySocialSummaryContent socialSummary;
+        try {
+            socialSummary = monthlySocialSummaryService.buildSocialSummary(event.userId(), range);
+        } catch (Exception e) {
+            log.error("[MONTHLY_REPORT][SOCIAL_SUMMARY_FAILED] userId={}, reportId={}",
+                    event.userId(), event.reportId(), e);
+            monthlyReportTxServiceV2.failAndRefundMonthly(
+                    event.userId(),
+                    event.reportId(),
+                    event.crystalLogId()
+            );
+            return;
+        }
+
+        MonthlyReportComparisonInputDto comparisonInput = null;
+        if (event.previousReportId() != null) {
+            try {
+                comparisonInput = monthlyReportV2Repository.findById(event.previousReportId())
+                        .filter(previousReport -> previousReport.getUser() != null
+                                && event.userId().equals(previousReport.getUser().getId()))
+                        .map(previousReport -> MonthlyReportComparisonInputAssembler.assemble(
+                                previousReport,
+                                emotionStats
+                        ))
+                        .orElseThrow();
+            } catch (Exception e) {
+                log.error("[MONTHLY_REPORT][COMPARISON_INPUT_FAILED] userId={}, reportId={}, previousReportId={}",
+                        event.userId(), event.reportId(), event.previousReportId(), e);
+                monthlyReportTxServiceV2.failAndRefundMonthly(
+                        event.userId(),
+                        event.reportId(),
+                        event.crystalLogId()
+                );
+                return;
+            }
+        }
+
         AiMonthlyReportResultDto dto;
         Long generationLogId = reportGenerationLogRecorder.start(
                 event.userId(),
@@ -119,13 +170,22 @@ public class MonthlyReportGenerationListenerV2 {
         );
         try {
             // 트랜잭션 밖(백그라운드)에서 LLM 호출
-            dto = monthlyReportLlmClientV2.generate(
+            LlmGenerationResult<AiMonthlyReportResultDto> generationResult = monthlyReportLlmClientV2.generate(
                     range.monthStartDate().toString(),
                     range.monthEndDate().toString(),
                     weeklySummaries,
                     representativeEntries,
                     emotionStats,
-                    event.exists()
+                    comparisonInput
+            );
+            dto = generationResult.content();
+            LlmTokenUsage tokenUsage = generationResult.tokenUsage();
+            reportGenerationLogRecorder.recordTokenUsage(
+                    generationLogId,
+                    tokenUsage.inputTokens(),
+                    tokenUsage.outputTokens(),
+                    tokenUsage.totalTokens(),
+                    tokenUsage.thinkingTokens()
             );
             reportGenerationLogRecorder.succeed(generationLogId);
         } catch (Exception e) {
@@ -156,7 +216,9 @@ public class MonthlyReportGenerationListenerV2 {
                     dto.content(),
                     dto.emotionSummaryContent(),
                     emotionStats,
-                    interestStats
+                    interestStats,
+                    MonthlyEmotionComparisonContent.from(comparisonInput),
+                    socialSummary
             );
             reportGenerationLogRecorder.succeed(textConfirmLogId);
 
@@ -184,7 +246,19 @@ public class MonthlyReportGenerationListenerV2 {
                 null
         );
         try {
-            String base64Image = openAiImageClient.generateBase64Image(event.userId(), dto, range);
+            MonthlyImageVisualPreset imageVisualPreset = monthlyImagePresetAssignmentService.getOrAssignVisualPreset(
+                    event.userId(),
+                    event.reportId()
+            );
+            MonthlyImagePromptContext imagePromptContext = MonthlyImagePromptContext.from(
+                    dto,
+                    range,
+                    imageVisualPreset
+            );
+            String base64Image = openAiImageClient.generateBase64Image(
+                    event.userId(),
+                    imagePromptContext
+            );
             imageKey = monthlyReportImageStorage.uploadBase64Webp(
                     event.userId(),
                     event.reportId(),

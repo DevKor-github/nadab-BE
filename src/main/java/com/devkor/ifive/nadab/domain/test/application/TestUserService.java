@@ -3,9 +3,11 @@ package com.devkor.ifive.nadab.domain.test.application;
 import com.devkor.ifive.nadab.domain.terms.application.TermsCommandService;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.CreateTestUserRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.response.CreateTestUserResponse;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.domain.user.core.service.UserInterestService;
 import com.devkor.ifive.nadab.domain.user.core.service.UserProfileUpdateService;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
 import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
@@ -25,9 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TestUserService {
 
+    private static final long DEFAULT_CRYSTAL_BALANCE = 1_000L;
+
     private final UserRepository userRepository;
     private final UserWalletRepository userWalletRepository;
     private final UserProfileUpdateService userProfileUpdateService;
+    private final UserInterestService userInterestService;
     private final TermsCommandService termsCommandService;
     private final PasswordEncoder passwordEncoder;
 
@@ -47,9 +52,10 @@ public class TestUserService {
         userRepository.save(user);
 
         userProfileUpdateService.updateNickname(user, request.nickname());
+        userInterestService.updateUserInterest(user, InterestCode.PREFERENCE);
         user.updateSignupStatus(SignupStatusType.COMPLETED);
 
-        userWalletRepository.save(UserWallet.create(user));
+        userWalletRepository.save(UserWallet.create(user, DEFAULT_CRYSTAL_BALANCE));
         termsCommandService.saveConsents(user.getId(), true, true, true, false);
 
         return new CreateTestUserResponse(

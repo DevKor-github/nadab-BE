@@ -5,5 +5,5 @@ public interface MonthlyReportPromptLoader {
 
     String loadV2BaselinePrompt();
 
-    String loadImagePrompt();
+    String loadV2ComparisonPrompt();
 }
