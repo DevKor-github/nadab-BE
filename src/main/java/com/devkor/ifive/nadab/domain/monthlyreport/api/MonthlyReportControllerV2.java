@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.api;
 
-import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportListResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
@@ -12,6 +12,7 @@ import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,7 +24,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @Tag(name = "월간 리포트 API V2", description = "월간 리포트 생성 및 조회 관련 API V2")
 @RestController
@@ -110,7 +110,7 @@ public class MonthlyReportControllerV2 {
                     @ApiResponse(
                             responseCode = "200",
                             description = "전체 리포트 목록 조회 성공",
-                            content = @Content(schema = @Schema(implementation = AllReportItemResponseV2.class), mediaType = "application/json")
+                            content = @Content(schema = @Schema(implementation = AllReportListResponseV2.class), mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -124,11 +124,16 @@ public class MonthlyReportControllerV2 {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<List<AllReportItemResponseV2>>> getAllReports(
+    public ResponseEntity<ApiResponseDto<AllReportListResponseV2>> getAllReports(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(defaultValue = "ALL") ReportListTypeV2 type
+            @Parameter(description = "리포트 목록 타입: ALL | MONTHLY | WEEKLY")
+            @RequestParam(defaultValue = "ALL") ReportListTypeV2 type,
+            @Parameter(description = "페이지 번호(1부터 시작)")
+            @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기(기본 7, 최대 50)")
+            @RequestParam(defaultValue = "7") int size
     ) {
-        List<AllReportItemResponseV2> response = monthlyReportQueryServiceV2.getAllReports(principal.getId(), type);
+        AllReportListResponseV2 response = monthlyReportQueryServiceV2.getAllReports(principal.getId(), type, page, size);
         return ApiResponseEntity.ok(response);
     }
 

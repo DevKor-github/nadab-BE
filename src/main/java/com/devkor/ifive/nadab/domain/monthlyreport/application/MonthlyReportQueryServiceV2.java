@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.application;
 
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportListResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportLocatorResponse;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
@@ -23,6 +24,7 @@ import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReportStatus;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.repository.WeeklyReportRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ForbiddenException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.shared.util.MonthRangeCalculator;
@@ -49,7 +51,9 @@ public class MonthlyReportQueryServiceV2 {
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
     private final MonthlyReportLocatorResolver monthlyReportLocatorResolver;
 
-    public List<AllReportItemResponseV2> getAllReports(Long userId, ReportListTypeV2 type) {
+    public AllReportListResponseV2 getAllReports(Long userId, ReportListTypeV2 type, int page, int size) {
+        validatePageRequest(page, size);
+
         if (!userRepository.existsById(userId)) {
             throw new NotFoundException(ErrorCode.USER_NOT_FOUND);
         }
@@ -114,9 +118,24 @@ public class MonthlyReportQueryServiceV2 {
                         .thenComparing(Comparator.comparingLong(ReportListRow::id).reversed())
         );
 
-        return rows.stream()
+        int totalCount = rows.size();
+        int totalPages = (int) Math.ceil((double) totalCount / size);
+        int fromIndex = Math.min((page - 1) * size, totalCount);
+        int toIndex = Math.min(fromIndex + size, totalCount);
+
+        List<AllReportItemResponseV2> items = rows.subList(fromIndex, toIndex).stream()
                 .map(r -> new AllReportItemResponseV2(r.id(), r.type(), r.period(), r.summary(), r.version()))
                 .toList();
+
+        return new AllReportListResponseV2(
+                items,
+                totalCount,
+                page,
+                size,
+                totalPages,
+                page > 1 && totalPages > 0,
+                page < totalPages
+        );
     }
 
     public MyMonthlyReportLookupResponseV2 getMyMonthlyReport(Long userId) {
@@ -202,6 +221,12 @@ public class MonthlyReportQueryServiceV2 {
                 profileImageUrl,
                 item.topRank()
         );
+    }
+
+    private void validatePageRequest(int page, int size) {
+        if (page < 1 || size < 1 || size > 50) {
+            throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
+        }
     }
 
     private record ReportListRow(
