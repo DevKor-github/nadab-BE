@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.api;
 
-import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportItemResponseV2;
+import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.AllReportListResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MyMonthlyReportLookupResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportResponseV2;
 import com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response.MonthlyReportStartResponse;
@@ -12,6 +12,7 @@ import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,7 +24,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @Tag(name = "월간 리포트 API V2", description = "월간 리포트 생성 및 조회 관련 API V2")
 @RestController
@@ -92,25 +92,42 @@ public class MonthlyReportControllerV2 {
     @Operation(
             summary = "이전 리포트 목록 조회",
             description = """
-                    주간/월간 이전 리포트를 통합 조회합니다.
+                    주간/월간 이전 리포트를 통합 조회합니다. 응답은 페이지네이션 메타데이터를 포함한 객체입니다.
                     
                     type: ALL | MONTHLY | WEEKLY
+                    - ALL: 월간 리포트와 주간 리포트를 모두 조회합니다.
+                    - MONTHLY: 월간 리포트만 조회합니다.
+                    - WEEKLY: 주간 리포트만 조회합니다.
+
+                    페이지네이션:
+                    - page는 1부터 시작합니다. 기본값은 1입니다.
+                    - size 기본값은 7이고, 최대 50까지 요청할 수 있습니다.
+                    - data.items에는 현재 페이지의 리포트 목록이 들어갑니다.
+                    - data.totalCount, data.totalPages, data.hasPrevious, data.hasNext로 페이지 UI를 구성할 수 있습니다.
+                    - 조회 결과가 없으면 items는 빈 배열, totalCount와 totalPages는 0입니다.
                     
                     정렬 순서:
-                    1) 년-월 내림차순
-                    2) 동일 월에서는 월간 먼저, 그 다음 주간(주차 내림차순)
+                    1) 최신 연도/월 우선
+                    2) 같은 월에서는 월간 리포트가 먼저 노출됩니다.
+                    3) 주간 리포트는 주차가 큰 순서로 노출됩니다.
+                    4) 같은 조건에서는 version 내림차순, id 내림차순으로 정렬됩니다.
                     
-                    version 규칙:
-                    - weekly: 값과 상관없이 GET /api/v1/weekly-report/{id} 로 조회
-                    - monthly_reports - 1인 경우 : GET /api/v1/monthly-report/{id}로 조회 (기존의 레거시 버전)
-                    - monthly_reports - 2인 경우 : GET /api/v2/monthly-report/{id}로 조회 (새로운 V2 버전)
+                    상세 조회 라우팅:
+                    - type = WEEKLY: GET /api/v1/weekly-report/{id}
+                    - type = MONTHLY, version = 1: GET /api/v1/monthly-report/{id}
+                    - type = MONTHLY, version = 2: GET /api/v2/monthly-report/{id}
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "전체 리포트 목록 조회 성공",
-                            content = @Content(schema = @Schema(implementation = AllReportItemResponseV2.class), mediaType = "application/json")
+                            description = "이전 리포트 목록 페이지 조회 성공",
+                            content = @Content(schema = @Schema(implementation = AllReportListResponseV2.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "- ErrorCode: VALIDATION_FAILED - page는 1 이상, size는 1 이상 50 이하로 요청해야 함",
+                            content = @Content
                     ),
                     @ApiResponse(
                             responseCode = "401",
@@ -124,11 +141,16 @@ public class MonthlyReportControllerV2 {
                     )
             }
     )
-    public ResponseEntity<ApiResponseDto<List<AllReportItemResponseV2>>> getAllReports(
+    public ResponseEntity<ApiResponseDto<AllReportListResponseV2>> getAllReports(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(defaultValue = "ALL") ReportListTypeV2 type
+            @Parameter(description = "리포트 목록 타입: ALL | MONTHLY | WEEKLY", example = "ALL")
+            @RequestParam(defaultValue = "ALL") ReportListTypeV2 type,
+            @Parameter(description = "페이지 번호(1부터 시작)", example = "1")
+            @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기(기본 7, 최대 50)", example = "7")
+            @RequestParam(defaultValue = "7") int size
     ) {
-        List<AllReportItemResponseV2> response = monthlyReportQueryServiceV2.getAllReports(principal.getId(), type);
+        AllReportListResponseV2 response = monthlyReportQueryServiceV2.getAllReports(principal.getId(), type, page, size);
         return ApiResponseEntity.ok(response);
     }
 
