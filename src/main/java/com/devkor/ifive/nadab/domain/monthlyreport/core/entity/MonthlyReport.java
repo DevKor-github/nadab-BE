@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.monthlyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
+import com.devkor.ifive.nadab.global.shared.entity.CreatableEntity;
 import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
 import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContentFactory;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -23,7 +24,7 @@ import java.time.OffsetDateTime;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MonthlyReport {
+public class MonthlyReport extends CreatableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
