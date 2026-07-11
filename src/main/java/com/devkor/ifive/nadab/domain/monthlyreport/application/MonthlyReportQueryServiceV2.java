@@ -74,7 +74,7 @@ public class MonthlyReportQueryServiceV2 {
                         month.getMonthValue() + "월",
                         report.getSummary(),
                         1,
-                        report.getCreatedAt()
+                        report.getAnalyzedAt()
                 ));
             }
 
@@ -90,7 +90,7 @@ public class MonthlyReportQueryServiceV2 {
                         month.getMonthValue() + "월",
                         report.getSummary(),
                         2,
-                        report.getCreatedAt()
+                        report.getAnalyzedAt()
                 ));
             }
         }
@@ -109,7 +109,7 @@ public class MonthlyReportQueryServiceV2 {
                         weekStart.getMonthValue() + "월 " + weekOfMonth + "주차",
                         report.getSummary(),
                         1,
-                        report.getCreatedAt()
+                        report.getAnalyzedAt()
                 ));
             }
         }
