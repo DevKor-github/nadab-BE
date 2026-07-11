@@ -2,6 +2,8 @@ package com.devkor.ifive.nadab.domain.monthlyreport.api.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.OffsetDateTime;
+
 @Schema(description = "전체 리포트 목록 아이템")
 public record AllReportItemResponseV2(
         @Schema(description = "리포트 ID")
@@ -13,6 +15,8 @@ public record AllReportItemResponseV2(
         @Schema(description = "요약")
         String summary,
         @Schema(description = "리포트 버전", example = "2")
-        int version
+        int version,
+        @Schema(description = "리포트 생성 시각 ISO 8601 timestamp", example = "2026-01-31T10:30:00+09:00")
+        OffsetDateTime createdAt
 ) {
 }
