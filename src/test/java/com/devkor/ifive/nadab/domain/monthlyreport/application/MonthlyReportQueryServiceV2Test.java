@@ -32,8 +32,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -107,13 +105,6 @@ class MonthlyReportQueryServiceV2Test {
         assertThat(response.items())
                 .extracting(AllReportItemResponseV2::id)
                 .containsExactly(201L, 101L, 301L);
-        assertThat(response.items())
-                .extracting(AllReportItemResponseV2::createdAt)
-                .containsExactly(
-                        OffsetDateTime.parse("2026-01-01T10:00:00+09:00"),
-                        OffsetDateTime.parse("2026-01-01T09:00:00+09:00"),
-                        OffsetDateTime.parse("2026-01-19T09:00:00+09:00")
-                );
     }
 
     @Test
@@ -331,7 +322,6 @@ class MonthlyReportQueryServiceV2Test {
         when(report.getId()).thenReturn(id);
         when(report.getMonthStartDate()).thenReturn(monthStartDate);
         when(report.getSummary()).thenReturn(summary);
-        when(report.getCreatedAt()).thenReturn(monthStartDate.atTime(9, 0).atOffset(ZoneOffset.ofHours(9)));
         return report;
     }
 
@@ -340,7 +330,6 @@ class MonthlyReportQueryServiceV2Test {
         when(report.getId()).thenReturn(id);
         when(report.getMonthStartDate()).thenReturn(monthStartDate);
         when(report.getSummary()).thenReturn(summary);
-        when(report.getCreatedAt()).thenReturn(monthStartDate.atTime(10, 0).atOffset(ZoneOffset.ofHours(9)));
         return report;
     }
 
@@ -349,7 +338,6 @@ class MonthlyReportQueryServiceV2Test {
         when(report.getId()).thenReturn(id);
         when(report.getWeekStartDate()).thenReturn(weekStartDate);
         when(report.getSummary()).thenReturn(summary);
-        when(report.getCreatedAt()).thenReturn(weekStartDate.atTime(9, 0).atOffset(ZoneOffset.ofHours(9)));
         return report;
     }
 }

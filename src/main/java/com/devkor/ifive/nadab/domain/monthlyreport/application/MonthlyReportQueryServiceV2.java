@@ -35,7 +35,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -73,8 +72,7 @@ public class MonthlyReportQueryServiceV2 {
                         99,
                         month.getMonthValue() + "월",
                         report.getSummary(),
-                        1,
-                        report.getCreatedAt()
+                        1
                 ));
             }
 
@@ -89,8 +87,7 @@ public class MonthlyReportQueryServiceV2 {
                         99,
                         month.getMonthValue() + "월",
                         report.getSummary(),
-                        2,
-                        report.getCreatedAt()
+                        2
                 ));
             }
         }
@@ -108,8 +105,7 @@ public class MonthlyReportQueryServiceV2 {
                         weekOfMonth,
                         weekStart.getMonthValue() + "월 " + weekOfMonth + "주차",
                         report.getSummary(),
-                        1,
-                        report.getCreatedAt()
+                        1
                 ));
             }
         }
@@ -128,7 +124,7 @@ public class MonthlyReportQueryServiceV2 {
         int toIndex = Math.min(fromIndex + size, totalCount);
 
         List<AllReportItemResponseV2> items = rows.subList(fromIndex, toIndex).stream()
-                .map(r -> new AllReportItemResponseV2(r.id(), r.type(), r.period(), r.summary(), r.version(), r.createdAt()))
+                .map(r -> new AllReportItemResponseV2(r.id(), r.type(), r.period(), r.summary(), r.version()))
                 .toList();
 
         return new AllReportListResponseV2(
@@ -241,8 +237,7 @@ public class MonthlyReportQueryServiceV2 {
             int weekOrder,
             String period,
             String summary,
-            int version,
-            OffsetDateTime createdAt
+            int version
     ) {
     }
 }
