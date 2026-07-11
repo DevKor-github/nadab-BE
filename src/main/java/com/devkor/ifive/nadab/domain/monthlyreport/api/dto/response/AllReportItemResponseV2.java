@@ -16,7 +16,7 @@ public record AllReportItemResponseV2(
         String summary,
         @Schema(description = "리포트 버전", example = "2")
         int version,
-        @Schema(description = "리포트 생성 시각 ISO 8601 timestamp", example = "2026-01-31T10:30:00+09:00")
+        @Schema(description = "목록 표시 기준 시각(리포트 분석 완료 시각) ISO 8601 timestamp", example = "2026-01-31T10:30:00+09:00")
         OffsetDateTime createdAt
 ) {
 }

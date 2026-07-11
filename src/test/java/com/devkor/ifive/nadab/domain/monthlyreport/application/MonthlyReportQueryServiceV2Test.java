@@ -110,9 +110,9 @@ class MonthlyReportQueryServiceV2Test {
         assertThat(response.items())
                 .extracting(AllReportItemResponseV2::createdAt)
                 .containsExactly(
-                        OffsetDateTime.parse("2026-01-01T10:00:00+09:00"),
-                        OffsetDateTime.parse("2026-01-01T09:00:00+09:00"),
-                        OffsetDateTime.parse("2026-01-19T09:00:00+09:00")
+                        OffsetDateTime.parse("2026-01-01T12:00:00+09:00"),
+                        OffsetDateTime.parse("2026-01-01T11:00:00+09:00"),
+                        OffsetDateTime.parse("2026-01-19T11:00:00+09:00")
                 );
     }
 
@@ -331,7 +331,7 @@ class MonthlyReportQueryServiceV2Test {
         when(report.getId()).thenReturn(id);
         when(report.getMonthStartDate()).thenReturn(monthStartDate);
         when(report.getSummary()).thenReturn(summary);
-        when(report.getCreatedAt()).thenReturn(monthStartDate.atTime(9, 0).atOffset(ZoneOffset.ofHours(9)));
+        when(report.getAnalyzedAt()).thenReturn(monthStartDate.atTime(11, 0).atOffset(ZoneOffset.ofHours(9)));
         return report;
     }
 
@@ -340,7 +340,7 @@ class MonthlyReportQueryServiceV2Test {
         when(report.getId()).thenReturn(id);
         when(report.getMonthStartDate()).thenReturn(monthStartDate);
         when(report.getSummary()).thenReturn(summary);
-        when(report.getCreatedAt()).thenReturn(monthStartDate.atTime(10, 0).atOffset(ZoneOffset.ofHours(9)));
+        when(report.getAnalyzedAt()).thenReturn(monthStartDate.atTime(12, 0).atOffset(ZoneOffset.ofHours(9)));
         return report;
     }
 
@@ -349,7 +349,7 @@ class MonthlyReportQueryServiceV2Test {
         when(report.getId()).thenReturn(id);
         when(report.getWeekStartDate()).thenReturn(weekStartDate);
         when(report.getSummary()).thenReturn(summary);
-        when(report.getCreatedAt()).thenReturn(weekStartDate.atTime(9, 0).atOffset(ZoneOffset.ofHours(9)));
+        when(report.getAnalyzedAt()).thenReturn(weekStartDate.atTime(11, 0).atOffset(ZoneOffset.ofHours(9)));
         return report;
     }
 }
