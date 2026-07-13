@@ -41,6 +41,10 @@ spring:
         options:
           model: gpt-4o-mini
           temperature: 0.0
+      embedding:
+        options:
+          model: text-embedding-3-small
+          dimensions: 1536
     anthropic:
       api-key: ${ANTHROPIC_API_KEY}
       chat:
@@ -90,6 +94,14 @@ admin:
     cookie-name: admin_auth
 
 api_prefix: /api/v1
+
+ask-chat:
+  rag:
+    embedding-model: text-embedding-3-small
+    embedding-dimensions: 1536
+    embedding-version: 1
+    embedding-batch-size: 20
+    retrieval-limit: 5
 
 firebase:
   admin:

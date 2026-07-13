@@ -228,6 +228,11 @@ public enum ErrorCode {
     // 404 Not Found
     SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색어를 찾을 수 없습니다"),
 
+    // ==================== ASK_CHAT (물어보기) ====================
+    // 404 Not Found
+    ASK_CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 세션을 찾을 수 없습니다"),
+    ASK_CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 메시지를 찾을 수 없습니다"),
+
     // ==================== PROMPT (프롬프트) ====================
     // 400 Bad Request
     PROMPT_DAILY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "일간 리포트 프롬프트 파일이 존재하지 않습니다"),
