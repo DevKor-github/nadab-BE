@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -226,7 +228,7 @@ public class ReportNotificationEventListener {
      * - 30개, 50개, 전체 완료 시 TYPE_REPORT_AVAILABLE 알림 발송
      */
     @Async("notificationTaskExecutor")
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleDailyReportCompleted(DailyReportCompletedEvent event) {
         try {
             // 해당 InterestCode의 총 답변 개수 조회

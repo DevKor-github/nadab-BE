@@ -5,7 +5,6 @@ import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequ
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateAnswerImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.ImageStatusResponse;
-import com.devkor.ifive.nadab.domain.dailyreport.application.event.DailyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
@@ -19,7 +18,6 @@ import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionR
 import com.devkor.ifive.nadab.domain.reportlog.application.ReportGenerationLogRecorder;
 import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationStep;
 import com.devkor.ifive.nadab.domain.reportlog.core.entity.ReportGenerationType;
-import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.user.core.service.ProfileImageService;
@@ -34,7 +32,6 @@ import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -55,8 +52,6 @@ public class DailyReportService {
 
     private final DailyReportLlmClient dailyReportLlmClient;
     private final ReportGenerationLogRecorder reportGenerationLogRecorder;
-
-    private final ApplicationEventPublisher eventPublisher;
 
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
 
@@ -125,14 +120,6 @@ public class DailyReportService {
         }
 
         ConfirmDailyAndRewardDto confirmDto = dailyReportTxService.confirmDailyAndReward(prep, dto, request.webpKey());
-
-        // 일일 리포트 완성 이벤트 발행 (유형 리포트 제작 가능 알림 체크용)
-        if (question.getInterest() != null) {
-            InterestCode interestCode = question.getInterest().getCode();
-            eventPublisher.publishEvent(
-                new DailyReportCompletedEvent(userId, interestCode)
-            );
-        }
 
         String imageUrl = answerEntry.getImageKey() != null ? profileImageUrlBuilder.buildUrl(answerEntry.getImageKey()) : null;
 
