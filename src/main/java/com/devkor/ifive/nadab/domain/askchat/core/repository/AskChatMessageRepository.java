@@ -20,6 +20,11 @@ public interface AskChatMessageRepository extends JpaRepository<AskChatMessage, 
             AskChatMessageRole role
     );
 
+    Optional<AskChatMessage> findFirstBySessionIdAndRoleOrderByCreatedAtAsc(
+            Long sessionId,
+            AskChatMessageRole role
+    );
+
     long countBySessionIdAndRoleAndStatus(
             Long sessionId,
             AskChatMessageRole role,

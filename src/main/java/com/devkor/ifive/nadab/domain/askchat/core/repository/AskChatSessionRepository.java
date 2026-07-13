@@ -18,4 +18,6 @@ public interface AskChatSessionRepository extends JpaRepository<AskChatSession, 
     );
 
     List<AskChatSession> findAllByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    long countByUserId(Long userId);
 }
