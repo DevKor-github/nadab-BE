@@ -41,7 +41,9 @@ class AskChatEmbeddingClientTest {
         assertThat(client.version()).isEqualTo(1);
         assertThat(client.dimensions()).isEqualTo(1536);
         assertThat(client.batchSize()).isEqualTo(20);
+        assertThat(client.backfillBatchSize()).isEqualTo(10);
         assertThat(client.retrievalLimit()).isEqualTo(5);
+        assertThat(client.maxRetryCount()).isEqualTo(3);
     }
 
     private AskChatRagProperties properties() {
@@ -50,7 +52,9 @@ class AskChatEmbeddingClientTest {
         properties.setEmbeddingDimensions(1536);
         properties.setEmbeddingVersion(1);
         properties.setEmbeddingBatchSize(20);
+        properties.setBackfillBatchSize(10);
         properties.setRetrievalLimit(5);
+        properties.setEmbeddingMaxRetryCount(3);
         return properties;
     }
 }

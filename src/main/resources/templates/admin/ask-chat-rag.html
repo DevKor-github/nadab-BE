@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>NADAB Admin Ask Chat RAG</title>
+    <style>
+        :root {
+            --bg: #10141b;
+            --surface: #181e28;
+            --surface-2: #202837;
+            --border: #2e3748;
+            --text: #e8edf8;
+            --muted: #9ca5bc;
+            --primary: #4b8bff;
+            --danger: #d35a5a;
+            --success: #4caf7d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-link {
+            text-decoration: none;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            background: var(--surface-2);
+        }
+
+        .tab-link.active {
+            border-color: var(--primary);
+            background: rgba(75, 139, 255, 0.2);
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 16px;
+            color: var(--muted);
+        }
+
+        .description {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-2);
+            padding: 14px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .stat-value.success { color: var(--success); }
+        .stat-value.danger { color: var(--danger); }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: 0;
+            border-radius: 6px;
+            padding: 9px 13px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-ghost { background: var(--surface-2); color: var(--text); }
+        .btn:disabled { cursor: not-allowed; opacity: 0.55; }
+
+        .result {
+            min-height: 42px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 9999;
+            padding: 16px;
+        }
+
+        .popup-backdrop.open {
+            display: flex;
+        }
+
+        .popup {
+            width: 100%;
+            max-width: 440px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .popup-title {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .popup-message {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .popup-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        @media (max-width: 700px) {
+            .stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <h1 class="title">Admin Console</h1>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+    </div>
+
+    <nav class="tabs">
+        <a href="/admin/tabs/app-versions" class="tab-link">App Versions</a>
+        <a href="/admin/tabs/ask-chat-rag" class="tab-link active">Ask Chat RAG</a>
+    </nav>
+
+    <div class="panel">
+        <h2 class="panel-title">Daily Answer Backfill</h2>
+        <p class="description">
+            Completed daily answers that do not have a RAG document for the current embedding version are indexed one batch at a time.
+            Run repeatedly until Target becomes 0. Failed embeddings are saved and handled by the retry scheduler.
+        </p>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Target</div>
+                <div id="targetCount" class="stat-value">-</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Indexed</div>
+                <div id="indexedCount" class="stat-value success">-</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Failed</div>
+                <div id="failedCount" class="stat-value danger">-</div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button id="runBackfillBtn" class="btn btn-primary" type="button">Run Next Batch</button>
+        </div>
+
+        <div id="resultText" class="result">No run yet.</div>
+    </div>
+</div>
+
+<div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+        <h2 id="popupTitle" class="popup-title"></h2>
+        <p id="popupMessage" class="popup-message"></p>
+        <div class="popup-actions">
+            <button id="popupCancelBtn" class="btn btn-ghost" type="button">No</button>
+            <button id="popupConfirmBtn" class="btn btn-primary" type="button">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const runBackfillBtn = document.getElementById('runBackfillBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const targetCountEl = document.getElementById('targetCount');
+    const indexedCountEl = document.getElementById('indexedCount');
+    const failedCountEl = document.getElementById('failedCount');
+    const resultTextEl = document.getElementById('resultText');
+    const popupBackdropEl = document.getElementById('popupBackdrop');
+    const popupTitleEl = document.getElementById('popupTitle');
+    const popupMessageEl = document.getElementById('popupMessage');
+    const popupCancelBtn = document.getElementById('popupCancelBtn');
+    const popupConfirmBtn = document.getElementById('popupConfirmBtn');
+
+    function showPopup({title, message, confirmText = 'OK', cancelText = 'No', isConfirm = false}) {
+        popupTitleEl.textContent = title;
+        popupMessageEl.textContent = message;
+        popupConfirmBtn.textContent = confirmText;
+        popupCancelBtn.textContent = cancelText;
+        popupCancelBtn.style.display = isConfirm ? 'inline-block' : 'none';
+        popupBackdropEl.classList.add('open');
+
+        return new Promise((resolve) => {
+            const cleanup = () => {
+                popupBackdropEl.classList.remove('open');
+                popupConfirmBtn.onclick = null;
+                popupCancelBtn.onclick = null;
+            };
+
+            popupConfirmBtn.onclick = () => {
+                cleanup();
+                resolve(true);
+            };
+            popupCancelBtn.onclick = () => {
+                cleanup();
+                resolve(false);
+            };
+        });
+    }
+
+    function showConfirmPopup(message) {
+        return showPopup({
+            title: 'Confirm',
+            message,
+            confirmText: 'Run',
+            cancelText: 'Cancel',
+            isConfirm: true
+        });
+    }
+
+    function showResultPopup(message, isError = false) {
+        return showPopup({
+            title: isError ? 'Error' : 'Done',
+            message,
+            confirmText: 'OK',
+            isConfirm: false
+        });
+    }
+
+    async function request(method, url) {
+        const response = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'}
+        });
+
+        if (response.status === 401) {
+            location.replace('/admin/login');
+            return null;
+        }
+
+        if (!response.ok) {
+            let message = 'Request failed.';
+            try {
+                const errorBody = await response.json();
+                if (errorBody && errorBody.message) {
+                    message = errorBody.message;
+                }
+            } catch (e) {
+                // ignore
+            }
+            throw new Error(message);
+        }
+
+        return response.json();
+    }
+
+    function renderResult(result) {
+        targetCountEl.textContent = result.targetCount;
+        indexedCountEl.textContent = result.indexedCount;
+        failedCountEl.textContent = result.failedCount;
+
+        if (result.targetCount === 0) {
+            resultTextEl.textContent = 'No remaining completed daily answers for this embedding version.';
+            return;
+        }
+
+        resultTextEl.textContent =
+            `Processed one batch.\nTarget: ${result.targetCount}, Indexed: ${result.indexedCount}, Failed: ${result.failedCount}`;
+    }
+
+    runBackfillBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirmPopup(
+            'Run one Ask Chat RAG backfill batch?\nThis calls the embedding API for completed daily answers that are not indexed yet.'
+        );
+        if (!confirmed) {
+            return;
+        }
+
+        runBackfillBtn.disabled = true;
+        runBackfillBtn.textContent = 'Running...';
+        resultTextEl.textContent = 'Running backfill batch...';
+
+        try {
+            const body = await request('POST', '/admin/api/ask-chat/rag/backfill/daily-answers');
+            if (!body) {
+                return;
+            }
+            renderResult(body.data);
+            await showResultPopup('Backfill batch completed.');
+        } catch (e) {
+            resultTextEl.textContent = e.message;
+            await showResultPopup(e.message, true);
+        } finally {
+            runBackfillBtn.disabled = false;
+            runBackfillBtn.textContent = 'Run Next Batch';
+        }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        const confirmed = await showPopup({
+            title: 'Confirm',
+            message: 'Logout now?',
+            confirmText: 'Yes',
+            cancelText: 'No',
+            isConfirm: true
+        });
+        if (!confirmed) {
+            return;
+        }
+        try {
+            await request('POST', '/admin/api/logout');
+        } finally {
+            location.replace('/admin/login');
+        }
+    });
+</script>
+</body>
+</html>

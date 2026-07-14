@@ -25,6 +25,7 @@ public class AskChatRagVectorRepository {
                    SET embedding = CAST(:embedding AS vector),
                        embedding_status = 'COMPLETED',
                        error_code = NULL,
+                       last_embedding_attempted_at = CURRENT_TIMESTAMP,
                        embedded_at = CURRENT_TIMESTAMP,
                        updated_at = CURRENT_TIMESTAMP
                  WHERE id = :documentId
@@ -35,18 +36,24 @@ public class AskChatRagVectorRepository {
                 .addValue("embedding", formatVector(embedding)));
     }
 
-    public int markEmbeddingFailed(Long documentId, String errorCode) {
+    public int markEmbeddingFailed(Long documentId, String errorCode, int maxRetryCount) {
         String sql = """
                 UPDATE ask_chat_rag_documents
-                   SET embedding_status = 'FAILED',
+                   SET embedding_status = CASE
+                           WHEN retry_count + 1 >= :maxRetryCount THEN 'DEAD_LETTER'
+                           ELSE 'FAILED'
+                       END,
+                       retry_count = retry_count + 1,
                        error_code = :errorCode,
+                       last_embedding_attempted_at = CURRENT_TIMESTAMP,
                        updated_at = CURRENT_TIMESTAMP
                  WHERE id = :documentId
                 """;
 
         return jdbcTemplate.update(sql, new MapSqlParameterSource()
                 .addValue("documentId", documentId)
-                .addValue("errorCode", errorCode));
+                .addValue("errorCode", errorCode)
+                .addValue("maxRetryCount", maxRetryCount));
     }
 
     public List<AskChatRagSearchResultDto> search(

@@ -28,5 +28,16 @@ public class AskChatRagProperties {
     private int embeddingBatchSize = 20;
 
     @Min(1)
+    private int backfillBatchSize = 20;
+
+    @Min(1)
     private int retrievalLimit = 5;
+
+    private boolean embeddingRetryEnabled = true;
+
+    @Min(1000)
+    private long embeddingRetryFixedDelayMs = 60000;
+
+    @Min(1)
+    private int embeddingMaxRetryCount = 3;
 }

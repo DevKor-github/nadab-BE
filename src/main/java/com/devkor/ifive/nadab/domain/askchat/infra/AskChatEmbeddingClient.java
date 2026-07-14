@@ -40,8 +40,16 @@ public class AskChatEmbeddingClient {
         return properties.getEmbeddingBatchSize();
     }
 
+    public int backfillBatchSize() {
+        return properties.getBackfillBatchSize();
+    }
+
     public int retrievalLimit() {
         return properties.getRetrievalLimit();
+    }
+
+    public int maxRetryCount() {
+        return properties.getEmbeddingMaxRetryCount();
     }
 
     private List<Double> toDoubleList(float[] embedding) {
