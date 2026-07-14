@@ -25,4 +25,9 @@ public class AdminPageController {
     public String adminVersionHistoryPage() {
         return "admin/version-history";
     }
+
+    @GetMapping("/admin/tabs/ask-chat-rag")
+    public String adminAskChatRagPage() {
+        return "admin/ask-chat-rag";
+    }
 }
