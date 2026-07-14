@@ -33,11 +33,15 @@ public class AskChatHistoryQueryService {
         validatePageRequest(page, size);
 
         PageRequest pageRequest = PageRequest.of(page - 1, size);
-        List<AskChatSession> sessions = askChatSessionRepository.findAllByUserIdOrderByCreatedAtDesc(
+        List<AskChatSession> sessions = askChatSessionRepository.findHistoriesByUserIdAndMessageRole(
                 userId,
+                AskChatMessageRole.USER,
                 pageRequest
         );
-        long totalCount = askChatSessionRepository.countByUserId(userId);
+        long totalCount = askChatSessionRepository.countHistoriesByUserIdAndMessageRole(
+                userId,
+                AskChatMessageRole.USER
+        );
         int totalPages = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / size);
 
         List<AskChatHistoryItemResponse> histories = sessions.stream()
@@ -46,6 +50,7 @@ public class AskChatHistoryQueryService {
 
         return new AskChatHistoryListResponse(
                 histories,
+                histories.isEmpty(),
                 totalCount,
                 page,
                 size,
@@ -68,6 +73,7 @@ public class AskChatHistoryQueryService {
                 session.getId(),
                 session.getStatus(),
                 session.getAnsweredTurnCount(),
+                true,
                 session.getCreatedAt(),
                 session.getEndedAt(),
                 messages
@@ -85,6 +91,7 @@ public class AskChatHistoryQueryService {
         return new AskChatHistoryItemResponse(
                 session.getId(),
                 title,
+                session.getCreatedAt().toLocalDate(),
                 session.getStatus(),
                 session.getAnsweredTurnCount(),
                 session.getCreatedAt()

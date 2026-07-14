@@ -1,0 +1,80 @@
+package com.devkor.ifive.nadab.domain.askchat.application;
+
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatMessageResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
+import com.devkor.ifive.nadab.domain.user.core.entity.User;
+import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
+import com.devkor.ifive.nadab.global.exception.ConflictException;
+import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class AskChatMessageCommandService {
+
+    private static final int MAX_QUESTION_LENGTH = 200;
+
+    private final AskChatSessionRepository askChatSessionRepository;
+    private final AskChatMessageRepository askChatMessageRepository;
+    private final UserRepository userRepository;
+
+    @Transactional
+    public AskChatQuestionSendResponse sendQuestion(Long userId, String content) {
+        String normalizedContent = normalizeQuestionContent(content);
+        AskChatSession session = getOrCreateActiveSession(userId);
+        validateTurnLimit(session);
+
+        AskChatMessage userMessage = askChatMessageRepository.save(
+                AskChatMessage.createUserMessage(session, normalizedContent)
+        );
+
+        return new AskChatQuestionSendResponse(
+                AskChatSessionResponse.from(session, AskChatSessionService.MAX_TURN_COUNT),
+                AskChatMessageResponse.from(userMessage)
+        );
+    }
+
+    private AskChatSession getOrCreateActiveSession(Long userId) {
+        return askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
+                        userId,
+                        AskChatSessionStatus.ACTIVE
+                )
+                .orElseGet(() -> createSession(userId));
+    }
+
+    private AskChatSession createSession(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        return askChatSessionRepository.save(AskChatSession.start(user));
+    }
+
+    private void validateTurnLimit(AskChatSession session) {
+        if (session.getAnsweredTurnCount() >= AskChatSessionService.MAX_TURN_COUNT) {
+            throw new ConflictException(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED);
+        }
+    }
+
+    private String normalizeQuestionContent(String content) {
+        if (content == null) {
+            throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
+        }
+
+        String normalizedContent = content.trim();
+        if (normalizedContent.isBlank() || normalizedContent.length() > MAX_QUESTION_LENGTH) {
+            throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
+        }
+
+        return normalizedContent;
+    }
+}

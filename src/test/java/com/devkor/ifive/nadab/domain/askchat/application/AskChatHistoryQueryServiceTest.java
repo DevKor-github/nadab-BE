@@ -65,9 +65,14 @@ class AskChatHistoryQueryServiceTest {
                 endedCreatedAt,
                 OffsetDateTime.of(2026, 7, 12, 10, 20, 0, 0, ZoneOffset.ofHours(9))
         );
-        when(askChatSessionRepository.findAllByUserIdOrderByCreatedAtDesc(1L, PageRequest.of(0, 2)))
+        when(askChatSessionRepository.findHistoriesByUserIdAndMessageRole(
+                1L,
+                AskChatMessageRole.USER,
+                PageRequest.of(0, 2)
+        ))
                 .thenReturn(List.of(active, ended));
-        when(askChatSessionRepository.countByUserId(1L)).thenReturn(3L);
+        when(askChatSessionRepository.countHistoriesByUserIdAndMessageRole(1L, AskChatMessageRole.USER))
+                .thenReturn(3L);
         AskChatMessage activeTitleMessage = message(
                 100L,
                 AskChatMessageRole.USER,
@@ -91,14 +96,47 @@ class AskChatHistoryQueryServiceTest {
         assertThat(response.currentPage()).isEqualTo(1);
         assertThat(response.pageSize()).isEqualTo(2);
         assertThat(response.totalPages()).isEqualTo(2);
+        assertThat(response.empty()).isFalse();
         assertThat(response.hasPrevious()).isFalse();
         assertThat(response.hasNext()).isTrue();
         assertThat(response.histories())
-                .extracting("sessionId", "title", "status", "answeredTurnCount")
+                .extracting("sessionId", "title", "createdDate", "status", "answeredTurnCount")
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(10L, "나는 어떤 사람이야?", AskChatSessionStatus.ACTIVE, 2),
-                        org.assertj.core.groups.Tuple.tuple(9L, "내 장점은 뭐야?", AskChatSessionStatus.ENDED, 15)
+                        org.assertj.core.groups.Tuple.tuple(
+                                10L,
+                                "나는 어떤 사람이야?",
+                                activeCreatedAt.toLocalDate(),
+                                AskChatSessionStatus.ACTIVE,
+                                2
+                        ),
+                        org.assertj.core.groups.Tuple.tuple(
+                                9L,
+                                "내 장점은 뭐야?",
+                                endedCreatedAt.toLocalDate(),
+                                AskChatSessionStatus.ENDED,
+                                15
+                        )
                 );
+    }
+
+    @Test
+    void getHistories_returns_empty_response_when_no_user_message_session_exists() {
+        when(askChatSessionRepository.findHistoriesByUserIdAndMessageRole(
+                1L,
+                AskChatMessageRole.USER,
+                PageRequest.of(0, 20)
+        )).thenReturn(List.of());
+        when(askChatSessionRepository.countHistoriesByUserIdAndMessageRole(1L, AskChatMessageRole.USER))
+                .thenReturn(0L);
+
+        var response = service.getHistories(1L, 1, 20);
+
+        assertThat(response.histories()).isEmpty();
+        assertThat(response.empty()).isTrue();
+        assertThat(response.totalCount()).isZero();
+        assertThat(response.totalPages()).isZero();
+        assertThat(response.hasPrevious()).isFalse();
+        assertThat(response.hasNext()).isFalse();
     }
 
     @Test
@@ -141,6 +179,7 @@ class AskChatHistoryQueryServiceTest {
         assertThat(response.sessionId()).isEqualTo(10L);
         assertThat(response.status()).isEqualTo(AskChatSessionStatus.ENDED);
         assertThat(response.answeredTurnCount()).isEqualTo(1);
+        assertThat(response.readOnly()).isTrue();
         assertThat(response.messages())
                 .extracting("id", "role", "content")
                 .containsExactly(
