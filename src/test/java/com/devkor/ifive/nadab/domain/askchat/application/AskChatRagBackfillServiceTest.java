@@ -39,8 +39,8 @@ class AskChatRagBackfillServiceTest {
                 embeddingClient
         );
         when(embeddingClient.version()).thenReturn(2);
-        when(embeddingClient.batchSize()).thenReturn(20);
-        when(backfillQueryRepository.findCompletedDailyAnswerTargets(2, 20)).thenReturn(List.of(
+        when(embeddingClient.backfillBatchSize()).thenReturn(10);
+        when(backfillQueryRepository.findCompletedDailyAnswerTargets(2, 10)).thenReturn(List.of(
                 new AskChatRagBackfillTargetDto(10L, 100L, InterestCode.RELATIONSHIP),
                 new AskChatRagBackfillTargetDto(11L, 101L, InterestCode.ROUTINE)
         ));
@@ -63,8 +63,8 @@ class AskChatRagBackfillServiceTest {
                 embeddingClient
         );
         when(embeddingClient.version()).thenReturn(1);
-        when(embeddingClient.batchSize()).thenReturn(20);
-        when(backfillQueryRepository.findCompletedDailyAnswerTargets(1, 20)).thenReturn(List.of(
+        when(embeddingClient.backfillBatchSize()).thenReturn(10);
+        when(backfillQueryRepository.findCompletedDailyAnswerTargets(1, 10)).thenReturn(List.of(
                 new AskChatRagBackfillTargetDto(10L, 100L, InterestCode.RELATIONSHIP),
                 new AskChatRagBackfillTargetDto(11L, 101L, InterestCode.ROUTINE)
         ));

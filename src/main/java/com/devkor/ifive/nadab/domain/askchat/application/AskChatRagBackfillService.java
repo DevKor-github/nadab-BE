@@ -22,7 +22,7 @@ public class AskChatRagBackfillService {
     public AskChatRagBackfillResultDto backfillCompletedDailyAnswers() {
         List<AskChatRagBackfillTargetDto> targets = backfillQueryRepository.findCompletedDailyAnswerTargets(
                 embeddingClient.version(),
-                embeddingClient.batchSize()
+                embeddingClient.backfillBatchSize()
         );
 
         int indexedCount = 0;

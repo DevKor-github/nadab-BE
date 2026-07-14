@@ -15,3 +15,11 @@ logging:
   level:
     org.hibernate.SQL: info
     org.hibernate.type.descriptor.sql.BasicBinder: off
+
+ask-chat:
+  rag:
+    embedding-retry-enabled: false
+    embedding-retry-fixed-delay-ms: 60000
+    embedding-max-retry-count: 3
+    embedding-batch-size: 20
+    backfill-batch-size: 20

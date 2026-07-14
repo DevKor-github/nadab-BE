@@ -101,6 +101,7 @@ ask-chat:
     embedding-dimensions: 1536
     embedding-version: 1
     embedding-batch-size: 20
+    backfill-batch-size: 20
     retrieval-limit: 5
     embedding-retry-enabled: true
     embedding-retry-fixed-delay-ms: 60000
