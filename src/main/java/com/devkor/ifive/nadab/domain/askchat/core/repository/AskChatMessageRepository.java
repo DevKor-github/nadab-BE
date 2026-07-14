@@ -15,6 +15,12 @@ public interface AskChatMessageRepository extends JpaRepository<AskChatMessage, 
 
     List<AskChatMessage> findAllBySessionIdOrderByCreatedAtDesc(Long sessionId, Pageable pageable);
 
+    List<AskChatMessage> findAllBySessionIdAndStatusOrderByCreatedAtDesc(
+            Long sessionId,
+            AskChatMessageStatus status,
+            Pageable pageable
+    );
+
     Optional<AskChatMessage> findFirstBySessionIdAndRoleOrderByCreatedAtDesc(
             Long sessionId,
             AskChatMessageRole role
