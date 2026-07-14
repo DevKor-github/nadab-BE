@@ -11,6 +11,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepos
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +22,20 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AskChatMessageCommandService {
 
+    private static final int MAX_QUESTION_LENGTH = 200;
+
     private final AskChatSessionRepository askChatSessionRepository;
     private final AskChatMessageRepository askChatMessageRepository;
     private final UserRepository userRepository;
 
     @Transactional
     public AskChatQuestionSendResponse sendQuestion(Long userId, String content) {
+        String normalizedContent = normalizeQuestionContent(content);
         AskChatSession session = getOrCreateActiveSession(userId);
         validateTurnLimit(session);
 
         AskChatMessage userMessage = askChatMessageRepository.save(
-                AskChatMessage.createUserMessage(session, content.trim())
+                AskChatMessage.createUserMessage(session, normalizedContent)
         );
 
         return new AskChatQuestionSendResponse(
@@ -59,5 +63,18 @@ public class AskChatMessageCommandService {
         if (session.getAnsweredTurnCount() >= AskChatSessionService.MAX_TURN_COUNT) {
             throw new ConflictException(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED);
         }
+    }
+
+    private String normalizeQuestionContent(String content) {
+        if (content == null) {
+            throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
+        }
+
+        String normalizedContent = content.trim();
+        if (normalizedContent.isBlank() || normalizedContent.length() > MAX_QUESTION_LENGTH) {
+            throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
+        }
+
+        return normalizedContent;
     }
 }

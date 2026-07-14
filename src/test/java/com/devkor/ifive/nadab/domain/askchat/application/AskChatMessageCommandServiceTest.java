@@ -10,6 +10,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepos
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,6 +134,19 @@ class AskChatMessageCommandServiceTest {
         assertThatThrownBy(() -> service.sendQuestion(1L, "더 물어볼래"))
                 .isInstanceOfSatisfying(ConflictException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED));
+        verify(askChatMessageRepository, never()).save(any());
+    }
+
+    @Test
+    void sendQuestion_rejects_blank_or_too_long_content_before_session_lookup() {
+        assertThatThrownBy(() -> service.sendQuestion(1L, "   "))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        assertThatThrownBy(() -> service.sendQuestion(1L, "가".repeat(201)))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+
+        verify(askChatSessionRepository, never()).findFirstByUserIdAndStatusOrderByCreatedAtDesc(any(), any());
         verify(askChatMessageRepository, never()).save(any());
     }
 
