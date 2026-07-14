@@ -36,6 +36,7 @@ public class AskChatHistoryController {
             summary = "물어보기 히스토리 목록 조회",
             description = """
                     사용자의 물어보기 채팅 세션 목록을 최신순으로 조회합니다.
+                    USER 메시지가 1개 이상 저장된 세션만 히스토리로 노출하며, 세션만 생성되고 질문이 없는 대화는 목록에 포함하지 않습니다.
                     page는 1부터 시작하며, size는 최대 50까지 요청할 수 있습니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -70,7 +71,7 @@ public class AskChatHistoryController {
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "물어보기 히스토리 상세 조회",
-            description = "선택한 물어보기 채팅 세션의 전체 메시지를 시간순으로 조회합니다.",
+            description = "선택한 물어보기 채팅 세션의 전체 메시지를 시간순으로 조회합니다. 과거 대화 상세 화면은 readOnly=true로 반환하며 새 질문 입력은 제공하지 않습니다.",
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(

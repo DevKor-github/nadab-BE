@@ -9,6 +9,9 @@ public record AskChatHistoryListResponse(
         @Schema(description = "히스토리 목록")
         List<AskChatHistoryItemResponse> histories,
 
+        @Schema(description = "히스토리가 비어 있는지 여부", example = "false")
+        boolean empty,
+
         @Schema(description = "전체 히스토리 수", example = "12")
         long totalCount,
 
