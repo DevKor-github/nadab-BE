@@ -229,6 +229,9 @@ public enum ErrorCode {
     SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색어를 찾을 수 없습니다"),
 
     // ==================== ASK_CHAT (물어보기) ====================
+    // 409 Conflict
+    ASK_CHAT_TURN_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "세션당 대화 횟수를 모두 사용했습니다"),
+
     // 404 Not Found
     ASK_CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 세션을 찾을 수 없습니다"),
     ASK_CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 메시지를 찾을 수 없습니다"),
