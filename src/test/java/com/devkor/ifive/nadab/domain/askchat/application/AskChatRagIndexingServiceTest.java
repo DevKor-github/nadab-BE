@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocument;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocumentSourceType;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagEmbeddingStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -195,6 +197,7 @@ class AskChatRagIndexingServiceTest {
         when(messageRepository.findById(10L)).thenReturn(Optional.of(message));
         when(embeddingClient.version()).thenReturn(1);
         when(embeddingClient.model()).thenReturn("text-embedding-3-small");
+        when(embeddingClient.maxRetryCount()).thenReturn(3);
         when(ragDocumentRepository.existsBySourceTypeAndSourceIdAndEmbeddingVersion(
                 AskChatRagDocumentSourceType.ASK_CHAT_MESSAGE,
                 10L,
@@ -205,7 +208,7 @@ class AskChatRagIndexingServiceTest {
 
         service.indexAssistantMessage(10L, InterestCode.RELATIONSHIP);
 
-        verify(ragVectorRepository).markEmbeddingFailed(100L, "IllegalStateException");
+        verify(ragVectorRepository).markEmbeddingFailed(100L, "IllegalStateException", 3);
         verify(ragVectorRepository, never()).updateEmbedding(any(), any());
     }
 
@@ -238,6 +241,7 @@ class AskChatRagIndexingServiceTest {
         when(dailyReportRepository.findById(100L)).thenReturn(Optional.of(report));
         when(embeddingClient.version()).thenReturn(1);
         when(embeddingClient.model()).thenReturn("text-embedding-3-small");
+        when(embeddingClient.maxRetryCount()).thenReturn(3);
         when(ragDocumentRepository.existsBySourceTypeAndSourceIdAndEmbeddingVersion(
                 AskChatRagDocumentSourceType.ANSWER_ENTRY,
                 30L,
@@ -248,7 +252,47 @@ class AskChatRagIndexingServiceTest {
 
         service.indexDailyAnswer(30L, 100L, InterestCode.RELATIONSHIP);
 
-        verify(ragVectorRepository).markEmbeddingFailed(200L, "IllegalStateException");
+        verify(ragVectorRepository).markEmbeddingFailed(200L, "IllegalStateException", 3);
+        verify(ragVectorRepository, never()).updateEmbedding(any(), any());
+    }
+
+    @Test
+    void retryFailedEmbeddings_retries_failed_documents_by_batch_size() {
+        AskChatRagDocument first = ragDocument(1L, "first content");
+        AskChatRagDocument second = ragDocument(2L, "second content");
+        when(embeddingClient.batchSize()).thenReturn(20);
+        when(embeddingClient.maxRetryCount()).thenReturn(3);
+        when(ragDocumentRepository.findAllByEmbeddingStatusAndRetryCountLessThanOrderByCreatedAtAsc(
+                AskChatRagEmbeddingStatus.FAILED,
+                3,
+                PageRequest.of(0, 20)
+        )).thenReturn(List.of(first, second));
+        when(embeddingClient.embed("first content")).thenReturn(List.of(0.1, 0.2));
+        when(embeddingClient.embed("second content")).thenReturn(List.of(0.3, 0.4));
+
+        int retriedCount = service.retryFailedEmbeddings();
+
+        assertThat(retriedCount).isEqualTo(2);
+        verify(ragVectorRepository).updateEmbedding(1L, List.of(0.1, 0.2));
+        verify(ragVectorRepository).updateEmbedding(2L, List.of(0.3, 0.4));
+    }
+
+    @Test
+    void retryFailedEmbeddings_keeps_document_failed_when_embedding_fails() {
+        AskChatRagDocument document = ragDocument(1L, "content");
+        when(embeddingClient.batchSize()).thenReturn(20);
+        when(embeddingClient.maxRetryCount()).thenReturn(3);
+        when(ragDocumentRepository.findAllByEmbeddingStatusAndRetryCountLessThanOrderByCreatedAtAsc(
+                AskChatRagEmbeddingStatus.FAILED,
+                3,
+                PageRequest.of(0, 20)
+        )).thenReturn(List.of(document));
+        when(embeddingClient.embed("content")).thenThrow(new IllegalStateException("embedding failed"));
+
+        int retriedCount = service.retryFailedEmbeddings();
+
+        assertThat(retriedCount).isEqualTo(1);
+        verify(ragVectorRepository).markEmbeddingFailed(1L, "IllegalStateException", 3);
         verify(ragVectorRepository, never()).updateEmbedding(any(), any());
     }
 
@@ -304,5 +348,12 @@ class AskChatRagIndexingServiceTest {
         lenient().when(report.getContent()).thenReturn("report");
         lenient().when(report.getEmotion()).thenReturn(emotion);
         return report;
+    }
+
+    private AskChatRagDocument ragDocument(Long id, String content) {
+        AskChatRagDocument document = mock(AskChatRagDocument.class);
+        lenient().when(document.getId()).thenReturn(id);
+        lenient().when(document.getContent()).thenReturn(content);
+        return document;
     }
 }

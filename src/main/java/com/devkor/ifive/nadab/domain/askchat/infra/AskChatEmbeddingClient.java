@@ -44,6 +44,10 @@ public class AskChatEmbeddingClient {
         return properties.getRetrievalLimit();
     }
 
+    public int maxRetryCount() {
+        return properties.getEmbeddingMaxRetryCount();
+    }
+
     private List<Double> toDoubleList(float[] embedding) {
         Double[] values = new Double[embedding.length];
         for (int i = 0; i < embedding.length; i++) {

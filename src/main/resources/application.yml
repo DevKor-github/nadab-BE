@@ -102,6 +102,9 @@ ask-chat:
     embedding-version: 1
     embedding-batch-size: 20
     retrieval-limit: 5
+    embedding-retry-enabled: true
+    embedding-retry-fixed-delay-ms: 60000
+    embedding-max-retry-count: 3
 
 firebase:
   admin:

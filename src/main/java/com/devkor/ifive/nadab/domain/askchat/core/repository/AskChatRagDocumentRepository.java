@@ -23,8 +23,9 @@ public interface AskChatRagDocumentRepository extends JpaRepository<AskChatRagDo
             int embeddingVersion
     );
 
-    List<AskChatRagDocument> findAllByEmbeddingStatusOrderByCreatedAtAsc(
+    List<AskChatRagDocument> findAllByEmbeddingStatusAndRetryCountLessThanOrderByCreatedAtAsc(
             AskChatRagEmbeddingStatus embeddingStatus,
+            int retryCount,
             Pageable pageable
     );
 }

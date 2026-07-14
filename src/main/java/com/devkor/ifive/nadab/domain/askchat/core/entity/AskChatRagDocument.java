@@ -82,6 +82,12 @@ public class AskChatRagDocument extends AuditableEntity {
     @Column(name = "error_code", length = 128)
     private String errorCode;
 
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "last_embedding_attempted_at")
+    private OffsetDateTime lastEmbeddingAttemptedAt;
+
     @Column(name = "embedded_at")
     private OffsetDateTime embeddedAt;
 

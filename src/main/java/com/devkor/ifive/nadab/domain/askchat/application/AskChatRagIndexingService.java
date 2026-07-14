@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocument;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocumentSourceType;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagEmbeddingStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagVectorRepository;
@@ -18,6 +19,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,7 +73,7 @@ public class AskChatRagIndexingService {
             List<Double> embedding = embeddingClient.embed(message.getContent());
             ragVectorRepository.updateEmbedding(document.getId(), embedding);
         } catch (RuntimeException e) {
-            ragVectorRepository.markEmbeddingFailed(document.getId(), truncate(e.getClass().getSimpleName()));
+            markEmbeddingFailed(document.getId(), e);
         }
     }
 
@@ -111,8 +113,25 @@ public class AskChatRagIndexingService {
             List<Double> embedding = embeddingClient.embed(content);
             ragVectorRepository.updateEmbedding(document.getId(), embedding);
         } catch (RuntimeException e) {
-            ragVectorRepository.markEmbeddingFailed(document.getId(), truncate(e.getClass().getSimpleName()));
+            markEmbeddingFailed(document.getId(), e);
         }
+    }
+
+    @Transactional
+    public int retryFailedEmbeddings() {
+        int maxRetryCount = embeddingClient.maxRetryCount();
+        List<AskChatRagDocument> documents = ragDocumentRepository.findAllByEmbeddingStatusAndRetryCountLessThanOrderByCreatedAtAsc(
+                AskChatRagEmbeddingStatus.FAILED,
+                maxRetryCount,
+                PageRequest.of(0, embeddingClient.batchSize())
+        );
+
+        int retriedCount = 0;
+        for (AskChatRagDocument document : documents) {
+            retryEmbedding(document);
+            retriedCount++;
+        }
+        return retriedCount;
     }
 
     private boolean isIndexableAssistantMessage(AskChatMessage message) {
@@ -124,6 +143,23 @@ public class AskChatRagIndexingService {
         return report.getStatus() == DailyReportStatus.COMPLETED
                 && report.getAnswerEntry() != null
                 && report.getAnswerEntry().getId().equals(answerEntryId);
+    }
+
+    private void retryEmbedding(AskChatRagDocument document) {
+        try {
+            List<Double> embedding = embeddingClient.embed(document.getContent());
+            ragVectorRepository.updateEmbedding(document.getId(), embedding);
+        } catch (RuntimeException e) {
+            markEmbeddingFailed(document.getId(), e);
+        }
+    }
+
+    private void markEmbeddingFailed(Long documentId, RuntimeException e) {
+        ragVectorRepository.markEmbeddingFailed(
+                documentId,
+                truncate(e.getClass().getSimpleName()),
+                embeddingClient.maxRetryCount()
+        );
     }
 
     private Map<String, Object> metadata(AskChatMessage message) {
