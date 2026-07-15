@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocumentSourceType;
 import com.devkor.ifive.nadab.domain.askchat.core.properties.AskChatAnswerProperties;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
+import com.devkor.ifive.nadab.global.core.prompt.askchat.AskChatAnswerPromptLoader;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,8 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AskChatAnswerPromptComposerTest {
 
     @Test
-    void augment_builds_prompt_with_friendly_tone_and_conversation_order_rules() {
-        AskChatAnswerPromptComposer composer = new AskChatAnswerPromptComposer(properties());
+    void augment_builds_prompt_from_loaded_templates() {
+        AskChatAnswerPromptComposer composer = new AskChatAnswerPromptComposer(properties(), promptLoader());
         AskChatAnswerPromptContext context = new AskChatAnswerPromptContext(
                 1L,
                 10L,
@@ -38,12 +39,9 @@ class AskChatAnswerPromptComposerTest {
 
         var prompt = composer.augment(context);
 
-        assertThat(prompt.systemPrompt())
-                .contains("친절하고 편안한 한국어 구어체")
-                .contains("\"당신은\", \"사용자께서는\", \"사용자는\" 같은 딱딱하고 AI스러운 표현은 사용하지 마세요")
-                .contains("[최근 대화]의 마지막 USER 메시지를 기준으로 답하세요")
-                .contains("JSON 형식만 반환");
+        assertThat(prompt.systemPrompt()).isEqualTo("system template");
         assertThat(prompt.userPrompt())
+                .contains("프롬프트 버전: 1")
                 .contains("내가 방금 한 질문은 무엇이지?")
                 .contains("USER: 나는 어떤 사람이야?")
                 .contains("ASSISTANT: 말해준 걸 보면 관계를 중요하게 여기는 편으로 보여요.")
@@ -51,14 +49,18 @@ class AskChatAnswerPromptComposerTest {
                 .contains("ANSWER_ENTRY")
                 .contains("VALUES")
                 .contains("사용자는 기록에서 솔직함과 책임감을 중요하게 말한 적이 있다.")
-                .contains("followUpQuestions는 2개 이하")
-                .contains("최근 대화 목록에는 현재 질문을 포함하지 않았습니다")
-                .contains("최근 대화의 마지막 USER 메시지를 답하세요");
+                .contains("followUpQuestions는 2개 이하");
+        assertThat(prompt.userPrompt())
+                .doesNotContain("{promptVersion}")
+                .doesNotContain("{question}")
+                .doesNotContain("{recentMessages}")
+                .doesNotContain("{referenceDocuments}")
+                .doesNotContain("{followUpQuestionCount}");
     }
 
     @Test
     void augment_marks_empty_context_when_recent_messages_and_reference_documents_are_empty() {
-        AskChatAnswerPromptComposer composer = new AskChatAnswerPromptComposer(properties());
+        AskChatAnswerPromptComposer composer = new AskChatAnswerPromptComposer(properties(), promptLoader());
         AskChatAnswerPromptContext context = new AskChatAnswerPromptContext(
                 1L,
                 10L,
@@ -79,5 +81,33 @@ class AskChatAnswerPromptComposerTest {
         properties.setPromptVersion(1);
         properties.setFollowUpQuestionCount(2);
         return properties;
+    }
+
+    private AskChatAnswerPromptLoader promptLoader() {
+        return new AskChatAnswerPromptLoader() {
+            @Override
+            public String loadSystemPrompt() {
+                return "system template";
+            }
+
+            @Override
+            public String loadUserPrompt() {
+                return """
+                        프롬프트 버전: {promptVersion}
+
+                        [현재 질문]
+                        {question}
+
+                        [최근 대화]
+                        {recentMessages}
+
+                        [검색된 사용자 기록]
+                        {referenceDocuments}
+
+                        [이번 답변에서 지켜야 할 세부 조건]
+                        - followUpQuestions는 {followUpQuestionCount}개 이하
+                        """;
+            }
+        };
     }
 }
