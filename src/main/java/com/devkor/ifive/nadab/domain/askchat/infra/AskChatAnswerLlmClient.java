@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.domain.askchat.infra;
 
-import com.devkor.ifive.nadab.domain.askchat.application.helper.AskChatAnswerPromptComposer;
+import com.devkor.ifive.nadab.domain.askchat.application.helper.AskChatAnswerPromptAugmenter;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerGenerationResult;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPrompt;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPromptContext;
@@ -28,13 +28,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AskChatAnswerLlmClient {
 
-    private final AskChatAnswerPromptComposer promptComposer;
+    /*
+     * Keep prompt augmentation behind this boundary while evidence documents are stored in
+     * ask_chat_message_references. A future Spring AI Advisor implementation can replace this
+     * collaborator without changing the ChatClient call path.
+     */
+    private final AskChatAnswerPromptAugmenter promptAugmenter;
     private final AskChatAnswerProperties properties;
     private final LlmRouter llmRouter;
     private final ObjectMapper objectMapper;
 
     public AskChatAnswerGenerationResult generate(AskChatAnswerPromptContext context) {
-        AskChatAnswerPrompt prompt = promptComposer.compose(context);
+        AskChatAnswerPrompt prompt = promptAugmenter.augment(context);
         LlmProvider provider = properties.getProvider();
         ChatClient client = llmRouter.route(provider);
 

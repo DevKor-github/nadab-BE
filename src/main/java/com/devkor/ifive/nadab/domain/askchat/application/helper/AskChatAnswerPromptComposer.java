@@ -12,14 +12,15 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class AskChatAnswerPromptComposer {
+public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter {
 
     private static final String NO_REFERENCE_DOCUMENT = "검색된 사용자 기록이 없습니다.";
     private static final String NO_RECENT_MESSAGE = "최근 대화가 없습니다.";
 
     private final AskChatAnswerProperties properties;
 
-    public AskChatAnswerPrompt compose(AskChatAnswerPromptContext context) {
+    @Override
+    public AskChatAnswerPrompt augment(AskChatAnswerPromptContext context) {
         return new AskChatAnswerPrompt(
                 systemPrompt(),
                 userPrompt(context)

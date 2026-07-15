@@ -1,6 +1,6 @@
 package com.devkor.ifive.nadab.domain.askchat.infra;
 
-import com.devkor.ifive.nadab.domain.askchat.application.helper.AskChatAnswerPromptComposer;
+import com.devkor.ifive.nadab.domain.askchat.application.helper.AskChatAnswerPromptAugmenter;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPrompt;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPromptContext;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerReferenceDocument;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 class AskChatAnswerLlmClientTest {
 
     @Mock
-    private AskChatAnswerPromptComposer promptComposer;
+    private AskChatAnswerPromptAugmenter promptAugmenter;
 
     @Mock
     private LlmRouter llmRouter;
@@ -64,13 +64,13 @@ class AskChatAnswerLlmClientTest {
         properties.setMaxTokens(700);
         properties.setFollowUpQuestionCount(2);
         objectMapper = new ObjectMapper();
-        client = new AskChatAnswerLlmClient(promptComposer, properties, llmRouter, objectMapper);
+        client = new AskChatAnswerLlmClient(promptAugmenter, properties, llmRouter, objectMapper);
     }
 
     @Test
     void generate_returns_answer_with_token_usage_and_reference_document_ids() throws Exception {
         AskChatAnswerPromptContext context = context();
-        when(promptComposer.compose(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
+        when(promptAugmenter.augment(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
         when(llmRouter.route(LlmProvider.OPENAI)).thenReturn(chatClient);
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system("system")).thenReturn(requestSpec);
@@ -100,7 +100,7 @@ class AskChatAnswerLlmClientTest {
     @Test
     void generate_throws_parse_exception_when_response_is_not_json() {
         AskChatAnswerPromptContext context = context();
-        when(promptComposer.compose(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
+        when(promptAugmenter.augment(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
         when(llmRouter.route(LlmProvider.OPENAI)).thenReturn(chatClient);
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system("system")).thenReturn(requestSpec);
@@ -117,7 +117,7 @@ class AskChatAnswerLlmClientTest {
     @Test
     void generate_throws_format_exception_when_answer_is_blank() throws Exception {
         AskChatAnswerPromptContext context = context();
-        when(promptComposer.compose(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
+        when(promptAugmenter.augment(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
         when(llmRouter.route(LlmProvider.OPENAI)).thenReturn(chatClient);
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system("system")).thenReturn(requestSpec);
@@ -137,7 +137,7 @@ class AskChatAnswerLlmClientTest {
     @Test
     void generate_throws_unavailable_exception_when_response_is_empty() {
         AskChatAnswerPromptContext context = context();
-        when(promptComposer.compose(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
+        when(promptAugmenter.augment(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
         when(llmRouter.route(LlmProvider.OPENAI)).thenReturn(chatClient);
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system("system")).thenReturn(requestSpec);

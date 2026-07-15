@@ -6,10 +6,14 @@ import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResp
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerGenerationResult;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPromptContext;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageReference;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocument;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.properties.AskChatAnswerProperties;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageReferenceRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatAnswerLlmClient;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -36,6 +40,8 @@ public class AskChatMessageCommandService {
 
     private final AskChatSessionRepository askChatSessionRepository;
     private final AskChatMessageRepository askChatMessageRepository;
+    private final AskChatMessageReferenceRepository askChatMessageReferenceRepository;
+    private final AskChatRagDocumentRepository askChatRagDocumentRepository;
     private final UserRepository userRepository;
     private final AskChatAnswerContextService askChatAnswerContextService;
     private final AskChatAnswerLlmClient askChatAnswerLlmClient;
@@ -62,6 +68,7 @@ public class AskChatMessageCommandService {
         try {
             AskChatAnswerGenerationResult generationResult = askChatAnswerLlmClient.generate(context);
             assistantMessage = saveCompletedAssistantMessage(session, generationResult);
+            saveMessageReferences(assistantMessage, generationResult);
             session.incrementAnsweredTurnCount();
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
@@ -102,6 +109,21 @@ public class AskChatMessageCommandService {
                 askChatAnswerProperties.getModel(),
                 exception.getErrorCode().getCode()
         ));
+    }
+
+    private void saveMessageReferences(
+            AskChatMessage assistantMessage,
+            AskChatAnswerGenerationResult generationResult
+    ) {
+        List<Long> referenceDocumentIds = generationResult.referenceDocumentIds();
+        for (int i = 0; i < referenceDocumentIds.size(); i++) {
+            AskChatRagDocument ragDocument = askChatRagDocumentRepository.getReferenceById(referenceDocumentIds.get(i));
+            askChatMessageReferenceRepository.save(AskChatMessageReference.of(
+                    assistantMessage,
+                    ragDocument,
+                    i + 1
+            ));
+        }
     }
 
     private AskChatSession getOrCreateActiveSession(Long userId) {

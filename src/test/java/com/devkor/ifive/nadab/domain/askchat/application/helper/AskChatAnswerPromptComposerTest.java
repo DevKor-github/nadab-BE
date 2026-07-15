@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AskChatAnswerPromptComposerTest {
 
     @Test
-    void compose_builds_prompt_with_question_recent_messages_and_reference_documents() {
+    void augment_builds_prompt_with_question_recent_messages_and_reference_documents() {
         AskChatAnswerPromptComposer composer = new AskChatAnswerPromptComposer(properties());
         AskChatAnswerPromptContext context = new AskChatAnswerPromptContext(
                 1L,
@@ -36,7 +36,7 @@ class AskChatAnswerPromptComposerTest {
                 ))
         );
 
-        var prompt = composer.compose(context);
+        var prompt = composer.augment(context);
 
         assertThat(prompt.systemPrompt()).contains("JSON 형식만 반환");
         assertThat(prompt.userPrompt())
@@ -51,7 +51,7 @@ class AskChatAnswerPromptComposerTest {
     }
 
     @Test
-    void compose_marks_empty_context_when_recent_messages_and_reference_documents_are_empty() {
+    void augment_marks_empty_context_when_recent_messages_and_reference_documents_are_empty() {
         AskChatAnswerPromptComposer composer = new AskChatAnswerPromptComposer(properties());
         AskChatAnswerPromptContext context = new AskChatAnswerPromptContext(
                 1L,
@@ -61,7 +61,7 @@ class AskChatAnswerPromptComposerTest {
                 null
         );
 
-        var prompt = composer.compose(context);
+        var prompt = composer.augment(context);
 
         assertThat(prompt.userPrompt())
                 .contains("최근 대화가 없습니다.")

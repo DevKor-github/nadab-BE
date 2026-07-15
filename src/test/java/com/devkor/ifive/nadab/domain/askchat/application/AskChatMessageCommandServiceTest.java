@@ -4,12 +4,16 @@ import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerGenerationRes
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPromptContext;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatGeneratedAnswer;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageReference;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageStatus;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocument;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.properties.AskChatAnswerProperties;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageReferenceRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatAnswerLlmClient;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -53,6 +57,12 @@ class AskChatMessageCommandServiceTest {
     private AskChatMessageRepository askChatMessageRepository;
 
     @Mock
+    private AskChatMessageReferenceRepository askChatMessageReferenceRepository;
+
+    @Mock
+    private AskChatRagDocumentRepository askChatRagDocumentRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -72,6 +82,8 @@ class AskChatMessageCommandServiceTest {
         service = new AskChatMessageCommandService(
                 askChatSessionRepository,
                 askChatMessageRepository,
+                askChatMessageReferenceRepository,
+                askChatRagDocumentRepository,
                 userRepository,
                 askChatAnswerContextService,
                 askChatAnswerLlmClient,
@@ -97,6 +109,8 @@ class AskChatMessageCommandServiceTest {
         AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
         when(askChatAnswerContextService.build(any(), any(), any())).thenReturn(context);
         when(askChatAnswerLlmClient.generate(context)).thenReturn(successGeneration());
+        AskChatRagDocument ragDocument = mock(AskChatRagDocument.class);
+        when(askChatRagDocumentRepository.getReferenceById(100L)).thenReturn(ragDocument);
 
         var response = service.sendQuestion(1L, "  나는 어떤 사람이야?  ");
 
@@ -115,6 +129,12 @@ class AskChatMessageCommandServiceTest {
         assertThat(messageCaptor.getAllValues().get(0).getContent()).isEqualTo("나는 어떤 사람이야?");
         assertThat(messageCaptor.getAllValues().get(1).getStatus()).isEqualTo(AskChatMessageStatus.COMPLETED);
         assertThat(messageCaptor.getAllValues().get(1).getInputTokens()).isEqualTo(10L);
+        ArgumentCaptor<AskChatMessageReference> referenceCaptor =
+                ArgumentCaptor.forClass(AskChatMessageReference.class);
+        verify(askChatMessageReferenceRepository).save(referenceCaptor.capture());
+        assertThat(referenceCaptor.getValue().getMessage()).isSameAs(messageCaptor.getAllValues().get(1));
+        assertThat(referenceCaptor.getValue().getRagDocument()).isSameAs(ragDocument);
+        assertThat(referenceCaptor.getValue().getDisplayOrder()).isEqualTo(1);
         verify(activeSession).incrementAnsweredTurnCount();
         verify(userRepository, never()).findById(any());
     }
@@ -140,6 +160,8 @@ class AskChatMessageCommandServiceTest {
         AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
         when(askChatAnswerContextService.build(any(), any(), any())).thenReturn(context);
         when(askChatAnswerLlmClient.generate(context)).thenReturn(successGeneration());
+        AskChatRagDocument ragDocument = mock(AskChatRagDocument.class);
+        when(askChatRagDocumentRepository.getReferenceById(100L)).thenReturn(ragDocument);
 
         var response = service.sendQuestion(1L, "궁금한 내용을 적어봐요");
 
@@ -186,6 +208,7 @@ class AskChatMessageCommandServiceTest {
         assertThat(messageCaptor.getAllValues().get(1).getLlmModel()).isEqualTo("gpt-4o-mini");
         assertThat(messageCaptor.getAllValues().get(1).getErrorCode())
                 .isEqualTo(ErrorCode.AI_RESPONSE_PARSE_FAILED.getCode());
+        verify(askChatMessageReferenceRepository, never()).save(any());
         verify(activeSession, never()).incrementAnsweredTurnCount();
     }
 
