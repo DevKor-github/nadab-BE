@@ -73,7 +73,7 @@ public class AskChatRagVectorRepository {
                  WHERE user_id = :userId
                    AND embedding_status = 'COMPLETED'
                    AND embedding IS NOT NULL
-                   AND (:interestCode IS NULL OR interest_code = :interestCode)
+                   AND (CAST(:interestCode AS VARCHAR) IS NULL OR interest_code = CAST(:interestCode AS VARCHAR))
                  ORDER BY embedding <=> CAST(:queryEmbedding AS vector)
                  LIMIT :limit
                 """;

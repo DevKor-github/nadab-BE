@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -40,6 +41,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -135,6 +137,10 @@ class AskChatMessageCommandServiceTest {
         assertThat(referenceCaptor.getValue().getMessage()).isSameAs(messageCaptor.getAllValues().get(1));
         assertThat(referenceCaptor.getValue().getRagDocument()).isSameAs(ragDocument);
         assertThat(referenceCaptor.getValue().getDisplayOrder()).isEqualTo(1);
+        InOrder inOrder = inOrder(askChatAnswerContextService, askChatMessageRepository, askChatAnswerLlmClient);
+        inOrder.verify(askChatAnswerContextService).build(any(), any(), any());
+        inOrder.verify(askChatMessageRepository).save(messageCaptor.getAllValues().get(0));
+        inOrder.verify(askChatAnswerLlmClient).generate(context);
         verify(activeSession).incrementAnsweredTurnCount();
         verify(userRepository, never()).findById(any());
     }

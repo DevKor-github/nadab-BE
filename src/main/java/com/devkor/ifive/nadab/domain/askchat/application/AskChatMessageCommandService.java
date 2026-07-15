@@ -53,14 +53,14 @@ public class AskChatMessageCommandService {
         AskChatSession session = getOrCreateActiveSession(userId);
         validateTurnLimit(session);
 
-        AskChatMessage userMessage = askChatMessageRepository.save(
-                AskChatMessage.createUserMessage(session, normalizedContent)
-        );
-
         AskChatAnswerPromptContext context = askChatAnswerContextService.build(
                 userId,
                 session.getId(),
                 normalizedContent
+        );
+
+        AskChatMessage userMessage = askChatMessageRepository.save(
+                AskChatMessage.createUserMessage(session, normalizedContent)
         );
 
         AskChatMessage assistantMessage;
