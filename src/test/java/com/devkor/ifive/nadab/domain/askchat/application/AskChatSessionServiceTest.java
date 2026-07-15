@@ -157,6 +157,64 @@ class AskChatSessionServiceTest {
         verify(askChatSessionRepository, never()).save(any());
     }
 
+    @Test
+    void restartSession_ends_active_session_and_creates_new_session() {
+        User user = mock(User.class);
+        AskChatSession activeSession = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                4,
+                OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        AskChatSession savedSession = session(
+                11L,
+                AskChatSessionStatus.ACTIVE,
+                0,
+                OffsetDateTime.of(2026, 7, 14, 10, 5, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
+                1L,
+                AskChatSessionStatus.ACTIVE
+        )).thenReturn(Optional.of(activeSession));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(askChatSessionRepository.save(any(AskChatSession.class))).thenReturn(savedSession);
+
+        var response = service.restartSession(1L);
+
+        verify(activeSession).end();
+        assertThat(response.sessionId()).isEqualTo(11L);
+        assertThat(response.status()).isEqualTo(AskChatSessionStatus.ACTIVE);
+        assertThat(response.answeredTurnCount()).isZero();
+        assertThat(response.remainingTurnCount()).isEqualTo(15);
+    }
+
+    @Test
+    void restartSession_creates_session_when_active_session_does_not_exist() {
+        User user = mock(User.class);
+        AskChatSession savedSession = session(
+                11L,
+                AskChatSessionStatus.ACTIVE,
+                0,
+                OffsetDateTime.of(2026, 7, 14, 10, 5, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
+                1L,
+                AskChatSessionStatus.ACTIVE
+        )).thenReturn(Optional.empty());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(askChatSessionRepository.save(any(AskChatSession.class))).thenReturn(savedSession);
+
+        var response = service.restartSession(1L);
+
+        assertThat(response.sessionId()).isEqualTo(11L);
+        assertThat(response.status()).isEqualTo(AskChatSessionStatus.ACTIVE);
+        assertThat(response.answeredTurnCount()).isZero();
+        assertThat(response.remainingTurnCount()).isEqualTo(15);
+    }
+
     private AskChatSession session(
             Long id,
             AskChatSessionStatus status,
