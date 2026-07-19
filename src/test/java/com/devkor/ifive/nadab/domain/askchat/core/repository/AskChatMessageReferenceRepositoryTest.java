@@ -41,6 +41,7 @@ class AskChatMessageReferenceRepositoryTest extends PostgresIntegrationTestSuppo
                 null,
                 null,
                 null,
+                null,
                 null
         ));
         AskChatRagDocument firstDocument = persistRagDocument(user, 1L);

@@ -36,7 +36,8 @@ class AskChatSessionRepositoryTest extends PostgresIntegrationTestSupport {
                 "답변 생성에 실패했습니다.",
                 null,
                 null,
-                "TEST_ERROR"
+                "TEST_ERROR",
+                120L
         ));
         AskChatSession firstHistory = persistSession(user);
         persistMessage(AskChatMessage.createUserMessage(firstHistory, "나는 어떤 사람이야?"));

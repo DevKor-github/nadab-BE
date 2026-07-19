@@ -129,8 +129,11 @@ class AskChatMessageCommandServiceTest {
         verify(askChatMessageRepository, times(2)).save(messageCaptor.capture());
         assertThat(messageCaptor.getAllValues().get(0).getSession()).isEqualTo(activeSession);
         assertThat(messageCaptor.getAllValues().get(0).getContent()).isEqualTo("나는 어떤 사람이야?");
+        assertThat(messageCaptor.getAllValues().get(0).getGenerationDurationMs()).isNull();
         assertThat(messageCaptor.getAllValues().get(1).getStatus()).isEqualTo(AskChatMessageStatus.COMPLETED);
         assertThat(messageCaptor.getAllValues().get(1).getInputTokens()).isEqualTo(10L);
+        assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isNotNull();
+        assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isGreaterThanOrEqualTo(0L);
         ArgumentCaptor<AskChatMessageReference> referenceCaptor =
                 ArgumentCaptor.forClass(AskChatMessageReference.class);
         verify(askChatMessageReferenceRepository).save(referenceCaptor.capture());
@@ -214,6 +217,8 @@ class AskChatMessageCommandServiceTest {
         assertThat(messageCaptor.getAllValues().get(1).getLlmModel()).isEqualTo("gpt-4o-mini");
         assertThat(messageCaptor.getAllValues().get(1).getErrorCode())
                 .isEqualTo(ErrorCode.AI_RESPONSE_PARSE_FAILED.getCode());
+        assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isNotNull();
+        assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isGreaterThanOrEqualTo(0L);
         verify(askChatMessageReferenceRepository, never()).save(any());
         verify(activeSession, never()).incrementAnsweredTurnCount();
     }

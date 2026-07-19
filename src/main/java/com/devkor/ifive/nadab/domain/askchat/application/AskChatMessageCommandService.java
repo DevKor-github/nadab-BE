@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +54,7 @@ public class AskChatMessageCommandService {
         AskChatSession session = getOrCreateActiveSession(userId);
         validateTurnLimit(session);
 
+        long generationStartedAt = System.nanoTime();
         AskChatAnswerPromptContext context = askChatAnswerContextService.build(
                 userId,
                 session.getId(),
@@ -67,12 +69,14 @@ public class AskChatMessageCommandService {
         List<String> followUpQuestions;
         try {
             AskChatAnswerGenerationResult generationResult = askChatAnswerLlmClient.generate(context);
-            assistantMessage = saveCompletedAssistantMessage(session, generationResult);
+            long generationDurationMs = elapsedMillis(generationStartedAt);
+            assistantMessage = saveCompletedAssistantMessage(session, generationResult, generationDurationMs);
             saveMessageReferences(assistantMessage, generationResult);
             session.incrementAnsweredTurnCount();
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
-            assistantMessage = saveFailedAssistantMessage(session, e);
+            long generationDurationMs = elapsedMillis(generationStartedAt);
+            assistantMessage = saveFailedAssistantMessage(session, e, generationDurationMs);
             followUpQuestions = List.of();
         }
 
@@ -86,7 +90,8 @@ public class AskChatMessageCommandService {
 
     private AskChatMessage saveCompletedAssistantMessage(
             AskChatSession session,
-            AskChatAnswerGenerationResult generationResult
+            AskChatAnswerGenerationResult generationResult,
+            long generationDurationMs
     ) {
         LlmTokenUsage tokenUsage = generationResult.tokenUsage();
         return askChatMessageRepository.save(AskChatMessage.createAssistantMessage(
@@ -97,18 +102,28 @@ public class AskChatMessageCommandService {
                 tokenUsage.inputTokens(),
                 tokenUsage.outputTokens(),
                 tokenUsage.totalTokens(),
-                tokenUsage.thinkingTokens()
+                tokenUsage.thinkingTokens(),
+                generationDurationMs
         ));
     }
 
-    private AskChatMessage saveFailedAssistantMessage(AskChatSession session, AiServiceException exception) {
+    private AskChatMessage saveFailedAssistantMessage(
+            AskChatSession session,
+            AiServiceException exception,
+            long generationDurationMs
+    ) {
         return askChatMessageRepository.save(AskChatMessage.createFailedAssistantMessage(
                 session,
                 ANSWER_GENERATION_FAILED_MESSAGE,
                 askChatAnswerProperties.getProvider(),
                 askChatAnswerProperties.getModel(),
-                exception.getErrorCode().getCode()
+                exception.getErrorCode().getCode(),
+                generationDurationMs
         ));
+    }
+
+    private long elapsedMillis(long startedAtNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
     }
 
     private void saveMessageReferences(

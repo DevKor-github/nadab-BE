@@ -61,6 +61,7 @@ class AskChatAnswerContextServiceTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
         AskChatMessage previousUserMessage = AskChatMessage.createUserMessage(session, "내 강점은 뭐야?");
