@@ -45,6 +45,7 @@ public class AskChatMessageCommandService {
     private final AskChatAnswerContextService askChatAnswerContextService;
     private final AskChatAnswerLlmClient askChatAnswerLlmClient;
     private final AskChatAnswerProperties askChatAnswerProperties;
+    private final AskChatTurnReservationService askChatTurnReservationService;
 
     @Transactional
     public AskChatQuestionSendResponse sendQuestion(Long userId, Long sessionId, String content) {
@@ -52,6 +53,7 @@ public class AskChatMessageCommandService {
         String normalizedContent = normalizeQuestionContent(content);
         AskChatSession session = getSession(userId, sessionId);
         validateTurnLimit(session);
+        askChatTurnReservationService.ensureReservableTurn(userId);
 
         long generationStartedAt = System.nanoTime();
         AskChatAnswerPromptContext context = askChatAnswerContextService.build(

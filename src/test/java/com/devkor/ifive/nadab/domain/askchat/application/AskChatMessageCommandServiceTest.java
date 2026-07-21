@@ -69,6 +69,9 @@ class AskChatMessageCommandServiceTest {
     @Mock
     private AskChatAnswerLlmClient askChatAnswerLlmClient;
 
+    @Mock
+    private AskChatTurnReservationService askChatTurnReservationService;
+
     private AskChatMessageCommandService service;
     private AskChatAnswerProperties askChatAnswerProperties;
 
@@ -84,7 +87,8 @@ class AskChatMessageCommandServiceTest {
                 askChatRagDocumentRepository,
                 askChatAnswerContextService,
                 askChatAnswerLlmClient,
-                askChatAnswerProperties
+                askChatAnswerProperties,
+                askChatTurnReservationService
         );
     }
 
@@ -135,7 +139,13 @@ class AskChatMessageCommandServiceTest {
         assertThat(referenceCaptor.getValue().getMessage()).isSameAs(messageCaptor.getAllValues().get(1));
         assertThat(referenceCaptor.getValue().getRagDocument()).isSameAs(ragDocument);
         assertThat(referenceCaptor.getValue().getDisplayOrder()).isEqualTo(1);
-        InOrder inOrder = inOrder(askChatAnswerContextService, askChatMessageRepository, askChatAnswerLlmClient);
+        InOrder inOrder = inOrder(
+                askChatTurnReservationService,
+                askChatAnswerContextService,
+                askChatMessageRepository,
+                askChatAnswerLlmClient
+        );
+        inOrder.verify(askChatTurnReservationService).ensureReservableTurn(1L);
         inOrder.verify(askChatAnswerContextService).build(any(), any(), any());
         inOrder.verify(askChatMessageRepository).save(messageCaptor.getAllValues().get(0));
         inOrder.verify(askChatAnswerLlmClient).generate(context);
@@ -209,6 +219,29 @@ class AskChatMessageCommandServiceTest {
                 .isInstanceOfSatisfying(ConflictException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED));
         verify(askChatMessageRepository, never()).save(any());
+    }
+
+    @Test
+    void sendQuestion_rejects_when_turn_balance_is_insufficient_before_message_save() {
+        AskChatSession activeSession = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                2,
+                OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(activeSession));
+        org.mockito.Mockito.doThrow(new BadRequestException(ErrorCode.ASK_CHAT_TURN_BALANCE_INSUFFICIENT))
+                .when(askChatTurnReservationService)
+                .ensureReservableTurn(1L);
+
+        assertThatThrownBy(() -> service.sendQuestion(1L, 10L, "더 물어볼래"))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_TURN_BALANCE_INSUFFICIENT));
+
+        verify(askChatMessageRepository, never()).save(any());
+        verify(askChatAnswerContextService, never()).build(any(), any(), any());
+        verify(askChatAnswerLlmClient, never()).generate(any());
     }
 
     @Test

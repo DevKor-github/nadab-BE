@@ -237,6 +237,9 @@ public enum ErrorCode {
     ASK_CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 메시지를 찾을 수 없습니다"),
     ASK_CHAT_WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 지갑을 찾을 수 없습니다"),
 
+    // 400 Bad Request
+    ASK_CHAT_TURN_BALANCE_INSUFFICIENT(HttpStatus.BAD_REQUEST, "사용 가능한 Ask Chat 대화권이 없습니다"),
+
     // ==================== PROMPT (프롬프트) ====================
     // 400 Bad Request
     PROMPT_DAILY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "일간 리포트 프롬프트 파일이 존재하지 않습니다"),
