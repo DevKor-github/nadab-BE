@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.auth.application;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
 import com.devkor.ifive.nadab.domain.auth.application.TokenService.TokenBundle;
+import com.devkor.ifive.nadab.domain.askchat.application.AskChatWalletGrantService;
 import com.devkor.ifive.nadab.domain.email.core.entity.EmailVerification;
 import com.devkor.ifive.nadab.domain.email.core.entity.VerificationType;
 import com.devkor.ifive.nadab.domain.email.core.repository.EmailVerificationRepository;
@@ -34,6 +35,7 @@ public class BasicAuthService {
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final UserWalletRepository userWalletRepository;
+    private final AskChatWalletGrantService askChatWalletGrantService;
     private final TermsCommandService termsCommandService;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
@@ -63,6 +65,7 @@ public class BasicAuthService {
 
         UserWallet wallet = UserWallet.create(user);
         userWalletRepository.save(wallet);
+        askChatWalletGrantService.grantInitialFreeTurns(user);
 
         // 5. 약관 동의 처리
         termsCommandService.saveConsents(user.getId(), service, privacy, ageVerification, marketing);

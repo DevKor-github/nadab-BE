@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.test.application;
 
+import com.devkor.ifive.nadab.domain.askchat.application.AskChatWalletGrantService;
 import com.devkor.ifive.nadab.domain.terms.application.TermsCommandService;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.CreateTestUserRequest;
 import com.devkor.ifive.nadab.domain.test.api.dto.response.CreateTestUserResponse;
@@ -31,6 +32,7 @@ public class TestUserService {
 
     private final UserRepository userRepository;
     private final UserWalletRepository userWalletRepository;
+    private final AskChatWalletGrantService askChatWalletGrantService;
     private final UserProfileUpdateService userProfileUpdateService;
     private final UserInterestService userInterestService;
     private final TermsCommandService termsCommandService;
@@ -56,6 +58,7 @@ public class TestUserService {
         user.updateSignupStatus(SignupStatusType.COMPLETED);
 
         userWalletRepository.save(UserWallet.create(user, DEFAULT_CRYSTAL_BALANCE));
+        askChatWalletGrantService.grantInitialFreeTurns(user);
         termsCommandService.saveConsents(user.getId(), true, true, true, false);
 
         return new CreateTestUserResponse(

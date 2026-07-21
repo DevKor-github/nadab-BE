@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.auth.core.entity.ProviderType;
 import com.devkor.ifive.nadab.domain.auth.core.entity.SocialAccount;
 import com.devkor.ifive.nadab.domain.auth.core.repository.SocialAccountRepository;
 import com.devkor.ifive.nadab.domain.auth.infra.oauth.OAuth2Provider;
+import com.devkor.ifive.nadab.domain.askchat.application.AskChatWalletGrantService;
 import com.devkor.ifive.nadab.domain.user.core.entity.SignupStatusType;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
@@ -31,6 +32,7 @@ public class SocialAccountService {
     private final UserRepository userRepository;
     private final SocialAccountRepository socialAccountRepository;
     private final UserWalletRepository userWalletRepository;
+    private final AskChatWalletGrantService askChatWalletGrantService;
 
     // 소셜 계정으로 User 조회 또는 생성
     @Transactional
@@ -89,6 +91,7 @@ public class SocialAccountService {
         // UserWallet 생성 및 저장
         UserWallet wallet = UserWallet.create(newUser);
         userWalletRepository.save(wallet);
+        askChatWalletGrantService.grantInitialFreeTurns(newUser);
 
         // SocialAccount 생성 및 저장
         ProviderType providerType = ProviderType.valueOf(provider.name());
