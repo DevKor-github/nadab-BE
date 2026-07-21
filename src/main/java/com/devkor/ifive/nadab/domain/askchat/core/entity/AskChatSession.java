@@ -60,6 +60,13 @@ public class AskChatSession extends AuditableEntity {
         this.answeredTurnCount++;
     }
 
+    public void completeAnsweredTurn(int maxTurnCount) {
+        incrementAnsweredTurnCount();
+        if (this.answeredTurnCount >= maxTurnCount) {
+            end();
+        }
+    }
+
     public void end() {
         if (this.status == AskChatSessionStatus.ENDED) {
             return;

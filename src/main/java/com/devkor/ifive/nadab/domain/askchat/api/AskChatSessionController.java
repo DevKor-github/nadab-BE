@@ -41,9 +41,11 @@ public class AskChatSessionController {
             summary = "물어보기 홈 진입",
             description = """
                     ask_home_01 화면 진입 시 호출합니다. </br>
-                    홈 진입만으로 새 채팅 세션을 생성하지 않고, 이어갈 수 있는 ACTIVE 세션이 있는지만 조회합니다. </br>
-                    ACTIVE 세션이 있으면 activeSession에 세션 정보를 담아 반환하고, 없으면 activeSession만 null로 반환합니다. </br>
-                    maxTurnCount와 remainingTurnCount는 홈 화면의 잔여 대화 횟수 표시용 값입니다.
+                    홈 진입만으로 새 채팅 세션을 생성하지 않습니다. </br>
+                    최종 기획에서는 사용자가 여러 채팅 세션을 유지할 수 있으므로, 홈 응답은 특정 ACTIVE 세션 하나를 선택해 반환하지 않고 최근 채팅 세션 목록을 반환합니다. </br>
+                    recentSessions에는 USER 메시지가 1개 이상 저장된 세션만 최신순으로 포함하며, 각 항목은 첫 질문 제목, 마지막 사용자 질문, 마지막 메시지 시각을 함께 제공합니다. </br>
+                    새 세션 생성은 POST /ask-chat/sessions에서 명시적으로 수행합니다. </br>
+                    크리스탈 및 대화권 잔여 횟수는 다음 브랜치에서 별도 정책으로 연결합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -68,8 +70,8 @@ public class AskChatSessionController {
     @Operation(
             summary = "물어보기 세션 시작",
             description = """
-                    명시적으로 물어보기 채팅 세션을 준비할 때 호출합니다. </br>
-                    이미 ACTIVE 세션이 있으면 같은 세션을 반환하고, ACTIVE 세션이 없으면 새 세션을 생성합니다. </br>
+                    사용자가 새 채팅을 시작할 때 호출합니다. </br>
+                    이미 ACTIVE 세션이 있어도 기존 세션을 재사용하거나 종료하지 않고 매번 새 ACTIVE 세션을 생성합니다. </br>
                     이 API는 질문 메시지를 저장하지 않으며, 실제 질문 저장은 POST /ask-chat/messages에서 수행합니다. </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -90,45 +92,20 @@ public class AskChatSessionController {
         return ApiResponseEntity.ok(response);
     }
 
-    @PostMapping("/sessions/new")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "물어보기 새 대화 시작",
-            description = """
-                    ask_chat_01 화면의 '새로운 대화로 시작하기' 액션에서 호출합니다. </br>
-                    현재 이어가고 있는 ACTIVE 세션이 있으면 ENDED로 종료하고, 새 ACTIVE 세션을 생성해 반환합니다. </br>
-                    기존 대화의 USER/ASSISTANT 메시지는 삭제하지 않고 히스토리에서 조회할 수 있도록 보존합니다. </br>
-                    ACTIVE 세션이 없으면 종료 처리 없이 새 세션만 생성합니다. </br>
-                    이 API는 질문 메시지를 저장하거나 AI 답변을 생성하지 않습니다. </br>
-                    """,
-            security = @SecurityRequirement(name = "bearerAuth"),
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "새 물어보기 세션 생성 성공",
-                            content = @Content(schema = @Schema(implementation = AskChatSessionResponse.class))
-                    ),
-                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
-                    @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
-            }
-    )
-    public ResponseEntity<ApiResponseDto<AskChatSessionResponse>> startNewSession(
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        AskChatSessionResponse response = askChatSessionService.restartSession(principal.getId());
-        return ApiResponseEntity.ok(response);
-    }
-
     @PostMapping("/messages")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "물어보기 질문 전송",
             description = """
                     ask_home_01 또는 ask_chat_01 화면에서 사용자가 질문을 보낼 때 호출합니다. </br>
-                    ACTIVE 세션이 있으면 해당 세션에 USER 메시지를 저장하고, ACTIVE 세션이 없으면 새 세션을 생성한 뒤 USER 메시지를 저장합니다. </br>
-                    이 PR 단계에서는 AI 답변을 생성하지 않으므로 ASSISTANT 메시지, followUpQuestions, RAG 근거 문서는 반환하지 않습니다. </br>
+                    요청 본문의 sessionId에 해당하는 본인 채팅 세션에만 USER/ASSISTANT 메시지를 저장합니다. </br>
+                    세션이 없거나 다른 사용자의 세션이면 ASK_CHAT_SESSION_NOT_FOUND를 반환하며, 질문 전송 시 새 세션을 자동 생성하지 않습니다. </br>
+                    세션 생성은 POST /ask-chat/sessions에서 먼저 수행해야 합니다. </br>
                     질문 내용은 앞뒤 공백 제거 후 1자 이상 200자 이하만 허용합니다. </br>
-                    answeredTurnCount가 15 이상인 세션에서는 메시지를 저장하지 않고 ASK_CHAT_TURN_LIMIT_EXCEEDED를 반환합니다. </br>
+                    답변 생성이 성공한 경우에만 answeredTurnCount를 1 증가시키며, 15번째 성공 답변 후 해당 세션은 ENDED로 자동 전환됩니다. </br>
+                    답변 생성 실패 시에는 응답의 assistantMessage는 null로 반환합니다. </br>
+                    클라이언트에서는 answerGeneration.success=false, errorCode, message를 기준으로 채팅 말풍선이 아닌 모달/토스트를 표시해야 합니다. </br>
+                    ENDED 세션 또는 answeredTurnCount가 15 이상인 세션에서는 메시지를 저장하지 않고 ASK_CHAT_TURN_LIMIT_EXCEEDED를 반환합니다. </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -144,6 +121,11 @@ public class AskChatSessionController {
                     ),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(
+                            responseCode = "404",
+                            description = "- ErrorCode: ASK_CHAT_SESSION_NOT_FOUND - 채팅 세션을 찾을 수 없음",
+                            content = @Content
+                    ),
+                    @ApiResponse(
                             responseCode = "409",
                             description = "- ErrorCode: ASK_CHAT_TURN_LIMIT_EXCEEDED - 세션당 대화 횟수 제한 초과",
                             content = @Content
@@ -156,6 +138,7 @@ public class AskChatSessionController {
     ) {
         AskChatQuestionSendResponse response = askChatMessageCommandService.sendQuestion(
                 principal.getId(),
+                request.sessionId(),
                 request.content()
         );
         return ApiResponseEntity.ok(response);

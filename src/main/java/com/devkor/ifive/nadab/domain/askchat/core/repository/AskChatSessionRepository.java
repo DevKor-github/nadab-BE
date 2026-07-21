@@ -27,6 +27,7 @@ public interface AskChatSessionRepository extends JpaRepository<AskChatSession, 
     @Query("""
         select s
         from AskChatSession s
+        join AskChatMessage latestMessage on latestMessage.session = s
         where s.user.id = :userId
           and exists (
               select 1
@@ -34,7 +35,8 @@ public interface AskChatSessionRepository extends JpaRepository<AskChatSession, 
               where m.session = s
                 and m.role = :role
           )
-        order by s.createdAt desc
+        group by s
+        order by max(latestMessage.createdAt) desc, s.createdAt desc
         """)
     List<AskChatSession> findHistoriesByUserIdAndMessageRole(
             @Param("userId") Long userId,

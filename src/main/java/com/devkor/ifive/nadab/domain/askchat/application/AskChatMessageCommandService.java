@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.askchat.application;
 
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatAnswerGenerationResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatMessageResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
@@ -16,8 +17,6 @@ import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepos
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatAnswerLlmClient;
-import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
@@ -43,15 +42,15 @@ public class AskChatMessageCommandService {
     private final AskChatMessageRepository askChatMessageRepository;
     private final AskChatMessageReferenceRepository askChatMessageReferenceRepository;
     private final AskChatRagDocumentRepository askChatRagDocumentRepository;
-    private final UserRepository userRepository;
     private final AskChatAnswerContextService askChatAnswerContextService;
     private final AskChatAnswerLlmClient askChatAnswerLlmClient;
     private final AskChatAnswerProperties askChatAnswerProperties;
 
     @Transactional
-    public AskChatQuestionSendResponse sendQuestion(Long userId, String content) {
+    public AskChatQuestionSendResponse sendQuestion(Long userId, Long sessionId, String content) {
+        validateSessionId(sessionId);
         String normalizedContent = normalizeQuestionContent(content);
-        AskChatSession session = getOrCreateActiveSession(userId);
+        AskChatSession session = getSession(userId, sessionId);
         validateTurnLimit(session);
 
         long generationStartedAt = System.nanoTime();
@@ -66,24 +65,32 @@ public class AskChatMessageCommandService {
         );
 
         AskChatMessage assistantMessage;
+        AskChatAnswerGenerationResponse answerGeneration;
         List<String> followUpQuestions;
         try {
             AskChatAnswerGenerationResult generationResult = askChatAnswerLlmClient.generate(context);
             long generationDurationMs = elapsedMillis(generationStartedAt);
             assistantMessage = saveCompletedAssistantMessage(session, generationResult, generationDurationMs);
             saveMessageReferences(assistantMessage, generationResult);
-            session.incrementAnsweredTurnCount();
+            session.completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
+            answerGeneration = AskChatAnswerGenerationResponse.completed();
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
             long generationDurationMs = elapsedMillis(generationStartedAt);
-            assistantMessage = saveFailedAssistantMessage(session, e, generationDurationMs);
+            saveFailedAssistantMessage(session, e, generationDurationMs);
+            assistantMessage = null;
+            answerGeneration = AskChatAnswerGenerationResponse.failed(
+                    e.getErrorCode(),
+                    ANSWER_GENERATION_FAILED_MESSAGE
+            );
             followUpQuestions = List.of();
         }
 
         return new AskChatQuestionSendResponse(
                 AskChatSessionResponse.from(session, AskChatSessionService.MAX_TURN_COUNT),
                 AskChatMessageResponse.from(userMessage),
-                AskChatMessageResponse.from(assistantMessage),
+                assistantMessage == null ? null : AskChatMessageResponse.from(assistantMessage),
+                answerGeneration,
                 followUpQuestions
         );
     }
@@ -141,24 +148,21 @@ public class AskChatMessageCommandService {
         }
     }
 
-    private AskChatSession getOrCreateActiveSession(Long userId) {
-        return askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
-                        userId,
-                        AskChatSessionStatus.ACTIVE
-                )
-                .orElseGet(() -> createSession(userId));
-    }
-
-    private AskChatSession createSession(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
-
-        return askChatSessionRepository.save(AskChatSession.start(user));
+    private AskChatSession getSession(Long userId, Long sessionId) {
+        return askChatSessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ASK_CHAT_SESSION_NOT_FOUND));
     }
 
     private void validateTurnLimit(AskChatSession session) {
-        if (session.getAnsweredTurnCount() >= AskChatSessionService.MAX_TURN_COUNT) {
+        if (session.getStatus() != AskChatSessionStatus.ACTIVE
+                || session.getAnsweredTurnCount() >= AskChatSessionService.MAX_TURN_COUNT) {
             throw new ConflictException(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED);
+        }
+    }
+
+    private void validateSessionId(Long sessionId) {
+        if (sessionId == null || sessionId <= 0) {
+            throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
         }
     }
 

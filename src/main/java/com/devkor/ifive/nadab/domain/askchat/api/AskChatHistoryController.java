@@ -38,7 +38,7 @@ public class AskChatHistoryController {
                     ask_history_01 화면에서 사용자의 물어보기 채팅 세션 목록을 최신순으로 조회합니다.  </br>
                     USER 메시지가 1개 이상 저장된 세션만 히스토리로 노출하며, 세션만 생성되고 질문이 없는 대화는 목록에 포함하지 않습니다.  </br>
                     page는 1부터 시작하며, size는 최대 50까지 요청할 수 있습니다.  </br>
-                    응답의 empty는 현재 페이지의 목록이 비어 있는지 나타내며, 각 항목의 createdDate는 히스토리 카드 날짜 표시용입니다.  </br>
+                    응답의 empty는 현재 페이지의 목록이 비어 있는지 나타내며, 각 항목은 첫 질문 제목, 마지막 사용자 질문, 마지막 메시지 시각, createdDate를 카드 표시용으로 제공합니다.  </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

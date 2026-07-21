@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,8 +42,21 @@ class AskChatSessionRepositoryTest extends PostgresIntegrationTestSupport {
         ));
         AskChatSession firstHistory = persistSession(user);
         persistMessage(AskChatMessage.createUserMessage(firstHistory, "나는 어떤 사람이야?"));
+        sleepBriefly();
         AskChatSession secondHistory = persistSession(user);
         persistMessage(AskChatMessage.createUserMessage(secondHistory, "내 장점은 뭐야?"));
+        sleepBriefly();
+        persistMessage(AskChatMessage.createAssistantMessage(
+                firstHistory,
+                "최근에 이어진 답변입니다.",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                200L
+        ));
         em.flush();
         em.clear();
 
@@ -58,7 +72,7 @@ class AskChatSessionRepositoryTest extends PostgresIntegrationTestSupport {
 
         assertThat(histories)
                 .extracting(AskChatSession::getId)
-                .containsExactly(secondHistory.getId(), firstHistory.getId());
+                .containsExactly(firstHistory.getId(), secondHistory.getId());
         assertThat(histories)
                 .extracting(AskChatSession::getId)
                 .doesNotContain(emptySession.getId(), assistantOnlySession.getId());
@@ -78,5 +92,14 @@ class AskChatSessionRepositoryTest extends PostgresIntegrationTestSupport {
 
     private AskChatMessage persistMessage(AskChatMessage message) {
         return em.persistAndFlush(message);
+    }
+
+    private void sleepBriefly() {
+        try {
+            TimeUnit.MILLISECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while preparing timestamp-ordered test data", e);
+        }
     }
 }

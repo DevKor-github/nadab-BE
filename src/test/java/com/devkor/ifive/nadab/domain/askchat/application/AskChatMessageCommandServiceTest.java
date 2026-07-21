@@ -16,8 +16,6 @@ import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepos
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatAnswerLlmClient;
-import com.devkor.ifive.nadab.domain.user.core.entity.User;
-import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
@@ -41,6 +39,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -65,9 +64,6 @@ class AskChatMessageCommandServiceTest {
     private AskChatRagDocumentRepository askChatRagDocumentRepository;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
     private AskChatAnswerContextService askChatAnswerContextService;
 
     @Mock
@@ -86,7 +82,6 @@ class AskChatMessageCommandServiceTest {
                 askChatMessageRepository,
                 askChatMessageReferenceRepository,
                 askChatRagDocumentRepository,
-                userRepository,
                 askChatAnswerContextService,
                 askChatAnswerLlmClient,
                 askChatAnswerProperties
@@ -94,7 +89,7 @@ class AskChatMessageCommandServiceTest {
     }
 
     @Test
-    void sendQuestion_saves_user_message_to_active_session() {
+    void sendQuestion_saves_user_message_to_requested_session() {
         AskChatSession activeSession = session(
                 10L,
                 AskChatSessionStatus.ACTIVE,
@@ -102,10 +97,7 @@ class AskChatMessageCommandServiceTest {
                 OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
                 null
         );
-        when(askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
-                1L,
-                AskChatSessionStatus.ACTIVE
-        )).thenReturn(Optional.of(activeSession));
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(activeSession));
         when(askChatMessageRepository.save(any(AskChatMessage.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
@@ -114,7 +106,7 @@ class AskChatMessageCommandServiceTest {
         AskChatRagDocument ragDocument = mock(AskChatRagDocument.class);
         when(askChatRagDocumentRepository.getReferenceById(100L)).thenReturn(ragDocument);
 
-        var response = service.sendQuestion(1L, "  나는 어떤 사람이야?  ");
+        var response = service.sendQuestion(1L, 10L, "  나는 어떤 사람이야?  ");
 
         assertThat(response.session().sessionId()).isEqualTo(10L);
         assertThat(response.userMessage().role()).isEqualTo(AskChatMessageRole.USER);
@@ -123,6 +115,9 @@ class AskChatMessageCommandServiceTest {
         assertThat(response.assistantMessage().role()).isEqualTo(AskChatMessageRole.ASSISTANT);
         assertThat(response.assistantMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
         assertThat(response.assistantMessage().content()).isEqualTo("꾸준함이 강점으로 보여요.");
+        assertThat(response.answerGeneration().success()).isTrue();
+        assertThat(response.answerGeneration().errorCode()).isNull();
+        assertThat(response.answerGeneration().message()).isNull();
         assertThat(response.followUpQuestions()).containsExactly("언제 꾸준함이 잘 드러났나요?");
 
         ArgumentCaptor<AskChatMessage> messageCaptor = ArgumentCaptor.forClass(AskChatMessage.class);
@@ -144,58 +139,30 @@ class AskChatMessageCommandServiceTest {
         inOrder.verify(askChatAnswerContextService).build(any(), any(), any());
         inOrder.verify(askChatMessageRepository).save(messageCaptor.getAllValues().get(0));
         inOrder.verify(askChatAnswerLlmClient).generate(context);
-        verify(activeSession).incrementAnsweredTurnCount();
-        verify(userRepository, never()).findById(any());
+        verify(activeSession).completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
     }
 
     @Test
-    void sendQuestion_creates_session_when_active_session_does_not_exist() {
-        User user = mock(User.class);
-        AskChatSession savedSession = session(
-                11L,
-                AskChatSessionStatus.ACTIVE,
-                0,
-                OffsetDateTime.of(2026, 7, 14, 10, 5, 0, 0, ZoneOffset.ofHours(9)),
-                null
-        );
-        when(askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
-                1L,
-                AskChatSessionStatus.ACTIVE
-        )).thenReturn(Optional.empty());
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(askChatSessionRepository.save(any(AskChatSession.class))).thenReturn(savedSession);
-        when(askChatMessageRepository.save(any(AskChatMessage.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
-        when(askChatAnswerContextService.build(any(), any(), any())).thenReturn(context);
-        when(askChatAnswerLlmClient.generate(context)).thenReturn(successGeneration());
-        AskChatRagDocument ragDocument = mock(AskChatRagDocument.class);
-        when(askChatRagDocumentRepository.getReferenceById(100L)).thenReturn(ragDocument);
+    void sendQuestion_rejects_when_requested_session_does_not_exist_or_not_owned() {
+        when(askChatSessionRepository.findByIdAndUserId(99L, 1L)).thenReturn(Optional.empty());
 
-        var response = service.sendQuestion(1L, "궁금한 내용을 적어봐요");
-
-        assertThat(response.session().sessionId()).isEqualTo(11L);
-        assertThat(response.userMessage().content()).isEqualTo("궁금한 내용을 적어봐요");
-        assertThat(response.assistantMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
-
-        ArgumentCaptor<AskChatSession> sessionCaptor = ArgumentCaptor.forClass(AskChatSession.class);
-        verify(askChatSessionRepository).save(sessionCaptor.capture());
-        assertThat(sessionCaptor.getValue().getStatus()).isEqualTo(AskChatSessionStatus.ACTIVE);
+        assertThatThrownBy(() -> service.sendQuestion(1L, 99L, "궁금한 내용을 적어봐요"))
+                .isInstanceOfSatisfying(NotFoundException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_SESSION_NOT_FOUND));
+        verify(askChatSessionRepository, never()).save(any());
+        verify(askChatMessageRepository, never()).save(any());
     }
 
     @Test
     void sendQuestion_saves_failed_assistant_message_when_answer_generation_fails() {
         AskChatSession activeSession = session(
-                10L,
+                11L,
                 AskChatSessionStatus.ACTIVE,
                 2,
-                OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                OffsetDateTime.of(2026, 7, 14, 10, 5, 0, 0, ZoneOffset.ofHours(9)),
                 null
         );
-        when(askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
-                1L,
-                AskChatSessionStatus.ACTIVE
-        )).thenReturn(Optional.of(activeSession));
+        when(askChatSessionRepository.findByIdAndUserId(11L, 1L)).thenReturn(Optional.of(activeSession));
         when(askChatMessageRepository.save(any(AskChatMessage.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
@@ -203,16 +170,20 @@ class AskChatMessageCommandServiceTest {
         when(askChatAnswerLlmClient.generate(context))
                 .thenThrow(new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED));
 
-        var response = service.sendQuestion(1L, "나는 어떤 사람이야?");
+        var response = service.sendQuestion(1L, 11L, "나는 어떤 사람이야?");
 
         assertThat(response.userMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
-        assertThat(response.assistantMessage().role()).isEqualTo(AskChatMessageRole.ASSISTANT);
-        assertThat(response.assistantMessage().status()).isEqualTo(AskChatMessageStatus.FAILED);
-        assertThat(response.assistantMessage().content()).isEqualTo("답변 생성에 오류가 발생했어요. 다시 시도해주세요.");
+        assertThat(response.assistantMessage()).isNull();
+        assertThat(response.answerGeneration().success()).isFalse();
+        assertThat(response.answerGeneration().errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_PARSE_FAILED.getCode());
+        assertThat(response.answerGeneration().message()).isEqualTo("답변 생성에 오류가 발생했어요. 다시 시도해주세요.");
         assertThat(response.followUpQuestions()).isEmpty();
 
         ArgumentCaptor<AskChatMessage> messageCaptor = ArgumentCaptor.forClass(AskChatMessage.class);
         verify(askChatMessageRepository, times(2)).save(messageCaptor.capture());
+        assertThat(messageCaptor.getAllValues().get(1).getRole()).isEqualTo(AskChatMessageRole.ASSISTANT);
+        assertThat(messageCaptor.getAllValues().get(1).getStatus()).isEqualTo(AskChatMessageStatus.FAILED);
+        assertThat(messageCaptor.getAllValues().get(1).getContent()).isEqualTo("답변 생성에 오류가 발생했어요. 다시 시도해주세요.");
         assertThat(messageCaptor.getAllValues().get(1).getLlmProvider()).isEqualTo(LlmProvider.OPENAI);
         assertThat(messageCaptor.getAllValues().get(1).getLlmModel()).isEqualTo("gpt-4o-mini");
         assertThat(messageCaptor.getAllValues().get(1).getErrorCode())
@@ -220,7 +191,7 @@ class AskChatMessageCommandServiceTest {
         assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isNotNull();
         assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isGreaterThanOrEqualTo(0L);
         verify(askChatMessageReferenceRepository, never()).save(any());
-        verify(activeSession, never()).incrementAnsweredTurnCount();
+        verify(activeSession, never()).completeAnsweredTurn(anyInt());
     }
 
     @Test
@@ -232,12 +203,26 @@ class AskChatMessageCommandServiceTest {
                 OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
                 null
         );
-        when(askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
-                1L,
-                AskChatSessionStatus.ACTIVE
-        )).thenReturn(Optional.of(activeSession));
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(activeSession));
 
-        assertThatThrownBy(() -> service.sendQuestion(1L, "더 물어볼래"))
+        assertThatThrownBy(() -> service.sendQuestion(1L, 10L, "더 물어볼래"))
+                .isInstanceOfSatisfying(ConflictException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED));
+        verify(askChatMessageRepository, never()).save(any());
+    }
+
+    @Test
+    void sendQuestion_rejects_ended_session() {
+        AskChatSession endedSession = session(
+                10L,
+                AskChatSessionStatus.ENDED,
+                3,
+                OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                OffsetDateTime.of(2026, 7, 14, 10, 10, 0, 0, ZoneOffset.ofHours(9))
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(endedSession));
+
+        assertThatThrownBy(() -> service.sendQuestion(1L, 10L, "더 물어볼래"))
                 .isInstanceOfSatisfying(ConflictException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED));
         verify(askChatMessageRepository, never()).save(any());
@@ -245,28 +230,27 @@ class AskChatMessageCommandServiceTest {
 
     @Test
     void sendQuestion_rejects_blank_or_too_long_content_before_session_lookup() {
-        assertThatThrownBy(() -> service.sendQuestion(1L, "   "))
+        assertThatThrownBy(() -> service.sendQuestion(1L, 10L, "   "))
                 .isInstanceOfSatisfying(BadRequestException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
-        assertThatThrownBy(() -> service.sendQuestion(1L, "가".repeat(201)))
+        assertThatThrownBy(() -> service.sendQuestion(1L, 10L, "가".repeat(201)))
                 .isInstanceOfSatisfying(BadRequestException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
 
-        verify(askChatSessionRepository, never()).findFirstByUserIdAndStatusOrderByCreatedAtDesc(any(), any());
+        verify(askChatSessionRepository, never()).findByIdAndUserId(any(), any());
         verify(askChatMessageRepository, never()).save(any());
     }
 
     @Test
-    void sendQuestion_rejects_missing_user_when_creating_session() {
-        when(askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
-                1L,
-                AskChatSessionStatus.ACTIVE
-        )).thenReturn(Optional.empty());
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+    void sendQuestion_rejects_invalid_session_id_before_session_lookup() {
+        assertThatThrownBy(() -> service.sendQuestion(1L, null, "나는 어떤 사람이야?"))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        assertThatThrownBy(() -> service.sendQuestion(1L, 0L, "나는 어떤 사람이야?"))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
 
-        assertThatThrownBy(() -> service.sendQuestion(1L, "나는 어떤 사람이야?"))
-                .isInstanceOfSatisfying(NotFoundException.class, ex ->
-                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND));
+        verify(askChatSessionRepository, never()).findByIdAndUserId(any(), any());
         verify(askChatMessageRepository, never()).save(any());
     }
 
