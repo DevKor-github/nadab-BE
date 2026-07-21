@@ -235,6 +235,7 @@ public enum ErrorCode {
     // 404 Not Found
     ASK_CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 세션을 찾을 수 없습니다"),
     ASK_CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 메시지를 찾을 수 없습니다"),
+    ASK_CHAT_WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 지갑을 찾을 수 없습니다"),
 
     // ==================== PROMPT (프롬프트) ====================
     // 400 Bad Request

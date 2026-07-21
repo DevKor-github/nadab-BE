@@ -48,6 +48,23 @@ class AskChatWalletRepositoryTest extends PostgresIntegrationTestSupport {
     }
 
     @Test
+    void charge_paid_turns() {
+        User user = new UserBuilder(em).build();
+        askChatWalletRepository.save(AskChatWallet.create(user, 3, 0));
+
+        int updated = askChatWalletRepository.chargePaidTurns(user.getId(), 10);
+
+        em.flush();
+        em.clear();
+
+        AskChatWallet found = askChatWalletRepository.findByUserId(user.getId()).orElseThrow();
+        assertThat(updated).isEqualTo(1);
+        assertThat(found.getFreeTurnBalance()).isEqualTo(3);
+        assertThat(found.getPaidTurnBalance()).isEqualTo(10);
+        assertThat(found.getTotalTurnBalance()).isEqualTo(13);
+    }
+
+    @Test
     void save_and_find_wallet_logs_by_user_id_desc() {
         User user = new UserBuilder(em).build();
         AskChatSession session = AskChatSession.start(user);

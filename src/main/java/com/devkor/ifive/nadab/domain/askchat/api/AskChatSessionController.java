@@ -4,8 +4,10 @@ import com.devkor.ifive.nadab.domain.askchat.api.dto.request.AskChatQuestionRequ
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatTurnChargeResponse;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatMessageCommandService;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatSessionService;
+import com.devkor.ifive.nadab.domain.askchat.application.AskChatWalletChargeService;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
 import com.devkor.ifive.nadab.global.security.principal.UserPrincipal;
@@ -34,6 +36,7 @@ public class AskChatSessionController {
 
     private final AskChatSessionService askChatSessionService;
     private final AskChatMessageCommandService askChatMessageCommandService;
+    private final AskChatWalletChargeService askChatWalletChargeService;
 
     @GetMapping("/home")
     @PreAuthorize("isAuthenticated()")
@@ -89,6 +92,46 @@ public class AskChatSessionController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         AskChatSessionResponse response = askChatSessionService.startSession(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @PostMapping("/turns/charge")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "물어보기 대화권 충전",
+            description = """
+                    보유 크리스탈 30개를 차감하고 물어보기 유료 대화권 10회를 충전합니다. </br>
+                    잔여 크리스탈이 부족하면 대화권을 충전하지 않고 WALLET_INSUFFICIENT_BALANCE 에러 코드를 반환합니다. </br>
+                    응답에는 충전된 대화권 수, 차감된 크리스탈 수, 충전 후 크리스탈 잔액과 무료/유료/총 대화권 잔액을 포함합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "대화권 충전 성공",
+                            content = @Content(schema = @Schema(implementation = AskChatTurnChargeResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "- ErrorCode: WALLET_INSUFFICIENT_BALANCE - 보유 크리스탈 부족",
+                            content = @Content
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = """
+                                    - ErrorCode: USER_NOT_FOUND - 사용자를 찾을 수 없음
+                                    - ErrorCode: WALLET_NOT_FOUND - 크리스탈 지갑을 찾을 수 없음
+                                    - ErrorCode: ASK_CHAT_WALLET_NOT_FOUND - Ask Chat 대화권 지갑을 찾을 수 없음
+                                    """,
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<AskChatTurnChargeResponse>> chargeTurns(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        AskChatTurnChargeResponse response = askChatWalletChargeService.chargeTurns(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 

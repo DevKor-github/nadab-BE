@@ -7,8 +7,10 @@ import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeRespons
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatMessageResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatTurnChargeResponse;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatMessageCommandService;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatSessionService;
+import com.devkor.ifive.nadab.domain.askchat.application.AskChatWalletChargeService;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
@@ -39,6 +41,9 @@ class AskChatSessionControllerTest {
 
     @Mock
     private AskChatMessageCommandService askChatMessageCommandService;
+
+    @Mock
+    private AskChatWalletChargeService askChatWalletChargeService;
 
     @Test
     void enterHome_returns_recent_sessions_without_creating_session() {
@@ -139,10 +144,37 @@ class AskChatSessionControllerTest {
         verify(askChatMessageCommandService).sendQuestion(1L, 10L, "question");
     }
 
+    @Test
+    void chargeTurns_delegates_to_wallet_charge_service() {
+        AskChatSessionController controller = controller();
+        UserPrincipal principal = new UserPrincipal(1L);
+        AskChatTurnChargeResponse chargeResponse = new AskChatTurnChargeResponse(
+                10,
+                30L,
+                70L,
+                2,
+                10,
+                12
+        );
+        when(askChatWalletChargeService.chargeTurns(1L)).thenReturn(chargeResponse);
+
+        ResponseEntity<ApiResponseDto<AskChatTurnChargeResponse>> response =
+                controller.chargeTurns(principal);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getData().chargedTurnCount()).isEqualTo(10);
+        assertThat(response.getBody().getData().crystalCost()).isEqualTo(30L);
+        assertThat(response.getBody().getData().crystalBalance()).isEqualTo(70L);
+        assertThat(response.getBody().getData().totalTurnBalance()).isEqualTo(12);
+        verify(askChatWalletChargeService).chargeTurns(1L);
+    }
+
     private AskChatSessionController controller() {
         return new AskChatSessionController(
                 askChatSessionService,
-                askChatMessageCommandService
+                askChatMessageCommandService,
+                askChatWalletChargeService
         );
     }
 }
