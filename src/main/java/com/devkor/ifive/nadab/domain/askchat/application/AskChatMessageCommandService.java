@@ -70,7 +70,7 @@ public class AskChatMessageCommandService {
             long generationDurationMs = elapsedMillis(generationStartedAt);
             assistantMessage = saveCompletedAssistantMessage(session, generationResult, generationDurationMs);
             saveMessageReferences(assistantMessage, generationResult);
-            session.incrementAnsweredTurnCount();
+            session.completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
             long generationDurationMs = elapsedMillis(generationStartedAt);

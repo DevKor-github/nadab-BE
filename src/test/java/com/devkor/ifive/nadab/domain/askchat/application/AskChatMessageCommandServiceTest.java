@@ -39,6 +39,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -135,7 +136,7 @@ class AskChatMessageCommandServiceTest {
         inOrder.verify(askChatAnswerContextService).build(any(), any(), any());
         inOrder.verify(askChatMessageRepository).save(messageCaptor.getAllValues().get(0));
         inOrder.verify(askChatAnswerLlmClient).generate(context);
-        verify(activeSession).incrementAnsweredTurnCount();
+        verify(activeSession).completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
     }
 
     @Test
@@ -183,7 +184,7 @@ class AskChatMessageCommandServiceTest {
         assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isNotNull();
         assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isGreaterThanOrEqualTo(0L);
         verify(askChatMessageReferenceRepository, never()).save(any());
-        verify(activeSession, never()).incrementAnsweredTurnCount();
+        verify(activeSession, never()).completeAnsweredTurn(anyInt());
     }
 
     @Test
