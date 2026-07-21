@@ -41,9 +41,9 @@ public class AskChatSessionController {
             summary = "물어보기 홈 진입",
             description = """
                     ask_home_01 화면 진입 시 호출합니다. </br>
-                    홈 진입만으로 새 채팅 세션을 생성하지 않고, 이어갈 수 있는 ACTIVE 세션이 있는지만 조회합니다. </br>
-                    ACTIVE 세션이 있으면 activeSession에 세션 정보를 담아 반환하고, 없으면 activeSession만 null로 반환합니다. </br>
-                    maxTurnCount와 remainingTurnCount는 홈 화면의 잔여 대화 횟수 표시용 값입니다.
+                    홈 진입만으로 새 채팅 세션을 생성하지 않습니다. </br>
+                    이 API는 새 세션 생성 전에 필요한 기본 정책 값만 반환하며, 세션 생성은 POST /ask-chat/sessions에서 명시적으로 수행합니다. </br>
+                    크리스탈 및 대화권 잔여 횟수는 다음 브랜치에서 별도 정책으로 연결합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -68,8 +68,8 @@ public class AskChatSessionController {
     @Operation(
             summary = "물어보기 세션 시작",
             description = """
-                    명시적으로 물어보기 채팅 세션을 준비할 때 호출합니다. </br>
-                    이미 ACTIVE 세션이 있으면 같은 세션을 반환하고, ACTIVE 세션이 없으면 새 세션을 생성합니다. </br>
+                    사용자가 새 채팅을 시작할 때 호출합니다. </br>
+                    이미 ACTIVE 세션이 있어도 기존 세션을 재사용하거나 종료하지 않고 매번 새 ACTIVE 세션을 생성합니다. </br>
                     이 API는 질문 메시지를 저장하지 않으며, 실제 질문 저장은 POST /ask-chat/messages에서 수행합니다. </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -87,35 +87,6 @@ public class AskChatSessionController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         AskChatSessionResponse response = askChatSessionService.startSession(principal.getId());
-        return ApiResponseEntity.ok(response);
-    }
-
-    @PostMapping("/sessions/new")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "물어보기 새 대화 시작",
-            description = """
-                    ask_chat_01 화면의 '새로운 대화로 시작하기' 액션에서 호출합니다. </br>
-                    현재 이어가고 있는 ACTIVE 세션이 있으면 ENDED로 종료하고, 새 ACTIVE 세션을 생성해 반환합니다. </br>
-                    기존 대화의 USER/ASSISTANT 메시지는 삭제하지 않고 히스토리에서 조회할 수 있도록 보존합니다. </br>
-                    ACTIVE 세션이 없으면 종료 처리 없이 새 세션만 생성합니다. </br>
-                    이 API는 질문 메시지를 저장하거나 AI 답변을 생성하지 않습니다. </br>
-                    """,
-            security = @SecurityRequirement(name = "bearerAuth"),
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "새 물어보기 세션 생성 성공",
-                            content = @Content(schema = @Schema(implementation = AskChatSessionResponse.class))
-                    ),
-                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
-                    @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
-            }
-    )
-    public ResponseEntity<ApiResponseDto<AskChatSessionResponse>> startNewSession(
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        AskChatSessionResponse response = askChatSessionService.restartSession(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 
