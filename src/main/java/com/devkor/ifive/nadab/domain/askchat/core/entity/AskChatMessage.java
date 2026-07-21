@@ -66,6 +66,9 @@ public class AskChatMessage extends CreatableEntity {
     @Column(name = "thinking_tokens")
     private Long thinkingTokens;
 
+    @Column(name = "generation_duration_ms")
+    private Long generationDurationMs;
+
     @Column(name = "error_code", length = 128)
     private String errorCode;
 
@@ -83,7 +86,8 @@ public class AskChatMessage extends CreatableEntity {
             Long inputTokens,
             Long outputTokens,
             Long totalTokens,
-            Long thinkingTokens
+            Long thinkingTokens,
+            Long generationDurationMs
     ) {
         AskChatMessage message = create(session, AskChatMessageRole.ASSISTANT, content);
         message.status = AskChatMessageStatus.COMPLETED;
@@ -93,6 +97,7 @@ public class AskChatMessage extends CreatableEntity {
         message.outputTokens = outputTokens;
         message.totalTokens = totalTokens;
         message.thinkingTokens = thinkingTokens;
+        message.generationDurationMs = generationDurationMs;
         return message;
     }
 
@@ -101,13 +106,15 @@ public class AskChatMessage extends CreatableEntity {
             String content,
             LlmProvider llmProvider,
             String llmModel,
-            String errorCode
+            String errorCode,
+            Long generationDurationMs
     ) {
         AskChatMessage message = create(session, AskChatMessageRole.ASSISTANT, content);
         message.status = AskChatMessageStatus.FAILED;
         message.llmProvider = llmProvider;
         message.llmModel = llmModel;
         message.errorCode = errorCode;
+        message.generationDurationMs = generationDurationMs;
         return message;
     }
 

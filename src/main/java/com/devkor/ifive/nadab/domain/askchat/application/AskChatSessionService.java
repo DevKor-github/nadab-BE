@@ -45,6 +45,17 @@ public class AskChatSessionService {
         return AskChatSessionResponse.from(session, MAX_TURN_COUNT);
     }
 
+    @Transactional
+    public AskChatSessionResponse restartSession(Long userId) {
+        askChatSessionRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
+                userId,
+                AskChatSessionStatus.ACTIVE
+        ).ifPresent(AskChatSession::end);
+
+        AskChatSession newSession = createSession(userId);
+        return AskChatSessionResponse.from(newSession, MAX_TURN_COUNT);
+    }
+
     private AskChatSession createSession(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));

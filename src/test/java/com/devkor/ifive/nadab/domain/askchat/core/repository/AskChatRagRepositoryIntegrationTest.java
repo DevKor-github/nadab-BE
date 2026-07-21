@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.askchat.core.repository;
 
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillTargetDto;
+import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagSearchResultDto;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.infra.db.PostgresIntegrationTestSupport;
 import org.junit.jupiter.api.Test;
@@ -96,6 +97,40 @@ class AskChatRagRepositoryIntegrationTest extends PostgresIntegrationTestSupport
         assertThat(findDocumentStatus(failedDocumentId)).isEqualTo("FAILED");
         assertThat(findRetryCount(failedDocumentId)).isEqualTo(1);
         assertThat(hasEmbedding(completedDocumentId)).isTrue();
+    }
+
+    @Test
+    void search_returns_completed_documents_when_interest_filter_is_null() {
+        Long userId = insertUser("vector-search");
+        Long relationshipDocumentId = insertRagDocument(
+                userId,
+                "ANSWER_ENTRY",
+                2000L,
+                InterestCode.RELATIONSHIP,
+                1,
+                "PENDING"
+        );
+        Long routineDocumentId = insertRagDocument(
+                userId,
+                "ANSWER_ENTRY",
+                2001L,
+                InterestCode.ROUTINE,
+                1,
+                "PENDING"
+        );
+        vectorRepository.updateEmbedding(relationshipDocumentId, embedding(1536));
+        vectorRepository.updateEmbedding(routineDocumentId, embedding(1536));
+
+        var results = vectorRepository.search(
+                userId,
+                null,
+                embedding(1536),
+                10
+        );
+
+        assertThat(results)
+                .extracting(AskChatRagSearchResultDto::documentId)
+                .containsExactlyInAnyOrder(relationshipDocumentId, routineDocumentId);
     }
 
     private Long insertUser(String prefix) {
