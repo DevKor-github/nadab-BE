@@ -48,9 +48,11 @@ class AskChatHistoryQueryServiceTest {
     }
 
     @Test
-    void getHistories_returns_page_metadata_and_first_user_message_title() {
+    void getHistories_returns_page_metadata_and_session_card_summary() {
         OffsetDateTime activeCreatedAt = OffsetDateTime.of(2026, 7, 13, 10, 0, 0, 0, ZoneOffset.ofHours(9));
+        OffsetDateTime activeLastMessageAt = OffsetDateTime.of(2026, 7, 13, 10, 3, 0, 0, ZoneOffset.ofHours(9));
         OffsetDateTime endedCreatedAt = OffsetDateTime.of(2026, 7, 12, 10, 0, 0, 0, ZoneOffset.ofHours(9));
+        OffsetDateTime endedLastMessageAt = OffsetDateTime.of(2026, 7, 12, 10, 22, 0, 0, ZoneOffset.ofHours(9));
         AskChatSession active = session(
                 10L,
                 AskChatSessionStatus.ACTIVE,
@@ -79,16 +81,42 @@ class AskChatHistoryQueryServiceTest {
                 "나는 어떤 사람이야?",
                 activeCreatedAt
         );
+        AskChatMessage activeLastUserMessage = message(
+                102L,
+                AskChatMessageRole.USER,
+                "요즘 내가 놓치고 있는 감정은 뭐야?",
+                OffsetDateTime.of(2026, 7, 13, 10, 2, 0, 0, ZoneOffset.ofHours(9))
+        );
+        AskChatMessage activeLastMessage = message(
+                103L,
+                AskChatMessageRole.ASSISTANT,
+                "최근에는 안정감을 더 찾는 것 같아요.",
+                activeLastMessageAt
+        );
         AskChatMessage endedTitleMessage = message(
                 90L,
                 AskChatMessageRole.USER,
                 "내 장점은 뭐야?",
                 endedCreatedAt
         );
+        AskChatMessage endedLastMessage = message(
+                91L,
+                AskChatMessageRole.ASSISTANT,
+                "꾸준함이 장점으로 보여요.",
+                endedLastMessageAt
+        );
         when(askChatMessageRepository.findFirstBySessionIdAndRoleOrderByCreatedAtAsc(10L, AskChatMessageRole.USER))
                 .thenReturn(Optional.of(activeTitleMessage));
+        when(askChatMessageRepository.findFirstBySessionIdAndRoleOrderByCreatedAtDesc(10L, AskChatMessageRole.USER))
+                .thenReturn(Optional.of(activeLastUserMessage));
+        when(askChatMessageRepository.findFirstBySessionIdOrderByCreatedAtDesc(10L))
+                .thenReturn(Optional.of(activeLastMessage));
         when(askChatMessageRepository.findFirstBySessionIdAndRoleOrderByCreatedAtAsc(9L, AskChatMessageRole.USER))
                 .thenReturn(Optional.of(endedTitleMessage));
+        when(askChatMessageRepository.findFirstBySessionIdAndRoleOrderByCreatedAtDesc(9L, AskChatMessageRole.USER))
+                .thenReturn(Optional.of(endedTitleMessage));
+        when(askChatMessageRepository.findFirstBySessionIdOrderByCreatedAtDesc(9L))
+                .thenReturn(Optional.of(endedLastMessage));
 
         var response = service.getHistories(1L, 1, 2);
 
@@ -100,21 +128,33 @@ class AskChatHistoryQueryServiceTest {
         assertThat(response.hasPrevious()).isFalse();
         assertThat(response.hasNext()).isTrue();
         assertThat(response.histories())
-                .extracting("sessionId", "title", "createdDate", "status", "answeredTurnCount")
+                .extracting(
+                        "sessionId",
+                        "title",
+                        "lastUserQuestion",
+                        "createdDate",
+                        "status",
+                        "answeredTurnCount",
+                        "lastMessageAt"
+                )
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(
                                 10L,
                                 "나는 어떤 사람이야?",
+                                "요즘 내가 놓치고 있는 감정은 뭐야?",
                                 activeCreatedAt.toLocalDate(),
                                 AskChatSessionStatus.ACTIVE,
-                                2
+                                2,
+                                activeLastMessageAt
                         ),
                         org.assertj.core.groups.Tuple.tuple(
                                 9L,
                                 "내 장점은 뭐야?",
+                                "내 장점은 뭐야?",
                                 endedCreatedAt.toLocalDate(),
                                 AskChatSessionStatus.ENDED,
-                                15
+                                15,
+                                endedLastMessageAt
                         )
                 );
     }

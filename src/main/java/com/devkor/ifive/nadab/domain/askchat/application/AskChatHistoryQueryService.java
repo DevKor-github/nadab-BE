@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
@@ -87,14 +88,24 @@ public class AskChatHistoryQueryService {
                 )
                 .map(AskChatMessage::getContent)
                 .orElse("");
+        String lastUserQuestion = askChatMessageRepository.findFirstBySessionIdAndRoleOrderByCreatedAtDesc(
+                        session.getId(),
+                        AskChatMessageRole.USER
+                )
+                .map(AskChatMessage::getContent)
+                .orElse(title);
+        OffsetDateTime lastMessageAt = askChatMessageRepository.findFirstBySessionIdOrderByCreatedAtDesc(session.getId())
+                .map(AskChatMessage::getCreatedAt)
+                .orElse(session.getCreatedAt());
 
         return new AskChatHistoryItemResponse(
                 session.getId(),
                 title,
+                lastUserQuestion,
                 session.getCreatedAt().toLocalDate(),
                 session.getStatus(),
                 session.getAnsweredTurnCount(),
-                session.getCreatedAt()
+                lastMessageAt
         );
     }
 

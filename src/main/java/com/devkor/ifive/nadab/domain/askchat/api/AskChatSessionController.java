@@ -42,7 +42,9 @@ public class AskChatSessionController {
             description = """
                     ask_home_01 화면 진입 시 호출합니다. </br>
                     홈 진입만으로 새 채팅 세션을 생성하지 않습니다. </br>
-                    이 API는 새 세션 생성 전에 필요한 기본 정책 값만 반환하며, 세션 생성은 POST /ask-chat/sessions에서 명시적으로 수행합니다. </br>
+                    최종 기획에서는 사용자가 여러 채팅 세션을 유지할 수 있으므로, 홈 응답은 특정 ACTIVE 세션 하나를 선택해 반환하지 않고 최근 채팅 세션 목록을 반환합니다. </br>
+                    recentSessions에는 USER 메시지가 1개 이상 저장된 세션만 최신순으로 포함하며, 각 항목은 첫 질문 제목, 마지막 사용자 질문, 마지막 메시지 시각을 함께 제공합니다. </br>
+                    새 세션 생성은 POST /ask-chat/sessions에서 명시적으로 수행합니다. </br>
                     크리스탈 및 대화권 잔여 횟수는 다음 브랜치에서 별도 정책으로 연결합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
