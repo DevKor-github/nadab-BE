@@ -103,6 +103,8 @@ public class AskChatSessionController {
                     세션 생성은 POST /ask-chat/sessions에서 먼저 수행해야 합니다. </br>
                     질문 내용은 앞뒤 공백 제거 후 1자 이상 200자 이하만 허용합니다. </br>
                     답변 생성이 성공한 경우에만 answeredTurnCount를 1 증가시키며, 15번째 성공 답변 후 해당 세션은 ENDED로 자동 전환됩니다. </br>
+                    답변 생성 실패 시에는 응답의 assistantMessage는 null로 반환합니다. </br>
+                    클라이언트에서는 answerGeneration.success=false, errorCode, message를 기준으로 채팅 말풍선이 아닌 모달/토스트를 표시해야 합니다. </br>
                     ENDED 세션 또는 answeredTurnCount가 15 이상인 세션에서는 메시지를 저장하지 않고 ASK_CHAT_TURN_LIMIT_EXCEEDED를 반환합니다. </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),

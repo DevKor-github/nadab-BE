@@ -115,6 +115,9 @@ class AskChatMessageCommandServiceTest {
         assertThat(response.assistantMessage().role()).isEqualTo(AskChatMessageRole.ASSISTANT);
         assertThat(response.assistantMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
         assertThat(response.assistantMessage().content()).isEqualTo("꾸준함이 강점으로 보여요.");
+        assertThat(response.answerGeneration().success()).isTrue();
+        assertThat(response.answerGeneration().errorCode()).isNull();
+        assertThat(response.answerGeneration().message()).isNull();
         assertThat(response.followUpQuestions()).containsExactly("언제 꾸준함이 잘 드러났나요?");
 
         ArgumentCaptor<AskChatMessage> messageCaptor = ArgumentCaptor.forClass(AskChatMessage.class);
@@ -170,13 +173,17 @@ class AskChatMessageCommandServiceTest {
         var response = service.sendQuestion(1L, 11L, "나는 어떤 사람이야?");
 
         assertThat(response.userMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
-        assertThat(response.assistantMessage().role()).isEqualTo(AskChatMessageRole.ASSISTANT);
-        assertThat(response.assistantMessage().status()).isEqualTo(AskChatMessageStatus.FAILED);
-        assertThat(response.assistantMessage().content()).isEqualTo("답변 생성에 오류가 발생했어요. 다시 시도해주세요.");
+        assertThat(response.assistantMessage()).isNull();
+        assertThat(response.answerGeneration().success()).isFalse();
+        assertThat(response.answerGeneration().errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_PARSE_FAILED.getCode());
+        assertThat(response.answerGeneration().message()).isEqualTo("답변 생성에 오류가 발생했어요. 다시 시도해주세요.");
         assertThat(response.followUpQuestions()).isEmpty();
 
         ArgumentCaptor<AskChatMessage> messageCaptor = ArgumentCaptor.forClass(AskChatMessage.class);
         verify(askChatMessageRepository, times(2)).save(messageCaptor.capture());
+        assertThat(messageCaptor.getAllValues().get(1).getRole()).isEqualTo(AskChatMessageRole.ASSISTANT);
+        assertThat(messageCaptor.getAllValues().get(1).getStatus()).isEqualTo(AskChatMessageStatus.FAILED);
+        assertThat(messageCaptor.getAllValues().get(1).getContent()).isEqualTo("답변 생성에 오류가 발생했어요. 다시 시도해주세요.");
         assertThat(messageCaptor.getAllValues().get(1).getLlmProvider()).isEqualTo(LlmProvider.OPENAI);
         assertThat(messageCaptor.getAllValues().get(1).getLlmModel()).isEqualTo("gpt-4o-mini");
         assertThat(messageCaptor.getAllValues().get(1).getErrorCode())

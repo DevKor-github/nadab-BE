@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.askchat.application;
 
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatAnswerGenerationResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatMessageResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
@@ -64,6 +65,7 @@ public class AskChatMessageCommandService {
         );
 
         AskChatMessage assistantMessage;
+        AskChatAnswerGenerationResponse answerGeneration;
         List<String> followUpQuestions;
         try {
             AskChatAnswerGenerationResult generationResult = askChatAnswerLlmClient.generate(context);
@@ -71,17 +73,24 @@ public class AskChatMessageCommandService {
             assistantMessage = saveCompletedAssistantMessage(session, generationResult, generationDurationMs);
             saveMessageReferences(assistantMessage, generationResult);
             session.completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
+            answerGeneration = AskChatAnswerGenerationResponse.completed();
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
             long generationDurationMs = elapsedMillis(generationStartedAt);
-            assistantMessage = saveFailedAssistantMessage(session, e, generationDurationMs);
+            saveFailedAssistantMessage(session, e, generationDurationMs);
+            assistantMessage = null;
+            answerGeneration = AskChatAnswerGenerationResponse.failed(
+                    e.getErrorCode(),
+                    ANSWER_GENERATION_FAILED_MESSAGE
+            );
             followUpQuestions = List.of();
         }
 
         return new AskChatQuestionSendResponse(
                 AskChatSessionResponse.from(session, AskChatSessionService.MAX_TURN_COUNT),
                 AskChatMessageResponse.from(userMessage),
-                AskChatMessageResponse.from(assistantMessage),
+                assistantMessage == null ? null : AskChatMessageResponse.from(assistantMessage),
+                answerGeneration,
                 followUpQuestions
         );
     }
