@@ -115,6 +115,12 @@ public class ExceptionController {
         return ApiResponseEntity.error(ex.getErrorCode());
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleTooManyRequestsException(TooManyRequestsException ex) {
+        log.warn("TooManyRequestsException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(ex.getErrorCode());
+    }
+
     @ExceptionHandler(AiServiceUnavailableException.class)
     public ResponseEntity<ApiErrorResponseDto<Void>> handleAiServiceUnavailableException(AiServiceUnavailableException ex) {
         log.warn("AI Service Unavailable: {}", ex.getMessage(), ex);

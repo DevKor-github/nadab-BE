@@ -458,6 +458,22 @@ public enum ErrorCode {
     APP_VERSION_MUST_BE_GREATER_THAN_EXISTING(HttpStatus.CONFLICT, "앱 버전은 같은 플랫폼의 다른 모든 버전보다 높아야 합니다"),
     APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED(HttpStatus.CONFLICT, "같은 버전 내 displayOrder가 중복됩니다"),
 
+    // ==================== PDF_EXPORT (PDF 내보내기) ====================
+    // 400 Bad Request
+    PDF_EXPORT_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "PDF 내보내기 기간이 올바르지 않습니다 (시작일이 종료일보다 앞서야 하고, 종료일은 오늘 이후일 수 없으며, 최대 1년까지 가능합니다)"),
+    PDF_EXPORT_NO_DATA(HttpStatus.BAD_REQUEST, "선택한 유형·기간에 내보낼 기록이 없습니다"),
+    // 403 Forbidden
+    PDF_EXPORT_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 PDF 내보내기 작업만 조회할 수 있습니다"),
+    // 404 Not Found
+    PDF_EXPORT_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "PDF 내보내기 작업을 찾을 수 없습니다"),
+    // 409 Conflict
+    PDF_EXPORT_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 생성이 완료되지 않아 다운로드할 수 없습니다"),
+    PDF_EXPORT_EXPIRED(HttpStatus.CONFLICT, "다운로드 보관 기간(7일)이 지나 만료되었습니다. 다시 생성해 주세요"),
+    // 429 Too Many Requests
+    PDF_EXPORT_DOWNLOAD_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "다운로드 요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요"),
+    // 500 Internal Server Error
+    PDF_EXPORT_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PDF 생성에 실패했습니다. 차감된 크리스탈은 자동 환불됩니다"),
+
     // ==================== ADMIN (어드민) ====================
     // 401 Unauthorized
     ADMIN_PAGE_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "관리자 페이지 비밀번호가 올바르지 않습니다");
