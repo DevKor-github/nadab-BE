@@ -1,0 +1,121 @@
+/* PDF 내보내기 프린트 CSS */
+
+@page { size: 1046px 1480px; margin: 0; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Pretendard", sans-serif; color: #17191a; }
+
+/* 페이지: 카드는 Java가 계산한 px로 절대배치 */
+.page { position: relative; width: 1046px; height: 1480px; overflow: hidden; background: #ffffff; page-break-after: always; }
+.page:last-child { page-break-after: auto; }
+/* 두 열 사이 세로 점선 divider (오버샘플 PNG, 여기선 위치·크기만) */
+.divider { position: absolute; left: 523px; top: 46px; width: 1px; height: 1360px; }
+
+/* 카드 그림자 (PdfShadowRenderer PNG) */
+.cardshadow { position: absolute; }
+.card {
+    position: absolute;
+    overflow: hidden;
+    background: #f7f8ff;
+    border: 1px solid #e8ebf2;
+    border-radius: 16px;
+    padding: 16px;
+}
+
+/* ── 답변 카드 ── */
+/* 헤더 행: 태그(좌) + 날짜(우) */
+.a-head { line-height: 28px; }
+.date { float: right; font-size: 11px; color: #524a72; line-height: 28px; }
+.tag {
+    display: inline-block;
+    border: 1px solid #e8ebf2;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin-right: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #17191a;
+    white-space: nowrap;
+    line-height: 20px;
+}
+.tag img { width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; }
+/* 감정 색 dot */
+.tag .dot { display: inline-block; width: 13px; height: 13px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+.tag .label { vertical-align: middle; }
+/* 질문 */
+.q-title { font-weight: 700; font-size: 20px; margin: 8px 0 0; line-height: 1.4; color: #17191a; }
+/* 답변부 = 카드 안 흰 박스 */
+.a-answer { background: #ffffff; border: 1px solid #e8ebf2; border-radius: 16px; padding: 16px; margin-top: 16px; }
+.a-label { font-weight: 700; font-size: 18px; line-height: 1.4; margin-bottom: 16px; color: #17191a; }
+.a-body { font-size: 14px; line-height: 1.8; color: #808299; }
+/* 사진 있는 답변: 본문↔사진 간격(앞 블록 margin-bottom) */
+.has-photo { margin-bottom: 16px; }
+/* 답변 사진 (정사각, border-radius 네이티브 클리핑) */
+.a-photo { display: block; border-radius: 12px; }
+
+/* ── 리포트 카드(주간/월간 공용) ── */
+/* 배너: 상단 전체폭(좌우 -16 bleed), 위 모서리만 라운드 */
+.r-banner {
+    position: relative;
+    height: 163px;
+    margin: -16px -16px 0 -16px;
+    background-color: #eef0ff;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    overflow: hidden;
+}
+/* 배너 배경 이미지 (위 모서리 라운드 = img 자체 border-radius 클리핑) */
+.r-banner img.bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 15px 15px 0 0; z-index: 0; }
+/* 배너 텍스트 (절대배치 오버레이 + z-index) */
+.r-banner .r-text { position: absolute; top: 55px; left: 52px; width: 357px; text-align: center; z-index: 1; }
+.r-kicker { font-size: 12px; line-height: 20px; color: #524a72; }
+.r-title { font-size: 18px; line-height: 25px; font-weight: 700; color: #17191a; }
+
+/* 부제(월간 emotionTrend). 배너 아래 블록 간격은 어셈블러가 wrapper margin-top 으로 부여 */
+.r-subtitle { font-size: 14px; font-weight: 700; line-height: 24px; color: #524a72; }
+
+/* 섹션(발견/한마디) head */
+.r-section-head { font-size: 14px; font-weight: 700; color: #524a72; line-height: 24px; margin-bottom: 8px; }
+.r-section-head img { width: 24px; height: 24px; vertical-align: -6px; margin-right: 2px; }
+
+/* 발견 = 테두리 있는 단일 박스 */
+.r-box { background: #ffffff; border: 1px solid #e8ebf2; border-radius: 12px; padding: 16px; }
+/* 한 마디 = 문장별 박스(테두리 없음, padding 8/16, 간격 16) */
+.r-comment-box { background: #ffffff; border-radius: 12px; padding: 8px 16px; }
+.r-comment-box + .r-comment-box { margin-top: 16px; }
+.r-box-body { font-size: 14px; line-height: 1.8; color: #17191a; }
+
+/* 감정 레이더 흰 박스 */
+.radar-box { background: #ffffff; border: 1px solid #e8ebf2; border-radius: 12px; padding: 16px; }
+/* 차트=PNG, 축 라벨=.rl 절대배치 텍스트 */
+.radar-chart { position: relative; width: 240px; height: 240px; margin: 0 auto; }
+.radar-chart img { position: absolute; left: 0; top: 0; width: 240px; height: 240px; }
+.rl { position: absolute; width: 64px; margin-left: -32px; margin-top: -14px; text-align: center; }
+.rl-name { font-size: 11px; font-weight: 700; color: #524a72; line-height: 14px; }
+.rl-pct { font-size: 11px; font-weight: 700; color: #5d57f6; line-height: 14px; }
+/* 차트 아래 월 라벨(dot + "N월") */
+.radar-months { margin-top: 12px; font-size: 12px; color: #524a72; line-height: 20px; }
+.radar-months .m { margin-right: 12px; }
+.radar-months .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.radar-months .mlabel { vertical-align: middle; }
+/* 비교 문구(월 라벨 아래) */
+.radar-note { margin-top: 12px; font-size: 14px; line-height: 1.8; color: #17191a; }
+
+/* 스타일 텍스트: 마크 세그먼트 볼드 + 하이라이트 형광펜 바(__HL_BAR__ = 런타임 PNG data URI 치환) */
+strong { font-weight: 700; }
+.hl {
+    font-weight: 700;
+    background-color: #e7e6fe;
+    background-image: url("__HL_BAR__");
+    background-repeat: repeat-x;
+    background-position: left bottom;
+}
+
+/* ── footer(페이지마다) ── */
+.footer { position: absolute; left: 30px; right: 30px; bottom: 26px; height: 20px; }
+/* 브랜드 텍스트 (#9E9AFA = brand@60% over 흰색; color:rgba 미지원이라 불투명 hex) */
+.footer .brand { float: left; font-size: 15px; font-weight: 700; color: #9e9afa; line-height: 18.84px; letter-spacing: 0; }
+.footer .brand img { width: 20px; height: 20px; vertical-align: -5px; margin-right: 6px; }
+.footer .pageno { float: right; font-size: 12px; color: #808299; line-height: 20px; }
