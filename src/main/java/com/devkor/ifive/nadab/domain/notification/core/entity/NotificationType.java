@@ -19,6 +19,7 @@ public enum NotificationType {
     WEEKLY_REPORT_AVAILABLE("주간 리포트 제작 가능", NotificationGroup.REPORT),
     MONTHLY_REPORT_AVAILABLE("월간 리포트 제작 가능", NotificationGroup.REPORT),
     TYPE_REPORT_AVAILABLE("유형 리포트 제작 가능", NotificationGroup.REPORT),
+    PDF_EXPORT_COMPLETED("PDF 내보내기 완성", NotificationGroup.REPORT),
 
     // 소셜 알림
     FRIEND_REQUEST_RECEIVED("친구 요청", NotificationGroup.SOCIAL),
