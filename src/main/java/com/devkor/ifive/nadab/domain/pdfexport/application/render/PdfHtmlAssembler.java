@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.pdfexport.core.dto.PdfAnswerRowDto;
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportType;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent.EmotionStat;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.weeklyreport.core.entity.WeeklyReport;
 import com.devkor.ifive.nadab.global.core.pdf.PdfAssetLoader;
 import com.devkor.ifive.nadab.global.shared.reportcontent.ReportContent;
@@ -195,8 +196,10 @@ public class PdfHtmlAssembler {
         if (a.interestCode() != null) {
             String icon = assets.interestIcon(a.interestCode().name())
                     .map(u -> "<img src=\"" + u + "\" alt=\"\"/>").orElse("");
+            // 관심사 라벨. RELATIONSHIP만 "관계"(백엔드 displayNameKo·DB 시드는 "인간관계") → PDF만 앱과 맞춤.
+            String interestLabel = a.interestCode() == InterestCode.RELATIONSHIP ? "관계" : a.interestCode().displayNameKo();
             tags.append("<span class=\"tag\">").append(icon)
-                    .append("<span class=\"label\">").append(PdfHtml.escape(a.interestCode().displayNameKo()))
+                    .append("<span class=\"label\">").append(PdfHtml.escape(interestLabel))
                     .append("</span></span>");
         }
         if (a.emotionCode() != null) {
