@@ -33,9 +33,8 @@ import java.util.Optional;
 /**
  * PDF 내보내기 비동기 렌더 파이프라인(WeeklyReportGenerationListener 미러).
  * reserve 커밋 후(AFTER_COMMIT) 전용 풀에서 실행: 조회 → 렌더 → 업로드 → confirm.
- * <p>
- * 트랜잭션 경계: 데이터는 짧은 조회 레포로 받아 <b>커넥션을 즉시 반납한 뒤</b> 렌더한다.
- * 핸들러에 {@code @Transactional}을 붙이지 않는다 — 렌더(수 초)가 커넥션을 잡으면 풀이 고갈돼 다른 API까지 대기한다.
+ * 트랜잭션 경계: 데이터는 짧은 조회 레포로 받아 커넥션을 즉시 반납한 뒤 렌더한다.
+ * 핸들러에 @Transactional 을 붙이지 않는다 — 렌더(수 초)가 커넥션을 잡으면 풀이 고갈돼 다른 API까지 대기한다.
  * confirm/failAndRefund는 각자 짧은 트랜잭션(PdfExportTxService)에서 처리한다.
  */
 @Component
@@ -86,8 +85,9 @@ public class PdfExportGenerationListener {
             }
 
             // ── 2) Tx/커넥션 밖: 무거운 렌더(S3 사진 디코드·차트·HTML·PDF) ──
-            String xhtml = assembler.assemble(type, answers, weeklies, monthlies, monthlyV2s, this::resolvePhoto);
-            byte[] pdf = renderer.render(xhtml);
+            PdfHtmlAssembler.AssembledDocument doc =
+                    assembler.assemble(type, answers, weeklies, monthlies, monthlyV2s, this::resolvePhoto);
+            byte[] pdf = renderer.render(doc.xhtml(), doc.inlineAssets());
 
             // ── 3) 업로드(파일명 Content-Disposition 각인) → 완료 확정(markCompleted·completed_at·dedup 자동) ──
             storage.upload(resultKey, pdf,
@@ -107,15 +107,15 @@ public class PdfExportGenerationListener {
     }
 
     /**
-     * imageKey → 답변 사진 data URI. S3에서 원본(webp 등)을 받아 정중앙 정사각 cover 크롭/리샘플(PdfImage).
-     * <p>
+     * imageKey → 답변 사진 JPEG 바이트. S3에서 원본(webp 등)을 받아 정중앙 정사각 cover 크롭/리샘플(PdfImage).
+     * 바이트는 어셈블러가 asset:photo-N 으로 참조·수집하고 렌더러가 서빙한다.
      * 개별 사진 실패는 전체 export를 막지 않는다 — 그 사진만 건너뛰고(WARN) 나머지는 렌더한다.
      * 유료 '내 기록 전부' 특성상 썸네일 1장 손상으로 전액 환불+산출물 0은 과함(과금은 유형별 고정이라 사진 누락과 무관).
      */
-    private Optional<String> resolvePhoto(String imageKey) {
+    private Optional<byte[]> resolvePhoto(String imageKey) {
         try {
             byte[] source = storage.download(imageKey);
-            return Optional.of(PdfImage.coverSquareDataUri(source, PHOTO_PX));
+            return Optional.of(PdfImage.coverSquareJpegBytes(source, PHOTO_PX));
         } catch (RuntimeException e) {
             log.warn("[PDF_EXPORT] 답변 사진 스킵(다운로드/디코드 실패): imageKey={}", imageKey, e);
             return Optional.empty();

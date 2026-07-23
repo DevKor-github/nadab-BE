@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -121,20 +122,25 @@ public class PdfHtmlAssembler {
     }
 
     /**
-     * @param photoResolver imageKey → 답변 사진 data URI(없으면 empty). S3 접점은 호출자(리스너)가 주입.
+     * 기간 데이터 → XHTML + 사진 인라인 애셋 맵(asset:photo-N → JPEG 바이트). 렌더러가 맵을 받아 asset: 프로토콜로 서빙.
+     * photoResolver = imageKey → 사진 바이트(없으면 empty), S3 접점은 리스너가 주입.
      */
-    public String assemble(PdfExportType type,
-                           List<PdfAnswerRowDto> answers,
-                           List<WeeklyReport> weeklies,
-                           List<MonthlyReport> monthlies,
-                           List<MonthlyReportV2> monthlyV2s,
-                           Function<String, Optional<String>> photoResolver) {
+    public AssembledDocument assemble(PdfExportType type,
+                                      List<PdfAnswerRowDto> answers,
+                                      List<WeeklyReport> weeklies,
+                                      List<MonthlyReport> monthlies,
+                                      List<MonthlyReportV2> monthlyV2s,
+                                      Function<String, Optional<byte[]>> photoResolver) {
+        // 답변 사진은 asset:photo-N 토큰으로 참조하고 바이트는 이 맵에 모은다(XHTML 엔 토큰만, base64 인라인 안 함).
+        // 로컬 맵이라 동시 assemble 도 안전.
+        Map<String, byte[]> photoAssets = new LinkedHashMap<>();
+
         // 시간순 인터리브: 그 주의 답변들 → 그 주 주간 리포트 → 다음 주 답변들 → … → 그 달 월간 리포트.
         // 정렬키 = (날짜, tier). 답변=자기 날짜(tier0), 주간=주 종료일(tier1, 그 주 답변 뒤), 월간=월 종료일(tier2, 그 달 끝).
         List<Sortable> items = new ArrayList<>();
         if (type.includesAnswer()) {
             for (PdfAnswerRowDto a : answers) {
-                items.add(new Sortable(a.date(), 0, answerBlock(a, photoResolver)));
+                items.add(new Sortable(a.date(), 0, answerBlock(a, photoResolver, photoAssets)));
             }
         }
         if (type.includesReport()) {
@@ -155,7 +161,7 @@ public class PdfHtmlAssembler {
         for (Sortable s : items) {
             blocks.add(s.block());
         }
-        return document(pack(blocks));
+        return new AssembledDocument(document(pack(blocks)), photoAssets);
     }
 
     /* ── 패킹(내용맞춤 셀, 열 채움) ── */
@@ -188,8 +194,9 @@ public class PdfHtmlAssembler {
 
     /* ── 블록(카드) ── */
 
-    private Block answerBlock(PdfAnswerRowDto a, Function<String, Optional<String>> photoResolver) {
-        Optional<String> photo = (a.imageKey() == null) ? Optional.empty() : photoResolver.apply(a.imageKey());
+    private Block answerBlock(PdfAnswerRowDto a, Function<String, Optional<byte[]>> photoResolver,
+                              Map<String, byte[]> photoAssets) {
+        Optional<byte[]> photo = (a.imageKey() == null) ? Optional.empty() : photoResolver.apply(a.imageKey());
         boolean hasPhoto = photo.isPresent();
 
         StringBuilder tags = new StringBuilder();
@@ -211,10 +218,14 @@ public class PdfHtmlAssembler {
 
         // 사진 = wrapper 없는 img(자체 border-radius 네이티브 클리핑). width/height 를 WHITE_INNER 로 명시해
         // 정사각 블록으로 확정(inline-replaced phantom 여백 제거). PdfImage 가 항상 정사각으로 구워 비율 일치.
-        String photoHtml = photo
-                .map(u -> "<img class=\"a-photo\" width=\"" + WHITE_INNER + "\" height=\"" + WHITE_INNER
-                        + "\" src=\"" + u + "\" alt=\"\"/>")
-                .orElse("");
+        // 바이트는 asset:photo-N 으로 참조하고 photoAssets 에 등록. 키는 등록 순번이라 고유.
+        String photoHtml = "";
+        if (hasPhoto) {
+            String assetKey = "photo-" + photoAssets.size();
+            photoAssets.put(assetKey, photo.get());
+            photoHtml = "<img class=\"a-photo\" width=\"" + WHITE_INNER + "\" height=\"" + WHITE_INNER
+                    + "\" src=\"asset:" + assetKey + "\" alt=\"\"/>";
+        }
         // 본문↔사진 간격은 본문 블록의 margin-bottom 으로 준다(wrapper margin-top 은 openhtmltopdf 가 드롭).
         String bodyClass = hasPhoto ? "a-body has-photo" : "a-body";
 
@@ -504,7 +515,7 @@ public class PdfHtmlAssembler {
                         .append("px;top:").append(p.y() - PdfShadowRenderer.BLUR + PdfShadowRenderer.OFFSET_Y)
                         .append("px;width:").append(p.w() + 2 * PdfShadowRenderer.BLUR)
                         .append("px;height:").append(p.h() + 2 * PdfShadowRenderer.BLUR)
-                        .append("px;\" src=\"").append(shadowRenderer.dataUri(p.w(), p.h())).append("\"/>");
+                        .append("px;\" src=\"").append(shadowRenderer.assetUri(p.w(), p.h())).append("\"/>");
                 sb.append("<div class=\"card\" style=\"left:").append(p.x()).append("px;top:").append(p.y())
                         .append("px;width:").append(p.w()).append("px;height:").append(p.h()).append("px;\">")
                         .append(p.html()).append("</div>");
@@ -519,6 +530,13 @@ public class PdfHtmlAssembler {
         String logo = assets.footerLogo().map(u -> "<img src=\"" + u + "\" alt=\"\"/>").orElse("");
         return "<div class=\"footer\"><span class=\"brand\">" + logo + "나에게 답하다</span>"
                 + "<span class=\"pageno\">" + pageNo + "</span></div>";
+    }
+
+    /**
+     * assemble 결과: XHTML + 답변 사진 인라인 애셋 맵(asset:photo-N 토큰 → JPEG 바이트).
+     * 렌더러가 맵을 받아 asset: 프로토콜 스트림 팩토리로 서빙한다(반복 baked 에셋과 동일 경로).
+     */
+    public record AssembledDocument(String xhtml, Map<String, byte[]> inlineAssets) {
     }
 
     private record Block(int estH, String html) {

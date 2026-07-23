@@ -56,14 +56,15 @@ class PdfPreviewTest {
         PdfAssetLoader assets = new PdfAssetLoader();
         invoke(assets, "load");
         EmotionRadarChartRenderer radar = new EmotionRadarChartRenderer();
-        PdfHtmlAssembler assembler = new PdfHtmlAssembler(assets, radar, new PdfShadowRenderer());
+        PdfShadowRenderer shadow = new PdfShadowRenderer();
+        PdfHtmlAssembler assembler = new PdfHtmlAssembler(assets, radar, shadow);
         invoke(assembler, "loadCss");
-        PdfRenderer renderer = new PdfRenderer(assets);
+        PdfRenderer renderer = new PdfRenderer(assets, shadow);
 
-        String samplePhoto = samplePhotoDataUri();
-        Function<String, Optional<String>> photoResolver = key -> Optional.ofNullable(samplePhoto);
+        byte[] samplePhoto = samplePhotoBytes();
+        Function<String, Optional<byte[]>> photoResolver = key -> Optional.of(samplePhoto);
 
-        String xhtml = assembler.assemble(
+        PdfHtmlAssembler.AssembledDocument doc = assembler.assemble(
                 PdfExportType.REPORT_AND_ANSWER,
                 sampleAnswers(),
                 sampleWeeklies(),
@@ -71,7 +72,7 @@ class PdfPreviewTest {
                 sampleMonthlyV2s(),
                 photoResolver);
 
-        byte[] pdf = renderer.render(xhtml);
+        byte[] pdf = renderer.render(doc.xhtml(), doc.inlineAssets());
 
         // 전체 파이프라인이 예외 없이 돌고 유효한 PDF 헤더의 바이트를 만든다(디자인 충실도가 아니라 "렌더가 깨지지 않음"을 지킴).
         assertThat(pdf).hasSizeGreaterThan(1000);
@@ -175,8 +176,8 @@ class PdfPreviewTest {
 
     /* ── 샘플 사진: 파일 없이 코드로 만든 합성 사진을 프로덕션 PdfImage(정사각 cover 크롭)로 태운다 ── */
 
-    private String samplePhotoDataUri() throws Exception {
-        return PdfImage.coverSquareDataUri(syntheticPhotoBytes(), PHOTO_PX);
+    private byte[] samplePhotoBytes() throws Exception {
+        return PdfImage.coverSquareJpegBytes(syntheticPhotoBytes(), PHOTO_PX);
     }
 
     /** 비정사각 800×600 그라디언트 → cover-crop 경로까지 태우는 합성 사진 바이트(레포에 바이너리 파일을 두지 않는다). */

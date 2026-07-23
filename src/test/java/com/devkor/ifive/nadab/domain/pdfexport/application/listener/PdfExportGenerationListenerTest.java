@@ -26,6 +26,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -78,8 +79,9 @@ class PdfExportGenerationListenerTest {
         eventPublisher = mock(ApplicationEventPublisher.class);
 
         // 기본 해피패스 스텁(각 테스트에서 필요 시 덮어씀).
-        when(assembler.assemble(any(), any(), any(), any(), any(), any())).thenReturn(XHTML);
-        when(renderer.render(any())).thenReturn(PDF_BYTES);
+        when(assembler.assemble(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PdfHtmlAssembler.AssembledDocument(XHTML, Map.of()));
+        when(renderer.render(any(), any())).thenReturn(PDF_BYTES);
 
         listener = new PdfExportGenerationListener(
                 jobRepository, queryRepository, assembler, renderer, storage, txService, eventPublisher);
@@ -158,7 +160,7 @@ class PdfExportGenerationListenerTest {
         givenJob(PdfExportType.ANSWER_ONLY);
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END))
                 .thenReturn(List.of(answer("2026-01-05", "질문", null)));
-        when(renderer.render(any())).thenThrow(new RuntimeException("openhtmltopdf boom"));
+        when(renderer.render(any(), any())).thenThrow(new RuntimeException("openhtmltopdf boom"));
 
         listener.handle(EVENT);
 
@@ -171,23 +173,26 @@ class PdfExportGenerationListenerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void 사진리졸버_정상은_data_uri_실패는_스킵() throws Exception {
+    void 사진리졸버_정상은_jpeg바이트_실패는_스킵() throws Exception {
         givenJob(PdfExportType.ANSWER_ONLY);
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
 
         listener.handle(EVENT);
 
         // assembler 에 넘긴 사진 리졸버(this::resolvePhoto)를 붙잡아 실제 동작을 검증한다.
-        ArgumentCaptor<Function<String, Optional<String>>> resolverCaptor =
+        ArgumentCaptor<Function<String, Optional<byte[]>>> resolverCaptor =
                 ArgumentCaptor.forClass(Function.class);
         verify(assembler).assemble(any(), any(), any(), any(), any(), resolverCaptor.capture());
-        Function<String, Optional<String>> resolvePhoto = resolverCaptor.getValue();
+        Function<String, Optional<byte[]>> resolvePhoto = resolverCaptor.getValue();
 
-        // 정상: S3 원본 → PdfImage 로 정사각 리샘플 → JPEG data URI.
+        // 정상: S3 원본 → PdfImage 로 정사각 리샘플 → JPEG 바이트(asset: 서빙용).
         when(storage.download("answers/7/ok.webp")).thenReturn(syntheticPhotoBytes());
-        Optional<String> ok = resolvePhoto.apply("answers/7/ok.webp");
+        Optional<byte[]> ok = resolvePhoto.apply("answers/7/ok.webp");
         assertThat(ok).isPresent();
-        assertThat(ok.get()).startsWith("data:image/jpeg;base64,");
+        assertThat(ok.get()).hasSizeGreaterThan(1000);
+        // JPEG SOI 매직 바이트(0xFF 0xD8) — 실제 JPEG 인코딩 결과임을 확인.
+        assertThat(ok.get()[0] & 0xFF).isEqualTo(0xFF);
+        assertThat(ok.get()[1] & 0xFF).isEqualTo(0xD8);
 
         // 실패: 개별 사진 다운로드 실패는 전체를 막지 않고 그 사진만 건너뛴다(Optional.empty).
         doThrow(new RuntimeException("object not found")).when(storage).download("answers/7/broken.webp");

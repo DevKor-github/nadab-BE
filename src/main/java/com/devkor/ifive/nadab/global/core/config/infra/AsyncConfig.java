@@ -85,13 +85,13 @@ public class AsyncConfig {
     /**
      * PDF 내보내기(서버 렌더링) 전용 실행기
      * - 렌더링은 CPU·메모리(폰트/이미지/PDF 버퍼)를 많이 써 LLM I/O 풀과 성격이 다름
-     * - core2/max3/queue20 은 측정 전 잠정값(미확정) — 1년치 단일 렌더 peak heap 실측 후 확정(RAM 병목이라 소형 EC2 기준 하향 예상)
+     * - max1(동시성 1): 단일 렌더가 prod 공유힙을 거의 다 써 동시 2개면 OOM (메모리 근거로 실측 확정)
      */
     @Bean(name = "pdfExportTaskExecutor")
     public ThreadPoolTaskExecutor pdfExportTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(3);
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
         executor.setQueueCapacity(20);
         executor.setThreadNamePrefix("async-pdf-export-");
         executor.initialize();

@@ -10,7 +10,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,13 +28,19 @@ class PdfShadowRenderer {
     private static final int BLUR_PASSES = 3;
     private static final int PEAK_ALPHA = 51;
 
-    private final Map<Long, String> cache = new ConcurrentHashMap<>();
+    private final Map<Long, byte[]> cache = new ConcurrentHashMap<>();
 
-    String dataUri(int w, int h) {
+    /** asset: 토큰 반환(어셈블러가 XHTML 에 박음). 실제 PNG 바이트는 bytes() 로 렌더러 스트림 팩토리가 서빙. */
+    String assetUri(int w, int h) {
+        return "asset:shadow-" + w + "x" + h;
+    }
+
+    /** 크기별 그림자 PNG 바이트(표시 크기 캐시). */
+    byte[] bytes(int w, int h) {
         return cache.computeIfAbsent((((long) w) << 32) | (h & 0xffffffffL), k -> render(w, h));
     }
 
-    private String render(int w, int h) {
+    private byte[] render(int w, int h) {
         int fullW = w + 2 * BLUR;
         int fullH = h + 2 * BLUR;
 
@@ -64,7 +69,7 @@ class PdfShadowRenderer {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(out, "png", baos);
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
+            return baos.toByteArray();
         } catch (IOException e) {
             throw new IllegalStateException("그림자 PNG 인코딩 실패", e);
         }

@@ -12,11 +12,11 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Base64;
 
 /**
- * 답변 사진 렌더 유틸(정중앙 정사각 크롭 + 리샘플 → JPEG data URI). openhtmltopdf가 object-fit/aspect-ratio 미지원이라 여기서 굽는다.
+ * 답변 사진 렌더 유틸(정중앙 정사각 크롭 + 리샘플 → JPEG 바이트). openhtmltopdf가 object-fit/aspect-ratio 미지원이라 여기서 굽는다.
  * 프로덕션 Listener·프리뷰 하네스 공유 단일 지점. webp는 twelvemonkeys 리더로 ImageIO 가 바로 디코드(사전 변환 불필요).
+ * 결과 바이트는 어셈블러가 asset: 토큰으로 참조하고 렌더러 스트림 팩토리가 서빙한다 — XHTML 에 base64 로 인라인되지 않는다.
  */
 public final class PdfImage {
 
@@ -24,18 +24,16 @@ public final class PdfImage {
     }
 
     /**
-     * 원본 이미지 바이트 → 정중앙 정사각 크롭 → size×size 리샘플 → JPEG data URI.
-     *
-     * @param source 디코드 가능한 이미지 바이트(png/jpg/webp — webp는 등록된 twelvemonkeys 리더로 ImageIO 가 직접 디코드)
-     * @param size   출력 한 변 px(표시 크기의 오버샘플 배수로 지정)
+     * 원본 이미지 바이트 → 정중앙 정사각 크롭 → size×size 리샘플 → JPEG 바이트.
+     * source = 디코드 가능한 이미지 바이트(png/jpg/webp — webp는 twelvemonkeys 리더로 ImageIO 직접 디코드), size = 출력 한 변 px(오버샘플 배수).
      */
-    public static String coverSquareDataUri(byte[] source, int size) {
+    public static byte[] coverSquareJpegBytes(byte[] source, int size) {
         try {
             BufferedImage src = ImageIO.read(new ByteArrayInputStream(source));
             if (src == null) {
                 throw new IOException("이미지 디코드 실패(지원하지 않는 포맷)");
             }
-            return "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(encodeJpeg(coverSquare(src, size)));
+            return encodeJpeg(coverSquare(src, size));
         } catch (IOException e) {
             throw new IllegalStateException("답변 사진 렌더 실패", e);
         }

@@ -17,8 +17,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * PDF 렌더 정적 애셋(폰트·이미지)을 클래스패스에서 최초 1회 로드·캐시(이미지는 data URI 문자열로 굳혀 둠).
- * 폰트는 필수(없으면 startup 실패), 이미지는 선택(없으면 폴백).
+ * PDF 렌더 정적 애셋(폰트·이미지)을 클래스패스에서 최초 1회 로드·캐시.
+ * 반복 에셋(배너·divider·아이콘·로고·섹션)은 asset: 토큰으로 참조한다 — 게터는 asset:키 문자열을 주고,
+ * 바이트는 assetBytes 로 렌더러 스트림 팩토리가 서빙해 동일 에셋을 1회만 디코드한다. 폰트는 필수(없으면 startup 실패).
  */
 @Slf4j
 @Component
@@ -49,14 +50,15 @@ public class PdfAssetLoader {
     }
 
     private List<FontFace> pretendardFaces;
-    private Optional<String> reportBanner;
-    private Optional<String> footerLogo;
-    private Optional<String> sectionDiscoveredIcon;
-    private Optional<String> sectionCommentIcon;
-    private Map<String, String> interestIcons;
+    private Optional<byte[]> reportBannerBytes;
+    private Optional<byte[]> footerLogoBytes;
+    private Optional<byte[]> sectionDiscoveredIconBytes;
+    private Optional<byte[]> sectionCommentIconBytes;
+    private Map<String, byte[]> interestIconBytes;
+    /** HIGHLIGHT 바는 CSS에 1회만 박혀(반복 아님) data URI. */
     private String highlightBar;
-    /** 세로 점선 divider 컬럼 data URI(표시 높이별 캐시). */
-    private final Map<Integer, String> dottedColumns = new ConcurrentHashMap<>();
+    /** 세로 점선 divider PNG 바이트(표시 높이별 캐시). asset:divider-{h} 로 서빙. */
+    private final Map<Integer, byte[]> dividerBytes = new ConcurrentHashMap<>();
 
     @PostConstruct
     void load() {
@@ -65,55 +67,90 @@ public class PdfAssetLoader {
                 new FontFace(700, readRequired(FONT_BOLD_PATH))
         );
 
-        reportBanner = pngDataUri(IMG_DIR + "report-banner.png");
-        footerLogo = pngDataUri(IMG_DIR + "logo.png");
-        sectionDiscoveredIcon = pngDataUri(ICON_DIR + "section-discovered.png");
-        sectionCommentIcon = pngDataUri(ICON_DIR + "section-comment.png");
+        reportBannerBytes = readOptional(IMG_DIR + "report-banner.png");
+        footerLogoBytes = readOptional(IMG_DIR + "logo.png");
+        sectionDiscoveredIconBytes = readOptional(ICON_DIR + "section-discovered.png");
+        sectionCommentIconBytes = readOptional(ICON_DIR + "section-comment.png");
 
-        Map<String, String> icons = new LinkedHashMap<>();
+        Map<String, byte[]> icons = new LinkedHashMap<>();
         for (String code : INTEREST_CODES) {
-            pngDataUri(ICON_DIR + "interest-" + code.toLowerCase() + ".png")
-                    .ifPresent(uri -> icons.put(code, uri));
+            readOptional(ICON_DIR + "interest-" + code.toLowerCase() + ".png")
+                    .ifPresent(bytes -> icons.put(code, bytes));
         }
-        interestIcons = Map.copyOf(icons);
+        interestIconBytes = Map.copyOf(icons);
 
         highlightBar = makeHighlightBar();
 
         log.debug("PDF 애셋 로드 — 폰트 {}종, 배너 {}, 로고 {}, 관심사 아이콘 {}종",
                 pretendardFaces.size(),
-                reportBanner.isPresent() ? "O" : "폴백",
-                footerLogo.isPresent() ? "O" : "폴백",
-                interestIcons.size());
+                reportBannerBytes.isPresent() ? "O" : "폴백",
+                footerLogoBytes.isPresent() ? "O" : "폴백",
+                interestIconBytes.size());
     }
 
     public List<FontFace> pretendardFaces() {
         return pretendardFaces;
     }
 
+    /* ── 반복 에셋: asset: 토큰 반환(있을 때만 — 없으면 empty 로 폴백 유지). 바이트는 assetBytes()로 팩토리가 서빙 ── */
+
     public Optional<String> reportBanner() {
-        return reportBanner;
+        return reportBannerBytes.map(b -> "asset:banner");
     }
 
     public Optional<String> footerLogo() {
-        return footerLogo;
+        return footerLogoBytes.map(b -> "asset:logo");
     }
 
     public Optional<String> sectionDiscoveredIcon() {
-        return sectionDiscoveredIcon;
+        return sectionDiscoveredIconBytes.map(b -> "asset:section-discovered");
     }
 
     public Optional<String> sectionCommentIcon() {
-        return sectionCommentIcon;
+        return sectionCommentIconBytes.map(b -> "asset:section-comment");
     }
 
     /** code = InterestCode.name(). 아이콘 파일 없으면 empty. */
     public Optional<String> interestIcon(String code) {
-        return Optional.ofNullable(interestIcons.get(code));
+        return interestIconBytes.containsKey(code) ? Optional.of("asset:icon-" + code) : Optional.empty();
     }
 
-    /** HIGHLIGHT 형광펜 바 data URI(CSS __HL_BAR__ 치환용). */
+    /** 두 열 사이 세로 점선 divider. 표시 높이별 1회 생성·캐시. asset:divider-{h} 토큰 반환. */
+    public String dottedColumn(int displayHeightPx) {
+        dividerBytes.computeIfAbsent(displayHeightPx, PdfAssetLoader::makeDottedColumnBytes);
+        return "asset:divider-" + displayHeightPx;
+    }
+
+    /** HIGHLIGHT 형광펜 바 data URI(CSS __HL_BAR__ 치환용 — CSS에 1회 참조라 인라인). */
     public String highlightBar() {
         return highlightBar;
+    }
+
+    /**
+     * asset: 스트림 팩토리(렌더러)용 바이트 조회. key = 토큰에서 asset: 뗀 부분.
+     * 예: banner · logo · section-discovered · section-comment · icon-{CODE} · divider-{h}. (shadow-* 는 PdfShadowRenderer 담당.)
+     */
+    public Optional<byte[]> assetBytes(String key) {
+        if (key.equals("banner")) {
+            return reportBannerBytes;
+        }
+        if (key.equals("logo")) {
+            return footerLogoBytes;
+        }
+        if (key.equals("section-discovered")) {
+            return sectionDiscoveredIconBytes;
+        }
+        if (key.equals("section-comment")) {
+            return sectionCommentIconBytes;
+        }
+        if (key.startsWith("icon-")) {
+            return Optional.ofNullable(interestIconBytes.get(key.substring("icon-".length())));
+        }
+        if (key.startsWith("divider-")) {
+            int h = Integer.parseInt(key.substring("divider-".length()));
+            return Optional.of(dividerBytes.computeIfAbsent(h, PdfAssetLoader::makeDottedColumnBytes));
+        }
+        return Optional.empty();
     }
 
     private static String makeHighlightBar() {
@@ -135,17 +172,11 @@ public class PdfAssetLoader {
         }
     }
 
-    /**
-     * 두 열 사이 세로 점선 divider 컬럼 data URI. 표시 높이별 1회 생성·캐시.
-     */
-    public String dottedColumn(int displayHeightPx) {
-        return dottedColumns.computeIfAbsent(displayHeightPx, PdfAssetLoader::makeDottedColumn);
-    }
-
     private static final int DOTTED_OVERSAMPLE = 4;    // 가로 오버샘플(표시 1px)
     private static final int DOTTED_V_OVERSAMPLE = 8;  // 세로 오버샘플
 
-    private static String makeDottedColumn(int displayHeightPx) {
+    /** 세로 점선 divider PNG 바이트 생성(표시 높이별). */
+    private static byte[] makeDottedColumnBytes(int displayHeightPx) {
         int w = DOTTED_OVERSAMPLE;
         int h = displayHeightPx * DOTTED_V_OVERSAMPLE;
         int dot = 2 * DOTTED_V_OVERSAMPLE;
@@ -162,15 +193,10 @@ public class PdfAssetLoader {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(col, "png", baos);
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
+            return baos.toByteArray();
         } catch (IOException e) {
             throw new IllegalStateException("divider 점선 컬럼 생성 실패", e);
         }
-    }
-
-    private Optional<String> pngDataUri(String path) {
-        return readOptional(path)
-                .map(bytes -> "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes));
     }
 
     private byte[] readRequired(String path) {
