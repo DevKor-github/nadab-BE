@@ -14,6 +14,7 @@ import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
+import com.devkor.ifive.nadab.global.exception.PdfExportInProgressException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -36,15 +37,14 @@ public class PdfExportService {
     /** 종료일 기준 최대 1년 (윤년 포함 포괄 범위) */
     private static final long MAX_PERIOD_DAYS = 366L;
 
-    /**
-     * 재사용 대상은 '진행 중(PENDING/IN_PROGRESS)' 작업뿐 — 연속 요청 시 그 작업을 돌려줘 이중 과금을 막는다.
-     * 완료(COMPLETED)된 작업은 재사용하지 않아, 같은 기간 재요청은 새로 과금한다(유니크 인덱스도 같은 기준).
-     */
-    private static final List<PdfExportStatus> REUSABLE_STATUSES =
+    /** 진행 중으로 보는 상태 — 유저당 이 중 하나가 최대 1개만 존재한다(유니크 인덱스). */
+    private static final List<PdfExportStatus> ACTIVE_STATUSES =
             List.of(PdfExportStatus.PENDING, PdfExportStatus.IN_PROGRESS);
 
     /**
      * 비동기 시작 API: 즉시 jobId 반환. 상태는 GET 폴링으로 확인.
+     * 유저당 동시 생성은 1개 — 진행 중 작업이 있으면 같은 조건은 재과금 없이 재사용하고,
+     * 다른 조건이면 409(PDF_EXPORT_ALREADY_IN_PROGRESS)로 거부한다.
      */
     public PdfExportStartResponse start(Long userId, PdfExportStartRequest request) {
         User user = userRepository.findById(userId)
@@ -56,16 +56,12 @@ public class PdfExportService {
 
         validatePeriod(startDate, endDate);
 
-        // 멱등 재사용: 같은 (user, type, 기간)의 진행 중 job 있으면 재과금 없이 재사용
-        Optional<PdfExportJob> existing = pdfExportJobRepository
-                .findReusableJob(userId, type, startDate, endDate, REUSABLE_STATUSES);
-        if (existing.isPresent()) {
-            PdfExportJob job = existing.get();
-            // 재사용: status=PENDING(접수됨 신호, 실제 상태는 GET 폴링), balanceAfter=null(추가 차감 없음).
-            return new PdfExportStartResponse(job.getId(), PdfExportStatus.PENDING.name(), null);
+        Optional<PdfExportJob> active = pdfExportJobRepository.findActiveJob(userId, ACTIVE_STATUSES);
+        if (active.isPresent()) {
+            return resolveActive(active.get(), type, startDate, endDate);
         }
 
-        // 차감 전 데이터 존재 검사: 빈 PDF에 과금 방지(신규 차감 경로만, 재사용은 위에서 반환)
+        // 차감 전 데이터 존재 검사: 빈 PDF에 과금 방지(신규 차감 경로만, 재사용/거부는 위에서 반환)
         if (!hasExportableData(userId, type, startDate, endDate)) {
             throw new BadRequestException(ErrorCode.PDF_EXPORT_NO_DATA);
         }
@@ -75,13 +71,29 @@ public class PdfExportService {
             PdfExportReserveResultDto reserve = pdfExportTxService.reserveAndPublish(user, type, startDate, endDate);
             return new PdfExportStartResponse(reserve.jobId(), PdfExportStatus.PENDING.name(), reserve.balanceAfter());
         } catch (DataIntegrityViolationException e) {
-            // 진짜 동시 더블탭: findReusableJob을 둘 다 통과한 뒤 INSERT가 겹치면, 부분 유니크 인덱스
-            // (uq_pdf_export_jobs_idem)가 두 번째 INSERT를 막는다. 차감(tryConsume) 전 단계라 이중과금은 0.
-            // 먼저 커밋된 job으로 재사용 응답을 수렴시킨다(GET 폴링이 실제 상태를 반환).
-            return pdfExportJobRepository.findReusableJob(userId, type, startDate, endDate, REUSABLE_STATUSES)
-                    .map(job -> new PdfExportStartResponse(job.getId(), PdfExportStatus.PENDING.name(), null))
+            // 진짜 동시 요청: 둘 다 findActiveJob을 통과한 뒤 INSERT가 겹치면 부분 유니크 인덱스
+            // (uq_pdf_export_jobs_active_user)가 두 번째 INSERT를 막는다. 차감(tryConsume) 전 단계라 이중과금은 0.
+            // 먼저 커밋된 진행 중 job으로 수렴 — 같은 조건이면 재사용, 다르면 거부.
+            PdfExportJob job = pdfExportJobRepository.findActiveJob(userId, ACTIVE_STATUSES)
                     .orElseThrow(() -> e);
+            return resolveActive(job, type, startDate, endDate);
         }
+    }
+
+    /**
+     * 진행 중 작업이 이미 있을 때의 처리 — 같은 조건이면 재과금 없이 재사용, 다른 조건이면 거부.
+     * 재사용 응답은 status=PENDING(접수됨 신호, 실제 상태는 GET 폴링)·balanceAfter=null(추가 차감 없음).
+     * 거부(409) 응답엔 진행 중 작업 id를 실어, 클라가 그 생성 화면으로 이동할 수 있게 한다(상세·개수는 GET /current).
+     */
+    private PdfExportStartResponse resolveActive(PdfExportJob active, PdfExportType type,
+                                                 LocalDate startDate, LocalDate endDate) {
+        boolean sameRequest = active.getType() == type
+                && active.getStartDate().equals(startDate)
+                && active.getEndDate().equals(endDate);
+        if (sameRequest) {
+            return new PdfExportStartResponse(active.getId(), PdfExportStatus.PENDING.name(), null);
+        }
+        throw new PdfExportInProgressException(active.getId());
     }
 
     /**

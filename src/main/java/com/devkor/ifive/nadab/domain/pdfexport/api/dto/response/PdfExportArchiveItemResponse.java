@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 /**
- * 아카이브(이력) 목록 항목. 생성중·완료 작업을 최신순으로 보여준다(다운로드는 항목별 발급 API로).
+ * 아카이브(이력) 목록 항목. 완료된 작업을 최신순으로 보여준다(다운로드는 항목별 발급 API로).
  */
 public record PdfExportArchiveItemResponse(
         @Schema(description = "작업 id", example = "1")
@@ -21,10 +21,10 @@ public record PdfExportArchiveItemResponse(
         @Schema(description = "기간 종료일", example = "2025-11-30")
         LocalDate endDate,
 
-        @Schema(description = "작업 상태 (PENDING/IN_PROGRESS/COMPLETED)", example = "COMPLETED")
+        @Schema(description = "작업 상태 (아카이브는 COMPLETED만)", example = "COMPLETED")
         String status,
 
-        @Schema(description = "COMPLETED 시 다운로드 보관 만료 시각(완료 시각 + 7일). 그 외 null",
+        @Schema(description = "다운로드 보관 만료 시각(완료 시각 + 7일)",
                 example = "2025-12-07T05:30:00Z")
         OffsetDateTime expiresAt,
 

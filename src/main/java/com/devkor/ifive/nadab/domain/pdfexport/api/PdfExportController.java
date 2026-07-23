@@ -2,7 +2,9 @@ package com.devkor.ifive.nadab.domain.pdfexport.api;
 
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.request.PdfExportStartRequest;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportArchiveItemResponse;
+import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportCurrentResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportDownloadResponse;
+import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportInProgressResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportPreviewResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportStartResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportStatusResponse;
@@ -44,13 +46,16 @@ public class PdfExportController {
             summary = "PDF 내보내기 생성 시작",
             description = """
                     선택한 유형(리포트만/답변만/리포트+답변)과 기간(종료일 기준 최대 1년)으로 PDF 생성을 시작합니다. 호출 즉시 크리스탈이 차감됩니다. </br>
-                    생성은 비동기라 이 API는 곧바로 jobId만 반환합니다. 완료 확인은 둘 중 하나로: </br>
-                    (1) 생성 화면에 머물러 완료를 바로 반영하려면 GET /pdf-exports/{jobId}를 일정 시간 간격으로 폴링, </br>
-                    (2) 생성 화면을 벗어나는 흐름이면 나중에 아카이브(GET /pdf-exports)에서 해당 작업이 COMPLETED로 뜨는지 확인(완료 시 FCM 푸시로 전송 후 사용자는 아카이브에서 확인). </br>
+                    생성은 비동기라 이 API는 곧바로 jobId, status, balanceAfter만 반환합니다. 완료 확인은 셋 중 하나로: </br>
+                    (1) 생성 후 로딩 화면에 머물러 완료를 바로 반영하려면 GET /pdf-exports/{jobId}를 일정 시간 간격으로 폴링, </br>
+                    (2) 생성 화면을 벗어나는 흐름이면 나중에 아카이브(GET /pdf-exports)에서 해당 작업이 COMPLETED로 뜨는지 확인(완료 시 FCM 푸시로 전송 후 사용자는 아카이브에서 확인), </br>
+                    (3) 화면을 벗어났다가 PDF 탭으로 다시 들어오면 GET /pdf-exports/current가 진행 중 작업을 돌려주므로, 그 로딩 화면으로 이동해 (1)과 동일하게 GET /pdf-exports/{jobId}를 폴링. </br>
                     어느 쪽이든 COMPLETED가 되면 POST /pdf-exports/{jobId}/download-url 로 다운로드 URL을 발급받아 받으면 됩니다. </br>
                     응답의 balanceAfter는 차감 후 남은 크리스탈 잔액입니다(지갑 UI 갱신용). </br>
-                    멱등 재사용: 같은 유형·기간의 작업이 아직 생성 중(PENDING/IN_PROGRESS)일 때 다시 호출하면(응답을 못 받아 재시도하거나 버튼 더블탭 등) 재과금 없이 그 작업을 그대로 돌려주며 balanceAfter=null 입니다(이중 과금 없음, 지갑 추가 차감 표시 금지). 완료(COMPLETED)된 작업은 재사용하지 않으므로 같은 기간 재요청은 새 작업으로 재과금됩니다(= 재생성). </br>
-                    생성 실패는 이 응답이 아니라 폴링(GET /pdf-exports/{jobId})에서 status=FAILED(errorCode 포함)로만 확인됩니다(아카이브에는 FAILED 미노출). 차감된 크리스탈은 자동 환불되므로, 잔액을 표시 중이면 다시 조회해 갱신하세요. </br>
+                    생성 로딩 화면의 "포함 내용" 개수(답변/주간/월간)는 이 API가 반환하지 않습니다 — 방금 생성 직전 호출한 미리보기(GET /pdf-exports/preview) 응답값을 그대로 표시하면 됩니다(생성 직후엔 그 값이 곧 생성 대상 개수). 화면을 벗어났다 다시 들어오는 재진입 흐름에서는 GET /pdf-exports/current가 같은 개수를 함께 내려줍니다. </br>
+                    동시 생성 1개: 한 사용자는 생성 중(PENDING/IN_PROGRESS) 작업을 동시에 1개만 가질 수 있습니다. 생성 중인데 다른 유형·기간으로 다시 호출하면 409(PDF_EXPORT_ALREADY_IN_PROGRESS)로 거부되며, 응답 data에 이미 생성 중인 작업의 jobId가 담겨 옵니다 — 그 작업의 생성 화면으로 유도하고 상세·포함 개수는 GET /pdf-exports/current로 받으세요. </br>
+                    멱등 재사용: 같은 유형·기간의 작업이 아직 생성 중일 때 다시 호출하면(응답을 못 받아 재시도하거나 버튼 더블탭 등) 재과금 없이 그 작업을 그대로 돌려주며 balanceAfter=null 입니다(이중 과금 없음, 지갑 추가 차감 표시 금지). 완료(COMPLETED)된 작업은 재사용하지 않으므로 같은 기간 재요청은 새 작업으로 재과금됩니다(= 재생성). </br>
+                    생성 실패는 아카이브에도 안 뜨고 완료 푸시도 없어, 오직 폴링(GET /pdf-exports/{jobId})의 status=FAILED(errorCode 포함)로만 드러납니다. 그래서 로딩 화면에서 폴링 중이라면 FAILED를 COMPLETED와 같은 '종료 상태'로 처리해야 합니다(안 그러면 "생성 중"이 무한히 돕니다). 화면을 벗어난 뒤라면 따로 확인할 필요가 없습니다 — 차감 크리스탈은 자동 환불되고(지갑 이력에 남음) 산출물이 없어 사용자가 할 액션이 없습니다. 잔액을 표시 중이면 다시 조회해 갱신하세요. </br>
                     내보낼 답변/리포트가 하나도 없으면 PDF_EXPORT_NO_DATA로 거부됩니다 — 미리보기(GET /pdf-exports/preview)로 사전 확인을 권장합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -77,6 +82,11 @@ public class PdfExportController {
                                     - ErrorCode: WALLET_NOT_FOUND - 지갑을 찾을 수 없음
                                     """,
                             content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "- ErrorCode: PDF_EXPORT_ALREADY_IN_PROGRESS - 이미 다른 조건으로 생성 중인 작업이 있음(응답 data에 그 작업의 jobId 포함)",
+                            content = @Content(schema = @Schema(implementation = PdfExportInProgressResponse.class), mediaType = "application/json")
                     )
             }
     )
@@ -93,10 +103,8 @@ public class PdfExportController {
     @Operation(
             summary = "PDF 내보내기 아카이브(이력) 목록",
             description = """
-                    내 PDF 내보내기 작업을 최신순(생성순 DESC)으로 조회합니다. 대상은 생성중(PENDING/IN_PROGRESS)과 완료(COMPLETED)이며, 실패(FAILED)는 자동 환불된 상태라 목록에 포함되지 않습니다. </br>
-                    아카이브 화면에서 이력을 보거나, 앱을 다시 켰을 때 진행 중이던 생성 작업(PENDING/IN_PROGRESS)을 이 목록에서 다시 확인하는 데 사용합니다. </br>
-                    각 항목은 유형(type)·기간(startDate~endDate)·상태(status)를 담습니다. status가 PENDING/IN_PROGRESS면 아직 생성 중이므로 GET /pdf-exports/{jobId} 폴링으로 이어가면 됩니다. </br>
-                    완료(COMPLETED) 항목은 expiresAt(다운로드 보관 만료 = 완료 + 7일)와 expired(만료 여부)를 포함합니다. expired=false면 다운로드 URL을 발급(POST /pdf-exports/{jobId}/download-url)해 받고, expired=true면 보관 기간이 지나 다운로드가 불가하므로 재생성이 필요합니다. </br>
+                    내 PDF 내보내기 이력을 최신순(생성순 DESC)으로 조회합니다. 대상은 완료(COMPLETED)뿐입니다 — 생성 중(PENDING/IN_PROGRESS)은 진행 중 조회(GET /pdf-exports/current)로, 실패(FAILED)는 자동 환불된 상태라 목록에 포함되지 않습니다. </br>
+                    각 항목은 유형(type)·기간(startDate~endDate)·상태(status)와 함께 expiresAt(다운로드 보관 만료 = 완료 + 7일)·expired(만료 여부)를 담습니다. expired=false면 다운로드 URL을 발급(POST /pdf-exports/{jobId}/download-url)해 받고, expired=true면 보관 기간이 지나 다운로드가 불가하므로 재생성이 필요합니다. </br>
                     같은 유형·기간으로 재생성하면 이전 완료 항목은 삭제되어 목록에는 가장 최근 것만 남습니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -113,6 +121,33 @@ public class PdfExportController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         List<PdfExportArchiveItemResponse> response = pdfExportQueryService.getArchive(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping("/current")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "진행 중인 PDF 내보내기 작업 조회",
+            description = """
+                    지금 생성 중인(PENDING/IN_PROGRESS) 내 PDF 작업을 돌려줍니다. 동시 생성은 유저당 1개라 결과는 단건이며, 없으면 data=null 입니다. </br>
+                    PDF 탭에 진입할 때 이 API를 호출해, 생성 중인 작업이 있으면(data≠null) 그 작업의 생성/로딩 화면으로 이동시켜 GET /pdf-exports/{jobId} 폴링으로 완료를 확인하는 흐름에 사용합니다. </br>
+                    응답에는 jobId·유형(type)·기간(startDate~endDate)·상태(status)와 함께, 로딩 화면 "포함 내용" 표시용 개수 3종(answerCount·weeklyCount·monthlyCount)이 담깁니다. 이 개수는 조회 시점에 즉석 계산한 값입니다(유형과 무관하게 3종 모두 내려주므로 선택 유형에 맞는 값만 표시하면 됩니다). 차감 크리스탈은 유형에서 유도하세요(리포트만/답변만 50, 둘 다 100). </br>
+                    완료된 이력은 여기 나오지 않으며 아카이브(GET /pdf-exports)에서 확인합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "진행 중 작업 조회 성공(없으면 data=null)",
+                            content = @Content(schema = @Schema(implementation = PdfExportCurrentResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
+            }
+    )
+    public ResponseEntity<ApiResponseDto<PdfExportCurrentResponse>> getCurrentPdfExport(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        PdfExportCurrentResponse response = pdfExportQueryService.getCurrent(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 
@@ -155,8 +190,7 @@ public class PdfExportController {
     @Operation(
             summary = "PDF 내보내기 상태 조회 (폴링)",
             description = """
-                    jobId로 특정 작업 하나의 진행 상태를 조회합니다. 생성 시작(POST /pdf-exports) 직후 생성/로딩 화면에 머무는 동안, 또는 아카이브에서 진행 중인 항목 하나를 열어 볼 때, COMPLETED나 FAILED가 될 때까지 이 API를 주기적으로 폴링합니다. </br>
-                    (아카이브 목록 화면에서 여러 진행 중 항목의 상태를 갱신할 때는 개별 폴링보다 목록 API(GET /pdf-exports)를 다시 호출하는 편이 낫습니다.) </br>
+                    jobId로 특정 작업 하나의 진행 상태를 조회합니다. 생성 시작(POST /pdf-exports) 직후 로딩 화면에 머무는 동안, 또는 PDF 탭 재진입 시 진행 중 조회(GET /pdf-exports/current)로 찾은 작업의 로딩 화면을 볼 때, COMPLETED나 FAILED가 될 때까지 이 API를 주기적으로 폴링합니다. </br>
                     status 값: </br>
                     - PENDING: 생성 대기 중 </br>
                     - IN_PROGRESS: 생성 진행 중 </br>
@@ -197,12 +231,12 @@ public class PdfExportController {
     @Operation(
             summary = "PDF 다운로드 URL 발급",
             description = """
-                    완료된 PDF의 다운로드 URL(CloudFront 서명 URL)을 발급합니다. 폴링과 분리된 발급 전용 API로, 상태가 COMPLETED가 된 뒤(또는 아카이브 항목의 다운로드 버튼에서) 호출합니다. </br>
-                    downloadUrl은 약 3분간 유효합니다. 3분은 다운로드를 '시작'할 수 있는 창이며, 한 번 시작된 전송은 3분을 넘겨도 끝까지 받아집니다. 만료 후에는 이 API를 다시 호출해 새 URL을 발급받으면 됩니다(같은 파일). </br>
-                    이미 지정해놨지만 혹시 필요하다면 저장 파일명은 응답의 fileName을 사용하세요(예: 나답_나에게답하다_20251101-20251130.pdf). 브라우저로 열어 받으면 URL에 파일명이 지정돼 있어 자동 적용되고, 앱(Capacitor) 네이티브 저장은 헤더를 읽지 않으므로 이 fileName을 직접 지정해야 할듯 합니다. </br>
+                    완료된 PDF의 다운로드 URL(CloudFront 서명 URL)을 발급합니다. 폴링과 분리된 발급 전용 API로, 상태가 COMPLETED가 된 뒤(아카이브 항목의 다운로드 버튼에서) 호출합니다. </br>
+                    downloadUrl은 약 3분간 유효합니다. 3분은 다운로드를 '시작'할 수 있는 제한시간이며, 한 번 시작된 전송은 3분을 넘겨도 끝까지 받아집니다. 만료 후에는 이 API를 다시 호출해 새 URL을 발급받으면 됩니다(같은 파일). </br>
+                    이미 지정해놨지만 혹시 필요하다면 저장 파일명은 응답의 fileName을 사용하세요(예: 나답_나에게답하다_20251101-20251130.pdf). 브라우저로 열어 받으면 URL에 파일명이 지정돼 있어 자동 적용되고, 앱(Capacitor) 네이티브 저장은 헤더를 읽지 않으므로 이 fileName으로 직접 지정해야 할듯 합니다. </br>
                     expiresAt은 다운로드 보관 만료 시각(완료 + 7일)입니다. 이 시각이 지나면 발급되지 않으므로(409 EXPIRED) 재생성이 필요합니다. </br>
-                    아직 완료 전이면 409(NOT_COMPLETED)가 반환됩니다. </br>
-                    발급은 유저당 1분에 20회로 제한되며, 초과하면 429(RATE_LIMITED)가 반환됩니다. 실제 다운로드 버튼을 누를 때만 1회 호출하면 정상 사용으로는 거의 닿지 않지만, 폴링할 때마다·화면이 리렌더될 때마다·아카이브 목록의 모든 항목에 대해 자동으로 이 API를 부르면 실수로 걸릴 수 있으니 주의하세요. 429가 나면 잠시 후 재시도하면 됩니다.
+                    아직 생성 완료 전이면 409(NOT_COMPLETED)가 반환됩니다. </br>
+                    발급은 유저당 1분에 20회로 제한되며, 초과하면 429(RATE_LIMITED)가 반환됩니다. 실제 다운로드 버튼을 누를 때만 1회 호출하면 정상 사용으로는 제한에 걸릴 일이 없지만, 폴링할 때마다·화면이 리렌더될 때마다·아카이브 목록의 모든 항목에 대해 자동으로 이 API를 부르면 실수로 걸릴 수 있으니 주의하세요. 429가 나면 잠시 후 재시도하면 됩니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

@@ -21,8 +21,8 @@ CREATE TABLE pdf_export_jobs (
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX uq_pdf_export_jobs_idem
-    ON pdf_export_jobs (user_id, type, start_date, end_date)
+CREATE UNIQUE INDEX uq_pdf_export_jobs_active_user
+    ON pdf_export_jobs (user_id)
     WHERE status IN ('PENDING', 'IN_PROGRESS');
 
 CREATE INDEX idx_pdf_export_jobs_user_created_at

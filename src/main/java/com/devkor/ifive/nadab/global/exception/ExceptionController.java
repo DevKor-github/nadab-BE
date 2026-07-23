@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.global.exception;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
+import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportInProgressResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiErrorResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
@@ -107,6 +108,12 @@ public class ExceptionController {
         log.warn("NoSuchKeyException: {}", ex.getMessage(), ex);
         // S3에서 객체를 찾을 수 없을 때 404 NOT_FOUND 응답
         return ApiResponseEntity.error(ErrorCode.FILE_STORAGE_NOT_FOUND);
+    }
+
+    @ExceptionHandler(PdfExportInProgressException.class)
+    public ResponseEntity<ApiErrorResponseDto<PdfExportInProgressResponse>> handlePdfExportInProgressException(PdfExportInProgressException ex) {
+        log.warn("PdfExportInProgressException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(ex.getErrorCode(), ex.getInProgressJob());
     }
 
     @ExceptionHandler(ConflictException.class)

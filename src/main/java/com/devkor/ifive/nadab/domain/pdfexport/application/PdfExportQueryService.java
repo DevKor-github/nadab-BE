@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.pdfexport.application;
 
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportArchiveItemResponse;
+import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportCurrentResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportDownloadResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportStatusResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportDownloadRateLimiter;
@@ -8,6 +9,7 @@ import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportFileN
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportJob;
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportStatus;
 import com.devkor.ifive.nadab.domain.pdfexport.core.repository.PdfExportJobRepository;
+import com.devkor.ifive.nadab.domain.pdfexport.core.repository.PdfExportQueryRepository;
 import com.devkor.ifive.nadab.domain.pdfexport.infra.PdfExportStorage;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -26,14 +29,20 @@ import java.util.List;
 public class PdfExportQueryService {
 
     private final PdfExportJobRepository pdfExportJobRepository;
+    private final PdfExportQueryRepository pdfExportQueryRepository;
     private final PdfExportStorage pdfExportStorage;
     private final PdfExportDownloadRateLimiter downloadRateLimiter;
 
     /**
-     * 아카이브에 노출할 상태: 생성중(PENDING/IN_PROGRESS) + 완료(COMPLETED). FAILED는 자동 환불된 transient라 제외.
+     * 아카이브(이력)에 노출할 상태: 완료(COMPLETED)만. 생성중은 아카이브가 아니라 진행 중 조회(getCurrent)로 다루고,
+     * FAILED는 자동 환불된 transient라 제외한다.
      */
     private static final List<PdfExportStatus> ARCHIVE_STATUSES =
-            List.of(PdfExportStatus.PENDING, PdfExportStatus.IN_PROGRESS, PdfExportStatus.COMPLETED);
+            List.of(PdfExportStatus.COMPLETED);
+
+    /** 진행 중으로 보는 상태 — 유저당 이 중 하나가 최대 1개만 존재한다(유니크 인덱스). */
+    private static final List<PdfExportStatus> ACTIVE_STATUSES =
+            List.of(PdfExportStatus.PENDING, PdfExportStatus.IN_PROGRESS);
 
     /** 폴링용 상태 조회. 다운로드 발급은 별도 엔드포인트. */
     public PdfExportStatusResponse getStatus(Long userId, Long jobId) {
@@ -71,7 +80,29 @@ public class PdfExportQueryService {
     }
 
     /**
-     * 아카이브(이력) 목록: 생성중·완료 작업을 최신순(생성순 DESC)으로. 다운로드는 항목별 발급 API(issueDownloadUrl).
+     * 지금 생성 중인 작업(유저당 최대 1개). 없으면 null. PDF 탭 진입 시 진행 중 작업을 감지해
+     * 생성 화면으로 이동하는 데 쓴다. 생성 화면 "포함 내용" 표시용 개수 3종은 즉석 계산해 담는다.
+     * 완료 이후 확인은 아카이브(getArchive)로.
+     */
+    public PdfExportCurrentResponse getCurrent(Long userId) {
+        return pdfExportJobRepository.findActiveJob(userId, ACTIVE_STATUSES)
+                .map(job -> toCurrentResponse(job, userId))
+                .orElse(null);
+    }
+
+    private PdfExportCurrentResponse toCurrentResponse(PdfExportJob job, Long userId) {
+        LocalDate start = job.getStartDate();
+        LocalDate end = job.getEndDate();
+        long monthlyCount = pdfExportQueryRepository.countMonthlyReportsV2InPeriod(userId, start, end)
+                + pdfExportQueryRepository.countMonthlyReportsInPeriod(userId, start, end);
+        return PdfExportCurrentResponse.of(job,
+                pdfExportQueryRepository.countAnswersInPeriod(userId, start, end),
+                pdfExportQueryRepository.countWeeklyReportsInPeriod(userId, start, end),
+                monthlyCount);
+    }
+
+    /**
+     * 아카이브(이력) 목록: 완료 작업을 최신순(생성순 DESC)으로. 다운로드는 항목별 발급 API(issueDownloadUrl).
      */
     public List<PdfExportArchiveItemResponse> getArchive(Long userId) {
         return pdfExportJobRepository.findArchive(userId, ARCHIVE_STATUSES).stream()

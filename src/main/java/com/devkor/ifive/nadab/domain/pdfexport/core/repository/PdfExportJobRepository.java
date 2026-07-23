@@ -30,22 +30,17 @@ public interface PdfExportJobRepository extends JpaRepository<PdfExportJob, Long
     );
 
     /**
-     * 같은 사용자·유형·기간으로 아직 진행 중인 작업을 찾는다.
-     * 있으면 재과금 없이 그 작업을 다시 쓴다(중복 요청 방지). statuses엔 PENDING/IN_PROGRESS를 넘긴다.
+     * 유저가 지금 진행 중인(PENDING/IN_PROGRESS) 작업. 유니크 인덱스가 유저당 1개로 보장해 단건이다.
+     * 같은 조건 재요청이면 이 작업을 재과금 없이 다시 쓰고, 다른 조건이면 동시 1개 제한으로 거부한다.
+     * statuses엔 PENDING/IN_PROGRESS를 넘긴다.
      */
     @Query("""
         SELECT j FROM PdfExportJob j
          WHERE j.user.id = :userId
-           AND j.type = :type
-           AND j.startDate = :startDate
-           AND j.endDate = :endDate
            AND j.status IN :statuses
     """)
-    Optional<PdfExportJob> findReusableJob(
+    Optional<PdfExportJob> findActiveJob(
             @Param("userId") Long userId,
-            @Param("type") PdfExportType type,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
             @Param("statuses") Collection<PdfExportStatus> statuses
     );
 

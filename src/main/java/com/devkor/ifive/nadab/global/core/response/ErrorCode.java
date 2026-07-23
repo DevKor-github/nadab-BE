@@ -467,6 +467,7 @@ public enum ErrorCode {
     // 404 Not Found
     PDF_EXPORT_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "PDF 내보내기 작업을 찾을 수 없습니다"),
     // 409 Conflict
+    PDF_EXPORT_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "이미 생성 중인 PDF가 있습니다. 완료된 뒤 새로 생성해 주세요"),
     PDF_EXPORT_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 생성이 완료되지 않아 다운로드할 수 없습니다"),
     PDF_EXPORT_EXPIRED(HttpStatus.CONFLICT, "다운로드 보관 기간(7일)이 지나 만료되었습니다. 다시 생성해 주세요"),
     // 429 Too Many Requests
