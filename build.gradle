@@ -108,5 +108,35 @@ dependencyManagement {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		// 렌더 실측 하네스는 무겁고 큰 힙이 필요 → 일반 test/build 에서 제외, pdfBench 로만 실행
+		excludeTags 'bench'
+	}
+}
+
+// PDF 렌더 실측 하네스: ./gradlew pdfBench (사진: -Dpdf.bench.photoDir=<webp 디렉터리>, 규모: -Dpdf.bench.days/photoRatio).
+tasks.register('pdfBench', Test) {
+	group = 'verification'
+	description = 'PDF 렌더 실측 하네스(peak heap · 시간 · CPU). @Tag("bench") 만 실행.'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'bench'
+	}
+	// 기본 2g(peak 관측용). 힙 요구량 탐색 시 -PbenchXmx=512m 등으로 낮춤.
+	maxHeapSize = project.findProperty('benchXmx') ?: '2g'
+	// t3.small(2 vCPU) 경합 재현: -PbenchCpu=2 → JVM 이 가용 코어를 2로 인식(라이트 CPU 스로틀 근사, 코어당 속도는 여전히 dev급)
+	if (project.hasProperty('benchCpu')) {
+		jvmArgs "-XX:ActiveProcessorCount=${project.property('benchCpu')}"
+	}
+	forkEvery = 1
+	maxParallelForks = 1
+	// pdf.bench.* 시스템 프로퍼티를 포크 JVM 으로 전달
+	systemProperties = System.properties.findAll { it.key.toString().startsWith('pdf.bench.') }
+	testLogging {
+		showStandardStreams = true
+		events 'passed', 'failed', 'skipped'
+		exceptionFormat = 'full'
+	}
+	outputs.upToDateWhen { false }
 }
