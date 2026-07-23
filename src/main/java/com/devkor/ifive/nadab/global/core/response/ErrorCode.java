@@ -236,6 +236,7 @@ public enum ErrorCode {
     ASK_CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 세션을 찾을 수 없습니다"),
     ASK_CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 메시지를 찾을 수 없습니다"),
     ASK_CHAT_WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 지갑을 찾을 수 없습니다"),
+    ASK_CHAT_WALLET_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 로그를 찾을 수 없습니다"),
 
     // 400 Bad Request
     ASK_CHAT_TURN_BALANCE_INSUFFICIENT(HttpStatus.BAD_REQUEST, "사용 가능한 Ask Chat 대화권이 없습니다"),

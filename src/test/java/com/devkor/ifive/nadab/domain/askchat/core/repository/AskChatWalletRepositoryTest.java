@@ -65,6 +65,31 @@ class AskChatWalletRepositoryTest extends PostgresIntegrationTestSupport {
     }
 
     @Test
+    void reserve_and_refund_turns() {
+        User user = new UserBuilder(em).build();
+        askChatWalletRepository.save(AskChatWallet.create(user, 1, 1));
+
+        int freeReserved = askChatWalletRepository.tryReserveFreeTurn(user.getId());
+        int secondFreeReserved = askChatWalletRepository.tryReserveFreeTurn(user.getId());
+        int paidReserved = askChatWalletRepository.tryReservePaidTurn(user.getId());
+        int emptyPaidReserved = askChatWalletRepository.tryReservePaidTurn(user.getId());
+        askChatWalletRepository.refundFreeTurn(user.getId());
+        askChatWalletRepository.refundPaidTurn(user.getId());
+
+        em.flush();
+        em.clear();
+
+        AskChatWallet found = askChatWalletRepository.findByUserId(user.getId()).orElseThrow();
+        assertThat(freeReserved).isEqualTo(1);
+        assertThat(secondFreeReserved).isZero();
+        assertThat(paidReserved).isEqualTo(1);
+        assertThat(emptyPaidReserved).isZero();
+        assertThat(found.getFreeTurnBalance()).isEqualTo(1);
+        assertThat(found.getPaidTurnBalance()).isEqualTo(1);
+        assertThat(found.getTotalTurnBalance()).isEqualTo(2);
+    }
+
+    @Test
     void save_and_find_wallet_logs_by_user_id_desc() {
         User user = new UserBuilder(em).build();
         AskChatSession session = AskChatSession.start(user);

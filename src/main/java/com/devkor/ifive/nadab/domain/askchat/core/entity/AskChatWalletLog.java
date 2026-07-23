@@ -109,6 +109,36 @@ public class AskChatWalletLog extends CreatableEntity {
         return log;
     }
 
+    public static AskChatWalletLog createPending(
+            User user,
+            AskChatSession session,
+            AskChatMessage message,
+            int freeTurnDelta,
+            int paidTurnDelta,
+            int freeTurnBalanceAfter,
+            int paidTurnBalanceAfter,
+            AskChatWalletLogReason reason,
+            String refType,
+            Long refId,
+            String idempotencyKey
+    ) {
+        AskChatWalletLog log = create(
+                user,
+                session,
+                message,
+                freeTurnDelta,
+                paidTurnDelta,
+                freeTurnBalanceAfter,
+                paidTurnBalanceAfter,
+                reason,
+                refType,
+                refId,
+                idempotencyKey
+        );
+        log.status = AskChatWalletLogStatus.PENDING;
+        return log;
+    }
+
     private static AskChatWalletLog create(
             User user,
             AskChatSession session,
