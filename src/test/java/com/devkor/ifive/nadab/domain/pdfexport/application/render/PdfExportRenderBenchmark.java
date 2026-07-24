@@ -3,6 +3,11 @@ package com.devkor.ifive.nadab.domain.pdfexport.application.render;
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportType;
 import com.devkor.ifive.nadab.domain.pdfexport.support.PdfSyntheticData;
 import com.devkor.ifive.nadab.global.core.pdf.PdfAssetLoader;
+import com.openhtmltopdf.extend.FSStream;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +16,13 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryPoolMXBean;
 import java.lang.management.MemoryType;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,6 +30,9 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -46,13 +60,25 @@ class PdfExportRenderBenchmark {
     private static final int BACKGROUND_MB = Integer.getInteger("pdf.bench.backgroundMB", 0);
     /** 단일 렌더 결과 PDF 를 이 경로에 write(시각 눈검토용, 측정 X). */
     private static final String DUMP_PDF = System.getProperty("pdf.bench.dumpPdf");
+    /** 지정 시 이 디렉터리의 .ttf(Bold→700·그외 400)로 임베드 폰트 교체(GSUB 제거 A/B용). 미지정이면 번들 Pretendard. */
+    private static final String FONT_DIR = System.getProperty("pdf.bench.fontDir");
+    /** 단일 조합만 -Xmx 브라켓하려는 모드: baos-mem|baos-scratch|file-mem|file-scratch. 지정 시 메인 test 스킵 + 변형 test는 이 조합 1개만 렌더. */
+    private static final String RENDER_MODE = System.getProperty("pdf.bench.renderMode");
+    /** >0 이면 렌더 중 힙이 이 MB 를 처음 넘는 순간 live class histogram 을 1회 캡처(peak 분포 규명). 예: -Dpdf.bench.histoAtMB=600 */
+    private static final int HISTO_AT_MB = Integer.getInteger("pdf.bench.histoAtMB", 0);
 
     private final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
     /** 배경 점유 블록(동시 워크로드 모사). 인스턴스 필드라 테스트 내내 live → 렌더 측정 동안 heap 을 실제로 차지한다. */
     private final List<byte[]> background = new ArrayList<>();
+    /** asset: URI 별 요청 횟수(benchRender 경로) — openhtmltopdf 가 이미지를 몇 번 요청하나(lazy 서빙 가능성 판단). */
+    private final Map<String, Integer> assetRequests = new ConcurrentHashMap<>();
 
     @Test
     void 일년치_단일렌더_실측_3종() throws Exception {
+        if (RENDER_MODE != null && !RENDER_MODE.isBlank()) {
+            System.out.println("[메인 측정] 스킵 — renderMode 브라켓 모드(변형 test가 단일 조합만 렌더)");
+            return;
+        }
         Pipeline pipe = Pipeline.production();
 
         line();
@@ -92,13 +118,13 @@ class PdfExportRenderBenchmark {
         // ── ① peak heap + 단계별 시간(단일 1년치 렌더) ──
         System.out.println("\n[① 단일 1년치 렌더 — peak heap · 단계별 시간]");
         resetHeapPoolPeaks();
-        HeapSampler sampler = HeapSampler.start(memoryBean);
+        HeapSampler sampler = HeapSampler.start(memoryBean, (long) HISTO_AT_MB * 1024 * 1024);
 
         long cpuBefore = processCpuTimeNanos();
         long t0 = System.nanoTime();
         PdfHtmlAssembler.AssembledDocument doc = pipe.assemble(PdfExportType.REPORT_AND_ANSWER, data);
         long t1 = System.nanoTime();
-        byte[] pdf = pipe.renderer.render(doc.xhtml(), doc.inlineAssets());
+        byte[] pdf = renderMeasured(pipe, doc);
         long t2 = System.nanoTime();
         long cpuAfter = processCpuTimeNanos();
 
@@ -126,6 +152,8 @@ class PdfExportRenderBenchmark {
         long settledUsed = memoryBean.getHeapMemoryUsage().getUsed();
         System.out.printf("  post-render 유지(gc 후 live-ish)         : %,d MB  ← 완주 필요 힙은 (이 값 ~ peak) 사이, 결정값은 -PbenchXmx 탐색%n",
                 settledUsed / (1024 * 1024));
+
+        printHistogramIfCaptured(sampler);
 
         // ── ③ CPU(단일) ──
         double wallSec = (t2 - t0) / 1e9;
@@ -157,15 +185,173 @@ class PdfExportRenderBenchmark {
         line();
     }
 
+    /**
+     * A(파일 스트리밍)·scratch(PDFBox 디스크 spill) 레버의 peak 델타를 4조합으로 격리 측정(2g 권장·단일렌더).
+     * -Dpdf.bench.renderVariants=true 로만 실행(기본 pdfBench 는 스킵). 규모는 DAYS/PHOTO_RATIO(worst=366·1.0).
+     * 조합 = 출력 sink(힙 BAOS vs 임시파일) × PDFBox 문서캐시(메모리 기본 vs 디스크 임시파일).
+     */
+    @Test
+    void 렌더_출력_변형_실측_A_scratch() throws Exception {
+        if (!Boolean.getBoolean("pdf.bench.renderVariants")) {
+            System.out.println("[렌더 출력 변형 실측] 스킵(-Dpdf.bench.renderVariants=true 로 활성)");
+            return;
+        }
+        Pipeline pipe = Pipeline.production();
+        preflightPhotos();
+        allocateBackground();
+        warmupOnce(pipe);
+
+        PdfSyntheticData data = PdfSyntheticData.of(END, DAYS, PHOTO_RATIO);
+        PdfHtmlAssembler.AssembledDocument doc = pipe.assemble(PdfExportType.REPORT_AND_ANSWER, data);
+        List<PdfAssetLoader.FontFace> faces = benchFaces(pipe);
+
+        System.out.printf("%n[렌더 출력 변형 실측 — A(파일)·scratch(디스크)] days=%d · photoRatio=%.2f · -Xmx=%,d MB · 배경%d MB · 폰트=%s%n",
+                DAYS, PHOTO_RATIO, Runtime.getRuntime().maxMemory() / (1024 * 1024), BACKGROUND_MB,
+                (FONT_DIR == null || FONT_DIR.isBlank()) ? "번들" : ("fontDir=" + FONT_DIR));
+        System.out.println("  조합            | ★sampler peak | resident(gc후) | wall");
+
+        if (RENDER_MODE != null && !RENDER_MODE.isBlank()) {
+            // 단일 조합만 렌더 → -Xmx 브라켓용(OOM=이진, 노이즈 없음). 완주하면 PASS, 못 들어가면 이 렌더에서 OOM.
+            boolean toFile = RENDER_MODE.startsWith("file");
+            boolean scratch = RENDER_MODE.endsWith("scratch");
+            System.out.printf("  [브라켓 단일] mode=%s (toFile=%b, scratch=%b) · -Xmx=%,d MB%n",
+                    RENDER_MODE, toFile, scratch, Runtime.getRuntime().maxMemory() / (1024 * 1024));
+            renderVariantRow(pipe, doc, faces, RENDER_MODE, toFile, scratch);
+            System.out.println("  → 이 -Xmx 에서 완주하면 그 조합의 peak ≤ -Xmx. OOM 이면 초과. 조합별로 -PbenchXmx 낮춰 floor 비교.");
+            return;
+        }
+
+        renderVariantRow(pipe, doc, faces, "BAOS·mem(현행)", false, false);
+        renderVariantRow(pipe, doc, faces, "BAOS·scratch ", false, true);
+        renderVariantRow(pipe, doc, faces, "file·mem     ", true, false);
+        renderVariantRow(pipe, doc, faces, "file·scratch ", true, true);
+
+        System.out.println("  → BAOS→file 델타 = A(꼬리 스파이크+held), mem→scratch 델타 = PDFBox 디스크 spill. 반드시 2g(언클램프)에서 읽을 것.");
+    }
+
+    private void renderVariantRow(Pipeline pipe, PdfHtmlAssembler.AssembledDocument doc,
+                                  List<PdfAssetLoader.FontFace> faces, String label, boolean toFile, boolean scratch) throws Exception {
+        settle();
+        assetRequests.clear();
+        resetHeapPoolPeaks();
+        HeapSampler sampler = HeapSampler.start(memoryBean);
+        Path tmp = toFile ? Files.createTempFile("pdfbench-", ".pdf") : null;
+        long t0 = System.nanoTime();
+        try (OutputStream sink = toFile ? Files.newOutputStream(tmp) : new ByteArrayOutputStream()) {
+            benchRender(doc.xhtml(), doc.inlineAssets(), pipe, faces, sink, scratch);
+        } finally {
+            if (tmp != null) Files.deleteIfExists(tmp);
+        }
+        long wall = System.nanoTime() - t0;
+        try { sampler.stop(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        settle();
+        long resident = memoryBean.getHeapMemoryUsage().getUsed();
+        System.out.printf("  %s | %,7d MB | %,7d MB | %,7d ms%n",
+                label, sampler.maxUsed() / (1024 * 1024), resident / (1024 * 1024), ms(wall));
+        printAssetRequestSummary();
+    }
+
+    /** 이번 렌더에서 사진 asset(asset:photo-N)이 몇 번 요청됐나 — 1회면 lazy 서빙이 캐시 없이 깔끔, 2회+면 재리샘플/캐시 필요. */
+    private void printAssetRequestSummary() {
+        Map<Integer, Integer> dist = new TreeMap<>();   // 요청횟수 → 그런 사진 장수
+        long total = 0;
+        int distinct = 0;
+        for (Map.Entry<String, Integer> e : assetRequests.entrySet()) {
+            if (e.getKey().contains("photo-")) {
+                distinct++;
+                total += e.getValue();
+                dist.merge(e.getValue(), 1, Integer::sum);
+            }
+        }
+        double avg = distinct == 0 ? 0 : (double) total / distinct;
+        System.out.printf("    └ 사진 asset 요청: 고유 %d장 · 총 %d회 · 평균 %.2f회/장 · 분포(요청수:장수)=%s%n",
+                distinct, total, avg, dist);
+    }
+
+    /** 측정 대상 렌더: fontDir 지정 시 대체 폰트로 benchRender, 아니면 프로덕션 PdfRenderer 그대로(기본 동작 불변). */
+    private byte[] renderMeasured(Pipeline pipe, PdfHtmlAssembler.AssembledDocument doc) throws IOException {
+        if (FONT_DIR == null || FONT_DIR.isBlank()) {
+            return pipe.renderer.render(doc.xhtml(), doc.inlineAssets());
+        }
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        benchRender(doc.xhtml(), doc.inlineAssets(), pipe, benchFaces(pipe), os, false);
+        return os.toByteArray();
+    }
+
+    /** fontDir 의 .ttf(파일명에 bold → 700, 그외 400)로 폰트 페이스 구성. 미지정이면 번들. */
+    private List<PdfAssetLoader.FontFace> benchFaces(Pipeline pipe) throws IOException {
+        if (FONT_DIR == null || FONT_DIR.isBlank()) {
+            return pipe.assets.pretendardFaces();
+        }
+        List<PdfAssetLoader.FontFace> faces = new ArrayList<>();
+        try (var paths = Files.list(Path.of(FONT_DIR))) {
+            for (Path p : paths.filter(x -> x.toString().toLowerCase().endsWith(".ttf")).toList()) {
+                int weight = p.getFileName().toString().toLowerCase().contains("bold") ? 700 : 400;
+                faces.add(new PdfAssetLoader.FontFace(weight, Files.readAllBytes(p)));
+            }
+        }
+        if (faces.isEmpty()) {
+            throw new IllegalStateException("fontDir 에 .ttf 가 없음: " + FONT_DIR);
+        }
+        return faces;
+    }
+
+    /** PdfRenderer.render 를 복제하되 폰트·출력 sink·PDFBox 스크래치를 토글(측정 전용). 프로덕션 PdfRenderer 는 무변경. */
+    private void benchRender(String xhtml, Map<String, byte[]> inlineAssets, Pipeline pipe,
+                             List<PdfAssetLoader.FontFace> faces, OutputStream sink, boolean scratch) throws IOException {
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        for (PdfAssetLoader.FontFace face : faces) {
+            byte[] fontData = face.data();
+            builder.useFont(() -> new ByteArrayInputStream(fontData),
+                    PdfAssetLoader.FONT_FAMILY, face.weight(), BaseRendererBuilder.FontStyle.NORMAL, true);
+        }
+        builder.useProtocolsStreamImplementation(uri -> benchOpenAsset(uri, inlineAssets, pipe), "asset");
+        builder.withHtmlContent(xhtml, "");
+        builder.toStream(sink);
+        if (scratch) {
+            // PDFBox 문서모델을 힙 대신 디스크 임시파일에 spill. usePDDocument 사용 시 close 는 우리 책임.
+            try (PDDocument pdDoc = new PDDocument(IOUtils.createTempFileOnlyStreamCache())) {
+                builder.usePDDocument(pdDoc);
+                builder.run();
+            }
+        } else {
+            builder.run();
+        }
+    }
+
+    private FSStream benchOpenAsset(String uri, Map<String, byte[]> inlineAssets, Pipeline pipe) {
+        assetRequests.merge(uri, 1, Integer::sum);   // openhtmltopdf 가 이 URI 를 몇 번 요청하나 집계
+        String key = uri.substring(uri.indexOf(':') + 1);
+        byte[] resolved;
+        if (key.startsWith("photo-")) {
+            resolved = inlineAssets.get(key);
+        } else if (key.startsWith("shadow-")) {
+            String[] wh = key.substring("shadow-".length()).split("x");
+            resolved = pipe.shadow.bytes(Integer.parseInt(wh[0]), Integer.parseInt(wh[1]));
+        } else {
+            resolved = pipe.assets.assetBytes(key).orElseThrow();
+        }
+        byte[] bytes = resolved;
+        return new FSStream() {
+            @Override public InputStream getStream() { return new ByteArrayInputStream(bytes); }
+            @Override public Reader getReader() { return new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8); }
+        };
+    }
+
     /* ────────────────────────── 렌더 파이프라인(협력자 실객체) ────────────────────────── */
 
     private static final class Pipeline {
         final PdfHtmlAssembler assembler;
         final PdfRenderer renderer;
+        final PdfAssetLoader assets;
+        final PdfShadowRenderer shadow;
 
-        private Pipeline(PdfHtmlAssembler assembler, PdfRenderer renderer) {
+        private Pipeline(PdfHtmlAssembler assembler, PdfRenderer renderer,
+                         PdfAssetLoader assets, PdfShadowRenderer shadow) {
             this.assembler = assembler;
             this.renderer = renderer;
+            this.assets = assets;
+            this.shadow = shadow;
         }
 
         static Pipeline production() throws Exception {
@@ -174,7 +360,7 @@ class PdfExportRenderBenchmark {
             PdfShadowRenderer shadow = new PdfShadowRenderer();
             PdfHtmlAssembler assembler = new PdfHtmlAssembler(assets, new EmotionRadarChartRenderer(), shadow);
             invoke(assembler, "loadCss");
-            return new Pipeline(assembler, new PdfRenderer(assets, shadow));
+            return new Pipeline(assembler, new PdfRenderer(assets, shadow), assets, shadow);
         }
 
         PdfHtmlAssembler.AssembledDocument assemble(PdfExportType type, PdfSyntheticData d) {
@@ -189,35 +375,71 @@ class PdfExportRenderBenchmark {
 
     /* ────────────────────────── 측정 유틸 ────────────────────────── */
 
-    /** 백그라운드 폴링으로 힙 used max 를 추적(풀 peak 과 교차검증). */
+    /** 백그라운드 폴링으로 힙 used max 를 추적(풀 peak 과 교차검증). 옵션: 고수위서 live class histogram 1회 캡처. */
     private static final class HeapSampler {
         private final Thread thread;
         private final AtomicLong max = new AtomicLong(0);
         private volatile boolean running = true;
+        private volatile String histogram;   // histoThreshold 넘는 순간 1회 캡처(peak 분포)
+        private volatile long histogramAtUsed;
 
-        private HeapSampler(MemoryMXBean bean) {
+        private HeapSampler(MemoryMXBean bean, long histoThresholdBytes) {
             this.thread = new Thread(() -> {
                 while (running) {
                     long used = bean.getHeapMemoryUsage().getUsed();
                     max.accumulateAndGet(used, Math::max);
+                    if (histoThresholdBytes > 0 && histogram == null && used >= histoThresholdBytes) {
+                        histogramAtUsed = used;
+                        histogram = gcClassHistogram();  // full GC → live 히스토그램(1회, 이후 재캡처 안 함)
+                    }
                     try { Thread.sleep(0, 500_000); } catch (InterruptedException e) { return; }
                 }
             }, "heap-sampler");
             this.thread.setDaemon(true);
         }
 
-        static HeapSampler start(MemoryMXBean bean) {
-            HeapSampler s = new HeapSampler(bean);
+        static HeapSampler start(MemoryMXBean bean) { return start(bean, 0); }
+
+        static HeapSampler start(MemoryMXBean bean, long histoThresholdBytes) {
+            HeapSampler s = new HeapSampler(bean, histoThresholdBytes);
             s.thread.start();
             return s;
         }
 
         void stop() throws InterruptedException {
             running = false;
-            thread.join(1000);
+            thread.join(2000);   // 히스토그램 캡처(full GC) 여유
         }
 
         long maxUsed() { return max.get(); }
+        String histogram() { return histogram; }
+        long histogramAtUsed() { return histogramAtUsed; }
+    }
+
+    private static void printHistogramIfCaptured(HeapSampler sampler) {
+        String h = sampler.histogram();
+        if (h == null) {
+            if (HISTO_AT_MB > 0) {
+                System.out.printf("  [histogram] 힙이 %d MB 를 안 넘어 미캡처 — -Dpdf.bench.histoAtMB 를 더 낮춰볼 것%n", HISTO_AT_MB);
+            }
+            return;
+        }
+        System.out.printf("%n  ★ peak 분포 (live class histogram @ 힙 %,d MB · full GC 후 live 바이트 · 상위 30) — GC.class_histogram 동일%n",
+                sampler.histogramAtUsed() / (1024 * 1024));
+        h.lines().limit(33).forEach(l -> System.out.println("    " + l));
+    }
+
+    /** 힙이 고수위일 때 live 객체를 클래스별 바이트로(full GC 후). DiagnosticCommand MBean = jcmd GC.class_histogram 과 동일. */
+    private static String gcClassHistogram() {
+        try {
+            javax.management.MBeanServer s = ManagementFactory.getPlatformMBeanServer();
+            javax.management.ObjectName n = new javax.management.ObjectName("com.sun.management:type=DiagnosticCommand");
+            return (String) s.invoke(n, "gcClassHistogram",
+                    new Object[]{ new String[0] },
+                    new String[]{ String[].class.getName() });
+        } catch (Exception e) {
+            return "class histogram 캡처 실패: " + e;
+        }
     }
 
     private record Snapshot(String label, long heapUsed, long nonHeapUsed, long metaspace,
@@ -289,8 +511,12 @@ class PdfExportRenderBenchmark {
         if (BACKGROUND_MB <= 0) {
             return;
         }
-        for (int i = 0; i < BACKGROUND_MB; i++) {
-            byte[] block = new byte[1024 * 1024];
+        // 블록 256KB: G1 humongous 임계(리전 50%=512KB @ 1MB 리전) 미만이라 정상 패킹.
+        // 1MB 블록은 1MB 리전을 넘겨 humongous(2리전)로 잡혀 실제 점유가 2배가 된다.
+        int blockBytes = 256 * 1024;
+        int blocks = BACKGROUND_MB * (1024 * 1024 / blockBytes);
+        for (int i = 0; i < blocks; i++) {
+            byte[] block = new byte[blockBytes];
             java.util.Arrays.fill(block, (byte) ((i & 0x3F) + 1)); // 커밋 강제(0페이지 공유 회피)
             background.add(block);
         }
@@ -364,6 +590,7 @@ class PdfExportRenderBenchmark {
         System.out.printf("  availableProcessors : %d%n", rt.availableProcessors());
         System.out.printf("  -Xmx(maxMemory)     : %,d MB  ← peak 을 읽으려면 넉넉해야 함(2g 권장)%n", rt.maxMemory() / (1024 * 1024));
         System.out.printf("  규모(days=%d, photoRatio=%.2f, concurrent=%b)%n", DAYS, PHOTO_RATIO, RUN_CONCURRENT);
+        System.out.printf("  임베드 폰트         : %s%n", (FONT_DIR == null || FONT_DIR.isBlank()) ? "번들 Pretendard" : ("대체 fontDir=" + FONT_DIR));
         // 사진 소스는 프리플라이트에서 출력(여기선 아직 resolveVariants 전이라 미초기화).
     }
 

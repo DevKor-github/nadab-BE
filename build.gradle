@@ -129,6 +129,16 @@ tasks.register('pdfBench', Test) {
 	if (project.hasProperty('benchCpu')) {
 		jvmArgs "-XX:ActiveProcessorCount=${project.property('benchCpu')}"
 	}
+	// 원인 규명 프로파일링(옵션):
+	//  -PbenchJfr   → JFR allocation 프로파일(build/pdf-render.jfr). 분석: jfr print --events jdk.ObjectAllocationSample --stack-depth 30 build/pdf-render.jfr
+	//  -PbenchGcLog → GC 로그(build/pdf-gc.log). GC 후 live(=floor) vs GC 사이 할당(=churn) 분리용.
+	if (project.hasProperty('benchJfr')) {
+		// %p=PID → JVM 마다 별도 파일(여러 워커가 같은 파일 덮어쓰는 것 방지). 벤치 워커 = 가장 큰 파일.
+		jvmArgs "-XX:StartFlightRecording=settings=profile,filename=${project.buildDir}/pdf-render-%p.jfr,dumponexit=true"
+	}
+	if (project.hasProperty('benchGcLog')) {
+		jvmArgs "-Xlog:gc*,gc+heap=debug:file=${project.buildDir}/pdf-gc.log:time,level,tags"
+	}
 	forkEvery = 1
 	maxParallelForks = 1
 	// pdf.bench.* 시스템 프로퍼티를 포크 JVM 으로 전달
