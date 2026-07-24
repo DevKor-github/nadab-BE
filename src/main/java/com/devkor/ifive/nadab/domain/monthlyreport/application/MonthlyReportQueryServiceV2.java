@@ -155,11 +155,8 @@ public class MonthlyReportQueryServiceV2 {
         MonthlyReportLocatorResponse report = monthlyReportLocatorResolver
                 .findByMonth(userId, range.monthStartDate())
                 .orElse(null);
-        MonthRangeDto previousRange = MonthRangeCalculator.monthRangeOf(
-                range.monthStartDate().minusMonths(1)
-        );
         MonthlyReportLocatorResponse previousReport = monthlyReportLocatorResolver
-                .findCompletedByMonth(userId, previousRange.monthStartDate())
+                .findLatestCompletedBefore(userId, range.monthStartDate())
                 .orElse(null);
 
         return new MyMonthlyReportLookupResponseV2(report, previousReport);

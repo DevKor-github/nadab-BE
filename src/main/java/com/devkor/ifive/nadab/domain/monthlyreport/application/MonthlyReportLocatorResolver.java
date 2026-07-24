@@ -41,6 +41,31 @@ public class MonthlyReportLocatorResolver {
                         .map(this::toLocatorResponse));
     }
 
+    public Optional<MonthlyReportLocatorResponse> findLatestCompletedBefore(Long userId, LocalDate monthStartDate) {
+        Optional<MonthlyReportV2> v2Report = monthlyReportV2Repository
+                .findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                        userId,
+                        MonthlyReportStatus.COMPLETED,
+                        monthStartDate
+                );
+        Optional<MonthlyReport> v1Report = monthlyReportRepository
+                .findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                        userId,
+                        MonthlyReportStatus.COMPLETED,
+                        monthStartDate
+                );
+
+        if (v2Report.isPresent() && v1Report.isPresent()) {
+            if (v2Report.get().getMonthStartDate().isAfter(v1Report.get().getMonthStartDate())) {
+                return v2Report.map(this::toLocatorResponse);
+            }
+            return v1Report.map(this::toLocatorResponse);
+        }
+
+        return v2Report.map(this::toLocatorResponse)
+                .or(() -> v1Report.map(this::toLocatorResponse));
+    }
+
     private MonthlyReportLocatorResponse toLocatorResponse(MonthlyReportV2 report) {
         return new MonthlyReportLocatorResponse(
                 report.getId(),

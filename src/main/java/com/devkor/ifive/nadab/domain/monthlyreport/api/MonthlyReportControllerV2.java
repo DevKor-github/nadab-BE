@@ -159,10 +159,10 @@ public class MonthlyReportControllerV2 {
     @Operation(
             summary = "나의 월간 리포트 조회 V2",
             description = """
-                    사용자의 지난달·지지난달 월간 리포트 위치 정보를 조회합니다. </br>
+                    사용자의 현재 조회 대상 월간 리포트와 존재하는 직전 완료 리포트 위치 정보를 조회합니다. </br>
                     
                     report: 지난달 리포트이며 존재하지 않으면 null입니다. </br>
-                    previousReport: 지지난달 완료 리포트이며 존재하지 않으면 null입니다. </br>
+                    previousReport: 존재하는 직전 완료 리포트이며 존재하지 않으면 null입니다. </br>
                     두 슬롯은 서로 독립적으로 null일 수 있습니다. </br>
                     각 항목은 reportId, version, month, status를 반환합니다. </br>
                     report.status: PENDING | IN_PROGRESS | TEXT_COMPLETED | COMPLETED | FAILED </br>

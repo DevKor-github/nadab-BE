@@ -199,18 +199,18 @@ class MonthlyReportQueryServiceV2Test {
     }
 
     @Test
-    void 현재와_지지난달_월간_리포트_위치_정보를_반환한다() {
+    void 현재와_존재하는_직전_월간_리포트_위치_정보를_반환한다() {
         when(userRepository.existsById(1L)).thenReturn(true);
         LocalDate currentMonth = MonthRangeCalculator.getLastMonthRange().monthStartDate();
-        LocalDate previousMonth = MonthRangeCalculator.getTwoMonthsAgoRange().monthStartDate();
+        LocalDate latestPreviousMonth = currentMonth.minusMonths(2);
         MonthlyReportLocatorResponse current = new MonthlyReportLocatorResponse(
                 20L, 2, currentMonth.getMonthValue(), MonthlyReportStatus.IN_PROGRESS
         );
         MonthlyReportLocatorResponse previous = new MonthlyReportLocatorResponse(
-                10L, 1, previousMonth.getMonthValue(), MonthlyReportStatus.COMPLETED
+                10L, 1, latestPreviousMonth.getMonthValue(), MonthlyReportStatus.COMPLETED
         );
         when(monthlyReportLocatorResolver.findByMonth(1L, currentMonth)).thenReturn(Optional.of(current));
-        when(monthlyReportLocatorResolver.findCompletedByMonth(1L, previousMonth))
+        when(monthlyReportLocatorResolver.findLatestCompletedBefore(1L, currentMonth))
                 .thenReturn(Optional.of(previous));
 
         var response = service.getMyMonthlyReport(1L);
@@ -233,7 +233,7 @@ class MonthlyReportQueryServiceV2Test {
         );
         when(monthlyReportLocatorResolver.findByMonth(1L, LocalDate.of(2026, 1, 1)))
                 .thenReturn(Optional.of(current));
-        when(monthlyReportLocatorResolver.findCompletedByMonth(1L, LocalDate.of(2025, 12, 1)))
+        when(monthlyReportLocatorResolver.findLatestCompletedBefore(1L, LocalDate.of(2026, 1, 1)))
                 .thenReturn(Optional.of(previous));
 
         var response = service.getMyMonthlyReport(1L, january);
