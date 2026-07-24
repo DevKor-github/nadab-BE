@@ -19,11 +19,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 
+import org.junit.jupiter.api.AfterEach;
+
 import java.awt.Color;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +59,6 @@ class PdfExportGenerationListenerTest {
     private static final String RESULT_KEY = "local/pdf-exports/7/abcd-uuid.pdf";
     private static final LocalDate START = LocalDate.parse("2026-01-01");
     private static final LocalDate END = LocalDate.parse("2026-01-31");
-    private static final byte[] PDF_BYTES = "%PDF-1.4 rendered".getBytes();
     private static final String XHTML = "<html/>";
     private static final PdfExportRequestedEventDto EVENT =
             new PdfExportRequestedEventDto(JOB_ID, USER_ID, CRYSTAL_LOG_ID);
@@ -68,8 +72,11 @@ class PdfExportGenerationListenerTest {
     private ApplicationEventPublisher eventPublisher;
     private PdfExportGenerationListener listener;
 
+    /** 렌더러가 반환하는 결과 임시파일(리스너가 업로드 후 삭제한다). */
+    private Path pdfFile;
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         jobRepository = mock(PdfExportJobRepository.class);
         queryRepository = mock(PdfExportQueryRepository.class);
         assembler = mock(PdfHtmlAssembler.class);
@@ -78,13 +85,21 @@ class PdfExportGenerationListenerTest {
         txService = mock(PdfExportTxService.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
 
+        pdfFile = Files.createTempFile("test-pdf-export-", ".pdf");
+        Files.write(pdfFile, "%PDF-1.4 rendered".getBytes());
+
         // 기본 해피패스 스텁(각 테스트에서 필요 시 덮어씀).
         when(assembler.assemble(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PdfHtmlAssembler.AssembledDocument(XHTML, Map.of()));
-        when(renderer.render(any(), any())).thenReturn(PDF_BYTES);
+        when(renderer.render(any(), any())).thenReturn(pdfFile);
 
         listener = new PdfExportGenerationListener(
                 jobRepository, queryRepository, assembler, renderer, storage, txService, eventPublisher);
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        Files.deleteIfExists(pdfFile);
     }
 
     @Test
@@ -105,7 +120,7 @@ class PdfExportGenerationListenerTest {
         verify(queryRepository, never()).findMonthlyReportsV2InPeriod(anyLong(), any(), any());
 
         // job 결과 키로 업로드 + 파일명 2종(한글·ASCII 폴백) 각인.
-        verify(storage).upload(RESULT_KEY, PDF_BYTES,
+        verify(storage).upload(RESULT_KEY, pdfFile,
                 "나답_나에게답하다_20260101-20260131.pdf",
                 "nadab_20260101-20260131.pdf");
 
@@ -133,9 +148,21 @@ class PdfExportGenerationListenerTest {
         verify(queryRepository).findMonthlyReportsV2InPeriod(USER_ID, START, END);
         verify(queryRepository, never()).findAnswersInPeriod(anyLong(), any(), any());
 
-        verify(storage).upload(eq(RESULT_KEY), eq(PDF_BYTES), any(), any());
+        verify(storage).upload(eq(RESULT_KEY), eq(pdfFile), any(), any());
         verify(txService).confirm(JOB_ID, CRYSTAL_LOG_ID);
         verify(eventPublisher).publishEvent(any(PdfExportCompletedEvent.class));
+    }
+
+    @Test
+    void 렌더결과_임시파일은_업로드후_삭제된다() {
+        givenJob(PdfExportType.ANSWER_ONLY);
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
+        assertThat(Files.exists(pdfFile)).isTrue();
+
+        listener.handle(EVENT);
+
+        // 업로드 성공 후 로컬 임시파일은 남기지 않는다(finally 정리).
+        assertThat(Files.exists(pdfFile)).isFalse();
     }
 
     @Test

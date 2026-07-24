@@ -26,6 +26,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +63,7 @@ public class PdfExportGenerationListener {
         Long userId = event.userId();
         Long crystalLogId = event.crystalLogId();
 
+        Path pdfFile = null;
         try {
             // ── 1) 짧은 조회들 (각자 자기 트랜잭션 → 커넥션 즉시 반납). 리포트 엔티티는 detached ──
             //     이후 LAZY user 접근 금지(jsonb content·emotionStats는 컬럼이라 로드됨). 조회는 컬럼만 쓴다.
@@ -87,10 +91,10 @@ public class PdfExportGenerationListener {
             // ── 2) Tx/커넥션 밖: 무거운 렌더(S3 사진 디코드·차트·HTML·PDF) ──
             PdfHtmlAssembler.AssembledDocument doc =
                     assembler.assemble(type, answers, weeklies, monthlies, monthlyV2s, this::resolvePhoto);
-            byte[] pdf = renderer.render(doc.xhtml(), doc.inlineAssets());
+            pdfFile = renderer.render(doc.xhtml(), doc.inlineAssets());
 
             // ── 3) 업로드(파일명 Content-Disposition 각인) → 완료 확정(markCompleted·completed_at·dedup 자동) ──
-            storage.upload(resultKey, pdf,
+            storage.upload(resultKey, pdfFile,
                     PdfExportFileNames.downloadFileName(job),
                     PdfExportFileNames.asciiFallbackFileName(job));
             txService.confirm(jobId, crystalLogId);
@@ -103,6 +107,20 @@ public class PdfExportGenerationListener {
             // error_code엔 안전한 ErrorCode enum 이름만 저장 — 예외 메시지·스택은 클라(getStatus)에 노출 금지.
             log.error("[PDF_EXPORT][GENERATION_FAILED] jobId={}, userId={}", jobId, userId, e);
             txService.failAndRefund(userId, jobId, crystalLogId, ErrorCode.PDF_EXPORT_GENERATION_FAILED.name());
+        } finally {
+            // 업로드 성공·실패 무관 로컬 임시파일 정리(S3에 올라간 뒤엔 불필요, 실패 시엔 잔여 제거).
+            if (pdfFile != null) {
+                deleteQuietly(pdfFile);
+            }
+        }
+    }
+
+    /** 결과 임시파일 삭제(실패해도 삼킨다). */
+    private void deleteQuietly(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            log.warn("[PDF_EXPORT] 결과 임시파일 삭제 실패: {}", file, e);
         }
     }
 

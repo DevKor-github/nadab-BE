@@ -5,15 +5,20 @@ import com.openhtmltopdf.extend.FSStream;
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -21,7 +26,9 @@ import java.util.Map;
  * 레이더·하이라이트는 data URI(1회/고유)지만, 반복 baked 에셋(배너·divider·아이콘·로고·섹션·그림자)과 답변 사진은
  * asset: 프로토콜로 서빙한다 — 어셈블러가 asset:키 토큰만 박고, 여기 스트림 팩토리가 바이트를 준다.
  * 반복 에셋은 URI 캐시로 1회만 디코드되고, 답변 사진은 고유라 캐시는 없지만 XHTML 에 base64 로 인라인되지 않는다.
+ * 결과 PDF는 힙 대신 임시파일로 스트리밍하고, PDFBox 문서모델도 디스크 임시파일에 둔다(힙 사용 감축).
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class PdfRenderer {
@@ -29,9 +36,21 @@ public class PdfRenderer {
     private final PdfAssetLoader assets;
     private final PdfShadowRenderer shadows;
 
-    /** inlineAssets = 답변 사진 애셋 맵(asset:photo-N → JPEG 바이트, 어셈블러가 렌더별로 채움). 사진 없으면 빈 맵. */
-    public byte[] render(String xhtml, Map<String, byte[]> inlineAssets) {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+    /**
+     * inlineAssets = 답변 사진 애셋 맵(asset:photo-N → JPEG 바이트, 어셈블러가 렌더별로 채움). 사진 없으면 빈 맵.
+     * 결과는 임시파일 Path — 호출부가 업로드 후 삭제 책임을 진다. 렌더 실패 시 여기서 임시파일을 지우고 던진다.
+     */
+    public Path render(String xhtml, Map<String, byte[]> inlineAssets) {
+        Path pdfFile;
+        try {
+            pdfFile = Files.createTempFile("pdf-export-", ".pdf");
+        } catch (IOException e) {
+            throw new IllegalStateException("PDF 임시파일 생성 실패", e);
+        }
+        boolean rendered = false;
+        // PDFBox 문서모델을 힙 대신 디스크 임시파일에 둔다(createTempFileOnlyStreamCache). usePDDocument 사용 시 close 는 우리 책임.
+        try (OutputStream os = Files.newOutputStream(pdfFile);
+             PDDocument pdDocument = new PDDocument(IOUtils.createTempFileOnlyStreamCache())) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             for (PdfAssetLoader.FontFace face : assets.pretendardFaces()) {
                 byte[] data = face.data();
@@ -42,10 +61,25 @@ public class PdfRenderer {
             builder.useProtocolsStreamImplementation(uri -> openAsset(uri, inlineAssets), "asset");
             builder.withHtmlContent(xhtml, "");
             builder.toStream(os);
+            builder.usePDDocument(pdDocument);
             builder.run();
-            return os.toByteArray();
+            rendered = true;
+            return pdfFile;
         } catch (IOException e) {
             throw new IllegalStateException("PDF 렌더 실패", e);
+        } finally {
+            if (!rendered) {
+                deleteQuietly(pdfFile);
+            }
+        }
+    }
+
+    /** 임시파일 삭제(실패해도 삼킨다). 렌더 실패 정리·크래시 잔여 대비. */
+    private void deleteQuietly(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            log.warn("PDF 임시파일 삭제 실패: {}", file, e);
         }
     }
 

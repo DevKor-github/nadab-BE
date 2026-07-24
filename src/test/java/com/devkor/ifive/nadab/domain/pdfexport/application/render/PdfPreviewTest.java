@@ -26,9 +26,12 @@ import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -72,11 +75,19 @@ class PdfPreviewTest {
                 sampleMonthlyV2s(),
                 photoResolver);
 
-        byte[] pdf = renderer.render(doc.xhtml(), doc.inlineAssets());
+        Path pdfFile = renderer.render(doc.xhtml(), doc.inlineAssets());
 
-        // 전체 파이프라인이 예외 없이 돌고 유효한 PDF 헤더의 바이트를 만든다(디자인 충실도가 아니라 "렌더가 깨지지 않음"을 지킴).
-        assertThat(pdf).hasSizeGreaterThan(1000);
-        assertThat(new String(pdf, 0, 5, StandardCharsets.ISO_8859_1)).startsWith("%PDF-");
+        // 전체 파이프라인이 예외 없이 돌고 유효한 PDF 헤더의 파일을 만든다(디자인 충실도가 아니라 "렌더가 깨지지 않음"을 지킴).
+        try {
+            assertThat(Files.size(pdfFile)).isGreaterThan(1000);
+            byte[] header = new byte[5];
+            try (InputStream in = Files.newInputStream(pdfFile)) {
+                in.readNBytes(header, 0, 5);
+            }
+            assertThat(new String(header, StandardCharsets.ISO_8859_1)).startsWith("%PDF-");
+        } finally {
+            Files.deleteIfExists(pdfFile);
+        }
     }
 
     /* ── 답변 (합성 5건 — 긴/짧은·사진 有/無·관심사 "관계" 커버) ── */

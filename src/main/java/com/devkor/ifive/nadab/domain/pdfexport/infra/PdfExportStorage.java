@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -66,8 +67,11 @@ public class PdfExportStorage {
         return "%s/pdf-exports/%d/%s.pdf".formatted(env, userId, UUID.randomUUID());
     }
 
-    /** 파일명 Content-Disposition을 업로드 시 각인한다 — CloudFront signed URL은 발급 시 헤더를 못 싣기 때문. */
-    public void upload(String key, byte[] pdfBytes, String downloadFilename, String asciiFallbackFilename) {
+    /**
+     * 파일명 Content-Disposition을 업로드 시 각인한다 — CloudFront signed URL은 발급 시 헤더를 못 싣기 때문.
+     * PDF는 임시파일에서 스트리밍 업로드한다(힙에 전체 바이트를 올리지 않는다).
+     */
+    public void upload(String key, Path pdfFile, String downloadFilename, String asciiFallbackFilename) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
@@ -75,7 +79,7 @@ public class PdfExportStorage {
                 .contentDisposition(buildContentDisposition(downloadFilename, asciiFallbackFilename))
                 .build();
 
-        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(pdfBytes));
+        s3Client.putObject(putObjectRequest, RequestBody.fromFile(pdfFile));
     }
 
     /** 답변 사진 원본 바이트(리스너 렌더용, 전체 객체 키). 무거운 I/O라 Tx/커넥션 밖에서 호출. */

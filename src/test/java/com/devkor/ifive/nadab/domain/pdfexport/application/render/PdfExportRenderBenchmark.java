@@ -23,10 +23,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,7 +110,9 @@ class PdfExportRenderBenchmark {
         // ── 워밍업: JIT·metaspace·code cache 안정화(작은 규모 1회, 측정값 오염 방지) ──
         System.out.println("\n[워밍업] 소규모 렌더 1회(측정 제외)…");
         PdfSyntheticData warm = PdfSyntheticData.of(END, Math.min(14, DAYS), PHOTO_RATIO);
-        assertThat(pipe.render(PdfExportType.REPORT_AND_ANSWER, warm)).hasSizeGreaterThan(1000);
+        Path warmPdf = pipe.render(PdfExportType.REPORT_AND_ANSWER, warm);
+        assertThat(fileSize(warmPdf)).isGreaterThan(1000);
+        deleteQuietly(warmPdf);
         warm = null; // 워밍업 데이터가 1년치 측정 중 힙에 남지 않도록(합성 모드의 변이 PNG 오염 제거)
         settle();
 
@@ -124,15 +128,16 @@ class PdfExportRenderBenchmark {
         long t0 = System.nanoTime();
         PdfHtmlAssembler.AssembledDocument doc = pipe.assemble(PdfExportType.REPORT_AND_ANSWER, data);
         long t1 = System.nanoTime();
-        byte[] pdf = renderMeasured(pipe, doc);
+        Path pdf = renderMeasured(pipe, doc);
         long t2 = System.nanoTime();
         long cpuAfter = processCpuTimeNanos();
 
         sampler.stop();
         long heapPoolPeak = heapPoolPeakBytes();
 
-        assertThat(new String(pdf, 0, 5, StandardCharsets.ISO_8859_1)).startsWith("%PDF-");
+        assertThat(pdfHeader(pdf)).startsWith("%PDF-");
         dumpPdfIfRequested(pdf);
+        long pdfSize = fileSize(pdf);
 
         System.out.printf("  답변 %d · 주간 %d · 월간V2 %d · 사진 %d장%n",
                 data.answers().size(), data.weeklies().size(), data.monthlyV2s().size(),
@@ -142,12 +147,13 @@ class PdfExportRenderBenchmark {
         System.out.printf("  전체 렌더 wall                        : %,d ms%n", ms(t2 - t0));
         System.out.printf("  XHTML 길이                            : %,d chars (사진 asset: 서빙이라 XHTML 엔 base64 없음 — 텍스트/토큰만)%n", doc.xhtml().length());
         System.out.printf("  사진 asset 수(= 인라인 맵 크기)         : %,d장 (raw JPEG 바이트로 상주, base64/UTF-16 인플레이션 없음)%n", doc.inlineAssets().size());
-        System.out.printf("  결과 PDF 크기                         : %,d bytes (%,d KB)%n", pdf.length, pdf.length / 1024);
+        System.out.printf("  결과 PDF 크기                         : %,d bytes (%,d KB)%n", pdfSize, pdfSize / 1024);
+        deleteQuietly(pdf); // PDF 는 파일에 있고 힙엔 없다(A) → 이후 resident 는 doc(xhtml+asset맵)만 반영
         System.out.printf("  ★ peak heap(샘플러 max, ★신뢰지표)      : %,d bytes (%,d MB)%n", sampler.maxUsed(), sampler.maxUsed() / (1024 * 1024));
         System.out.printf("  peak heap(풀별 peak 합산, ⚠과다계상)    : %,d bytes (%,d MB) — Eden/Survivor/Old 의 서로 다른 시점 peak 합이라 -Xmx 초과 가능(참고만)%n",
                 heapPoolPeak, heapPoolPeak / (1024 * 1024));
 
-        // xhtml·pdf·data 를 여전히 붙든 채 gc → 렌더 종료 시점의 live-ish 유지량(peak 의 미수집 쓰레기 제외한 하한).
+        // xhtml·data(asset맵) 를 여전히 붙든 채 gc → 렌더 종료 시점의 live-ish 유지량(PDF 는 파일이라 힙에 없음, peak 의 미수집 쓰레기 제외한 하한).
         settle();
         long settledUsed = memoryBean.getHeapMemoryUsage().getUsed();
         System.out.printf("  post-render 유지(gc 후 live-ish)         : %,d MB  ← 완주 필요 힙은 (이 값 ~ peak) 사이, 결정값은 -PbenchXmx 탐색%n",
@@ -268,14 +274,17 @@ class PdfExportRenderBenchmark {
                 distinct, total, avg, dist);
     }
 
-    /** 측정 대상 렌더: fontDir 지정 시 대체 폰트로 benchRender, 아니면 프로덕션 PdfRenderer 그대로(기본 동작 불변). */
-    private byte[] renderMeasured(Pipeline pipe, PdfHtmlAssembler.AssembledDocument doc) throws IOException {
+    /** 측정 대상 렌더: fontDir 지정 시 대체 폰트로 benchRender, 아니면 프로덕션 PdfRenderer 그대로(기본 동작 불변). 결과는 임시파일 Path. */
+    private Path renderMeasured(Pipeline pipe, PdfHtmlAssembler.AssembledDocument doc) throws IOException {
         if (FONT_DIR == null || FONT_DIR.isBlank()) {
             return pipe.renderer.render(doc.xhtml(), doc.inlineAssets());
         }
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        benchRender(doc.xhtml(), doc.inlineAssets(), pipe, benchFaces(pipe), os, false);
-        return os.toByteArray();
+        // fontDir A/B: 대체 폰트로 benchRender, 결과를 임시파일로(힙에 PDF 안 올림 — 측정 오염 방지).
+        Path pdfFile = Files.createTempFile("pdfbench-font-", ".pdf");
+        try (OutputStream os = Files.newOutputStream(pdfFile)) {
+            benchRender(doc.xhtml(), doc.inlineAssets(), pipe, benchFaces(pipe), os, false);
+        }
+        return pdfFile;
     }
 
     /** fontDir 의 .ttf(파일명에 bold → 700, 그외 400)로 폰트 페이스 구성. 미지정이면 번들. */
@@ -367,9 +376,37 @@ class PdfExportRenderBenchmark {
             return assembler.assemble(type, d.answers(), d.weeklies(), d.monthlies(), d.monthlyV2s(), d.photoResolver());
         }
 
-        byte[] render(PdfExportType type, PdfSyntheticData d) {
+        Path render(PdfExportType type, PdfSyntheticData d) {
             PdfHtmlAssembler.AssembledDocument doc = assemble(type, d);
             return renderer.render(doc.xhtml(), doc.inlineAssets());
+        }
+    }
+
+    /* PDF 는 임시파일로 나오므로(A: 힙에 안 올림) 크기·헤더는 파일에서 확인하고 측정 후 삭제한다. */
+
+    private static long fileSize(Path p) {
+        try {
+            return Files.size(p);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static String pdfHeader(Path p) {
+        try (InputStream in = Files.newInputStream(p)) {
+            byte[] b = new byte[5];
+            int n = in.readNBytes(b, 0, 5);
+            return new String(b, 0, n, StandardCharsets.ISO_8859_1);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void deleteQuietly(Path p) {
+        try {
+            Files.deleteIfExists(p);
+        } catch (IOException ignored) {
+            // 벤치 임시파일 — 삭제 실패해도 무시
         }
     }
 
@@ -527,8 +564,9 @@ class PdfExportRenderBenchmark {
 
     /** 첫 행 JIT 콜드 완화용 소규모 워밍업 1회(측정 제외). */
     private void warmupOnce(Pipeline pipe) {
-        assertThat(pipe.render(PdfExportType.REPORT_AND_ANSWER, PdfSyntheticData.of(END, Math.min(14, DAYS), 1.0)))
-                .hasSizeGreaterThan(1000);
+        Path warmPdf = pipe.render(PdfExportType.REPORT_AND_ANSWER, PdfSyntheticData.of(END, Math.min(14, DAYS), 1.0));
+        assertThat(fileSize(warmPdf)).isGreaterThan(1000);
+        deleteQuietly(warmPdf);
         settle();
     }
 
@@ -542,16 +580,17 @@ class PdfExportRenderBenchmark {
         HeapSampler sampler = HeapSampler.start(memoryBean);
         long t0 = System.nanoTime();
         PdfHtmlAssembler.AssembledDocument doc = pipe.assemble(PdfExportType.REPORT_AND_ANSWER, data);
-        byte[] pdf = pipe.renderer.render(doc.xhtml(), doc.inlineAssets());
+        Path pdf = pipe.renderer.render(doc.xhtml(), doc.inlineAssets());
         long wall = System.nanoTime() - t0;
         try {
             sampler.stop();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        assertThat(pdf).hasSizeGreaterThan(1000);
+        assertThat(fileSize(pdf)).isGreaterThan(1000);
+        deleteQuietly(pdf); // PDF 는 파일(A) → resident 는 doc(xhtml+asset맵)만
 
-        // live = xhtml·data·pdf 를 붙든 채 gc → 렌더 종료 resident. ★xhtml 을 null 하지 않는다.
+        // live = xhtml·data(asset맵) 를 붙든 채 gc → 렌더 종료 resident. ★xhtml 을 null 하지 않는다.
         settle();
         long live = memoryBean.getHeapMemoryUsage().getUsed();
         int xhtmlLen = doc.xhtml().length(); // gc 이후 doc 사용 → live 에 XHTML+사진 애셋맵 포함 보장
@@ -567,11 +606,13 @@ class PdfExportRenderBenchmark {
                     .mapToObj(i -> PdfSyntheticData.of(END.minusDays(i), DAYS, PHOTO_RATIO))
                     .toList();
             long t0 = System.nanoTime();
-            List<Future<byte[]>> futures = datasets.stream()
+            List<Future<Path>> futures = datasets.stream()
                     .map(d -> pool.submit(() -> pipe.render(PdfExportType.REPORT_AND_ANSWER, d)))
                     .toList();
-            for (Future<byte[]> f : futures) {
-                assertThat(f.get()).hasSizeGreaterThan(1000);
+            for (Future<Path> f : futures) {
+                Path p = f.get();
+                assertThat(fileSize(p)).isGreaterThan(1000);
+                deleteQuietly(p);
             }
             long wall = System.nanoTime() - t0;
             System.out.printf("  %d개 동시 렌더 전체 wall : %,d ms (동시성 %d, 가용 코어 %d)%n",
@@ -651,7 +692,7 @@ class PdfExportRenderBenchmark {
     }
 
     /** -Dpdf.bench.dumpPdf 지정 시 결과 PDF 를 파일로 써서 배너·divider·그림자·아이콘·레이더 회귀를 눈으로 확인하게 한다. */
-    private static void dumpPdfIfRequested(byte[] pdf) throws IOException {
+    private static void dumpPdfIfRequested(Path pdf) throws IOException {
         if (DUMP_PDF == null || DUMP_PDF.isBlank()) {
             return;
         }
@@ -659,9 +700,9 @@ class PdfExportRenderBenchmark {
         if (out.getParent() != null) {
             Files.createDirectories(out.getParent());
         }
-        Files.write(out, pdf);
+        Files.copy(pdf, out, StandardCopyOption.REPLACE_EXISTING);
         System.out.printf("%n  ★ PDF 덤프 → %s (%,d KB) — 열어서 배너 라운드코너·divider·그림자·아이콘·레이더 눈검토%n",
-                out.toAbsolutePath(), pdf.length / 1024);
+                out.toAbsolutePath(), fileSize(out) / 1024);
     }
 
     private static void settle() {
