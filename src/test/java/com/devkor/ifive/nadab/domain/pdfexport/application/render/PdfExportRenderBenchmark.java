@@ -121,13 +121,22 @@ class PdfExportRenderBenchmark {
 
         // ── ① peak heap + 단계별 시간(단일 1년치 렌더) ──
         System.out.println("\n[① 단일 1년치 렌더 — peak heap · 단계별 시간]");
-        resetHeapPoolPeaks();
-        HeapSampler sampler = HeapSampler.start(memoryBean, (long) HISTO_AT_MB * 1024 * 1024);
-
         long cpuBefore = processCpuTimeNanos();
+
+        // assemble 단계 peak 를 별도로 잰다 → floor 가 디코드(assemble)냐 레이아웃(렌더)이냐 판정용.
+        resetHeapPoolPeaks();
+        HeapSampler asmSampler = HeapSampler.start(memoryBean);
         long t0 = System.nanoTime();
         PdfHtmlAssembler.AssembledDocument doc = pipe.assemble(PdfExportType.REPORT_AND_ANSWER, data);
         long t1 = System.nanoTime();
+        asmSampler.stop();
+        // ★ 이 줄이 낮은 -Xmx OOM 때 "assemble 완료" 마커 — 안 찍히면 assemble-bound, 찍히면 렌더-bound.
+        System.out.printf("%n  [phase] assemble 완료 · assemble peak(sampler) = %,d MB · 진입 heap = %,d MB%n",
+                asmSampler.maxUsed() / (1024 * 1024), memoryBean.getHeapMemoryUsage().getUsed() / (1024 * 1024));
+
+        // 렌더 단계 peak(히스토그램 캡처는 렌더에서만).
+        resetHeapPoolPeaks();
+        HeapSampler sampler = HeapSampler.start(memoryBean, (long) HISTO_AT_MB * 1024 * 1024);
         Path pdf = renderMeasured(pipe, doc);
         long t2 = System.nanoTime();
         long cpuAfter = processCpuTimeNanos();

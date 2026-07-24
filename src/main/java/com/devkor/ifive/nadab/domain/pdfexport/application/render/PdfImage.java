@@ -2,8 +2,11 @@ package com.devkor.ifive.nadab.domain.pdfexport.application.render;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -12,6 +15,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * 답변 사진 렌더 유틸(정중앙 정사각 크롭 + 리샘플 → JPEG 바이트). openhtmltopdf가 object-fit/aspect-ratio 미지원이라 여기서 굽는다.
@@ -29,13 +33,37 @@ public final class PdfImage {
      */
     public static byte[] coverSquareJpegBytes(byte[] source, int size) {
         try {
-            BufferedImage src = ImageIO.read(new ByteArrayInputStream(source));
-            if (src == null) {
-                throw new IOException("이미지 디코드 실패(지원하지 않는 포맷)");
-            }
+            BufferedImage src = decodeSubsampled(source, size);
             return encodeJpeg(coverSquare(src, size));
         } catch (IOException e) {
             throw new IllegalStateException("답변 사진 렌더 실패", e);
+        }
+    }
+
+    /**
+     * size 이상 해상도로만 축소되게 서브샘플링(=짧은변/size)해 디코드 — 큰 원본을 힙에 통째로 안 올린다.
+     * 리더가 서브샘플링을 무시하면 풀디코드로 폴백(출력·안전 동일, 메모리 이득만 없음).
+     */
+    private static BufferedImage decodeSubsampled(byte[] source, int size) throws IOException {
+        try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(source))) {
+            if (iis == null) {
+                throw new IOException("이미지 스트림 생성 실패");
+            }
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+            if (!readers.hasNext()) {
+                throw new IOException("이미지 디코드 실패(지원하지 않는 포맷)");
+            }
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(iis, true, true);
+                int shorter = Math.min(reader.getWidth(0), reader.getHeight(0));
+                int subsample = Math.max(1, shorter / size);
+                ImageReadParam param = reader.getDefaultReadParam();
+                param.setSourceSubsampling(subsample, subsample, 0, 0);
+                return reader.read(0, param);
+            } finally {
+                reader.dispose();
+            }
         }
     }
 
