@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +43,22 @@ public interface PdfExportJobRepository extends JpaRepository<PdfExportJob, Long
     Optional<PdfExportJob> findActiveJob(
             @Param("userId") Long userId,
             @Param("statuses") Collection<PdfExportStatus> statuses
+    );
+
+    /**
+     * 복구 스윕: 오래 진행 중인 채로 멈춰 있는 작업. updatedAt은 startProcessing이 찍은 큐 진입 시각이다.
+     * PENDING은 안 본다. reserveAndPublish가 한 트랜잭션에서 IN_PROGRESS까지 바꾸므로 커밋된 PENDING 행은 없다.
+     */
+    @Query("""
+        SELECT j FROM PdfExportJob j
+         WHERE j.status = com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportStatus.IN_PROGRESS
+           AND j.updatedAt < :threshold
+         ORDER BY j.updatedAt ASC
+         LIMIT :limit
+    """)
+    List<PdfExportJob> findStuckInProgress(
+            @Param("threshold") OffsetDateTime threshold,
+            @Param("limit") int limit
     );
 
     /**

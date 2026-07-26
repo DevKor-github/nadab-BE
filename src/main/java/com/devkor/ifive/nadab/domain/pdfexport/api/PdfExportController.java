@@ -201,6 +201,9 @@ public class PdfExportController {
                     - IN_PROGRESS: 생성 진행 중 </br>
                     - COMPLETED: 생성 완료. expiresAt(다운로드 보관 만료 = 완료 + 7일)와 expired(만료 여부)가 포함됩니다. expired=true면 보관 기간이 지나 다운로드가 불가하므로 재생성이 필요합니다. </br>
                     - FAILED: 생성 실패(errorCode 포함). 차감된 크리스탈은 자동 환불되므로, 잔액을 표시 중이면 다시 조회해 갱신하세요. </br>
+                    FAILED일 때 errorCode 값(둘 다 자동 환불됨): </br>
+                    - PDF_EXPORT_GENERATION_FAILED: 생성 도중 오류로 실패 </br>
+                    - PDF_EXPORT_GENERATION_TIMEOUT: 생성이 60분 안에 끝나지 않아 자동 취소(배포·서버 재시작 등으로 작업이 유실된 경우) </br>
                     다운로드 URL은 이 응답에 포함되지 않습니다. COMPLETED가 된 뒤 POST /pdf-exports/{jobId}/download-url 로 발급받으세요(발급 빈도 제한이 폴링에 영향을 주지 않도록 분리되어 있습니다).
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),

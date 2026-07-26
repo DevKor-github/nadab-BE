@@ -475,6 +475,7 @@ public enum ErrorCode {
     PDF_EXPORT_SERVER_BUSY(HttpStatus.TOO_MANY_REQUESTS, "생성 요청이 몰려 있어 지금은 접수할 수 없습니다. 잠시 후 다시 시도해 주세요"),
     // 500 Internal Server Error
     PDF_EXPORT_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PDF 생성에 실패했습니다. 차감된 크리스탈은 자동 환불됩니다"),
+    PDF_EXPORT_GENERATION_TIMEOUT(HttpStatus.INTERNAL_SERVER_ERROR, "시간 내에 생성이 완료되지 않아 취소되었습니다. 차감된 크리스탈은 자동 환불됩니다"),
 
     // ==================== ADMIN (어드민) ====================
     // 401 Unauthorized
