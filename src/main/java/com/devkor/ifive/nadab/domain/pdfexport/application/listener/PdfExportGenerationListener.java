@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -111,6 +112,7 @@ public class PdfExportGenerationListener {
                     this::skipPhoto,
                     PHOTO_DOWNLOAD_THREADS, PHOTO_PREFETCH_WINDOW);
             photoCount = photos.size();
+            requirePhotosWhenExpected(imageKeys, photos);
 
             PdfHtmlAssembler.AssembledDocument doc = assembler.assemble(type, answers, weeklies, monthlies,
                     monthlyV2s, key -> Optional.ofNullable(photos.get(key)));
@@ -149,6 +151,14 @@ public class PdfExportGenerationListener {
             Files.deleteIfExists(file);
         } catch (IOException e) {
             log.warn("[PDF_EXPORT] 결과 임시파일 삭제 실패: {}", file, e);
+        }
+    }
+
+    /** 사진이 실려야 하는데 한 장도 준비되지 못했으면 job 실패(기존 catch 가 환불까지 처리). 일부 실패는 스킵으로 둔다 */
+    private void requirePhotosWhenExpected(List<String> imageKeys, Map<String, byte[]> photos) {
+        boolean expected = imageKeys.stream().anyMatch(Objects::nonNull);
+        if (expected && photos.isEmpty()) {
+            throw new IllegalStateException("답변 사진을 한 장도 준비하지 못했습니다(요청 " + imageKeys.size() + "건)");
         }
     }
 

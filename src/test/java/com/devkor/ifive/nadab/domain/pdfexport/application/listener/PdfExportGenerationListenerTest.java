@@ -106,12 +106,13 @@ class PdfExportGenerationListenerTest {
     }
 
     @Test
-    void 답변만_답변만조회하고_렌더파일을_업로드_확정_완료이벤트() {
+    void 답변만_답변만조회하고_렌더파일을_업로드_확정_완료이벤트() throws Exception {
         givenJob(PdfExportType.ANSWER_ONLY);
         List<PdfAnswerRowDto> answers = List.of(
                 answer("2026-01-05", "오늘 가장 고마웠던 순간은?", null),
                 answer("2026-01-12", "지금 마음의 온도는?", "answers/7/photo.webp"));
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(answers);
+        when(storage.download("answers/7/photo.webp")).thenReturn(syntheticPhotoBytes());
 
         listener.handle(EVENT);
 
@@ -231,6 +232,36 @@ class PdfExportGenerationListenerTest {
         // 실패한 사진은 맵에 없어 그 자리만 생략된다(나머지는 정상 렌더·업로드·확정).
         assertThat(photos.apply("answers/7/broken.webp")).isEmpty();
         verify(txService).confirm(JOB_ID, CRYSTAL_LOG_ID);
+    }
+
+    @Test
+    void 사진이_한_장도_준비되지_않으면_확정하지_않고_환불한다() {
+        givenJob(PdfExportType.ANSWER_ONLY);
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of(
+                answer("2026-01-05", "오늘 가장 고마웠던 순간은?", "answers/7/a.webp"),
+                answer("2026-01-06", "지금 마음의 온도는?", "answers/7/b.webp")));
+        // S3 장애·권한 사고면 전멸로 나타난다. 그대로 두면 사진 없는 PDF 를 만들고 과금까지 확정된다.
+        doThrow(new RuntimeException("access denied")).when(storage).download(any());
+
+        listener.handle(EVENT);
+
+        verify(txService).failAndRefund(USER_ID, JOB_ID, CRYSTAL_LOG_ID, "PDF_EXPORT_GENERATION_FAILED");
+        verify(txService, never()).confirm(anyLong(), anyLong());
+        verify(storage, never()).upload(any(), any(), any(), any());
+    }
+
+    @Test
+    void 사진이_원래_없는_기간은_전멸_판정에_걸리지_않는다() {
+        givenJob(PdfExportType.ANSWER_ONLY);
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of(
+                answer("2026-01-05", "오늘 가장 고마웠던 순간은?", null),
+                answer("2026-01-06", "지금 마음의 온도는?", null)));
+
+        listener.handle(EVENT);
+
+        // 사진을 안 올린 유저의 export 는 정상이다. 여기서 실패시키면 멀쩡한 요청을 죽인다.
+        verify(txService).confirm(JOB_ID, CRYSTAL_LOG_ID);
+        verify(txService, never()).failAndRefund(anyLong(), anyLong(), anyLong(), any());
     }
 
     /* ── helpers ── */
