@@ -69,15 +69,17 @@ public final class PdfSyntheticData {
     private final List<MonthlyReport> monthlies;
     private final List<MonthlyReportV2> monthlyV2s;
     private final Function<String, Optional<byte[]>> photoResolver;
+    private final byte[][] photoVariants;
 
     private PdfSyntheticData(List<PdfAnswerRowDto> answers, List<WeeklyReport> weeklies,
                              List<MonthlyReport> monthlies, List<MonthlyReportV2> monthlyV2s,
-                             Function<String, Optional<byte[]>> photoResolver) {
+                             Function<String, Optional<byte[]>> photoResolver, byte[][] photoVariants) {
         this.answers = answers;
         this.weeklies = weeklies;
         this.monthlies = monthlies;
         this.monthlyV2s = monthlyV2s;
         this.photoResolver = photoResolver;
+        this.photoVariants = photoVariants;
     }
 
     public List<PdfAnswerRowDto> answers() { return answers; }
@@ -85,6 +87,14 @@ public final class PdfSyntheticData {
     public List<MonthlyReport> monthlies() { return monthlies; }
     public List<MonthlyReportV2> monthlyV2s() { return monthlyV2s; }
     public Function<String, Optional<byte[]>> photoResolver() { return photoResolver; }
+
+    /**
+     * imageKey → 원본 사진 바이트(디코드 전). 프로덕션의 S3 download 자리 —
+     * 프리페치 A/B 는 다운로드와 디코드를 따로 걸어야 해서 리졸버를 두 조각으로 나눠 쓴다.
+     */
+    public byte[] photoSource(String key) {
+        return photoVariants[Math.floorMod(key.hashCode(), photoVariants.length)];
+    }
 
     /**
      * 1년치 최악 케이스: endDate 기준 days 일 전부 답변 + 사진 100% + 주(週)당 주간 1 + 월(月)당 월간 V2 1.
@@ -126,7 +136,7 @@ public final class PdfSyntheticData {
         List<MonthlyReportV2> monthlyV2s = buildMonthlyV2s(startDate, endDate);
         List<MonthlyReport> monthlies = List.of(); // V1(레거시)은 2026-05 이전 잔존분 — 최악 규모엔 비지배라 생략(필요 시 추가)
 
-        return new PdfSyntheticData(answers, weeklies, monthlies, monthlyV2s, photoResolver);
+        return new PdfSyntheticData(answers, weeklies, monthlies, monthlyV2s, photoResolver, variants);
     }
 
     /**
@@ -135,6 +145,11 @@ public final class PdfSyntheticData {
      */
     public static int samplePhotoByteSize() {
         return PdfImage.coverSquareJpegBytes(resolveVariants()[0], PHOTO_PX).length;
+    }
+
+    /** 원본 사진 변이 바이트(실 webp 우선, 없으면 합성). 사진 1장 처리시간 단계분해가 렌더 없이 이 바이트만 쓴다. */
+    public static byte[][] photoSourceVariants() {
+        return resolveVariants();
     }
 
     /**

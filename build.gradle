@@ -129,6 +129,11 @@ tasks.register('pdfBench', Test) {
 	if (project.hasProperty('benchCpu')) {
 		jvmArgs "-XX:ActiveProcessorCount=${project.property('benchCpu')}"
 	}
+	// 실서버 GC 고정: -PbenchGc=g1(운영 t3.small) | serial(개발 t3.micro). 미지정이면 JVM ergonomic 선택.
+	if (project.hasProperty('benchGc')) {
+		def gc = project.property('benchGc').toString().toLowerCase()
+		jvmArgs(gc == 'serial' ? '-XX:+UseSerialGC' : '-XX:+UseG1GC')
+	}
 	// 원인 규명 프로파일링(옵션):
 	//  -PbenchJfr   → JFR allocation 프로파일(build/pdf-render.jfr). 분석: jfr print --events jdk.ObjectAllocationSample --stack-depth 30 build/pdf-render.jfr
 	//  -PbenchGcLog → GC 로그(build/pdf-gc.log). GC 후 live(=floor) vs GC 사이 할당(=churn) 분리용.
@@ -137,7 +142,8 @@ tasks.register('pdfBench', Test) {
 		jvmArgs "-XX:StartFlightRecording=settings=profile,filename=${project.buildDir}/pdf-render-%p.jfr,dumponexit=true"
 	}
 	if (project.hasProperty('benchGcLog')) {
-		jvmArgs "-Xlog:gc*,gc+heap=debug:file=${project.buildDir}/pdf-gc.log:time,level,tags"
+		// %p=PID → 워커 JVM 마다 별도 파일(뒤에 뜬 워커가 렌더 워커 로그를 덮어쓰는 것 방지). 벤치 워커 = 가장 큰 파일.
+		jvmArgs "-Xlog:gc*,gc+heap=debug:file=${project.buildDir}/pdf-gc-%p.log:time,level,tags"
 	}
 	forkEvery = 1
 	maxParallelForks = 1
