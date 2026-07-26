@@ -274,8 +274,8 @@ class MonthlyReportQueryServiceV2Test {
         MonthlySocialSummaryContent socialSummary = new MonthlySocialSummaryContent(
                 true,
                 5,
-                List.of(new MonthlySocialRankingItem(1, 2L, "가", "custom-key", null, true)),
-                List.of(new MonthlySocialRankingItem(1, 3L, "나", null, DefaultProfileType.DEFAULT, true))
+                List.of(new MonthlySocialRankingItem(1, 1, 2L, "가", "custom-key", null, true)),
+                List.of(new MonthlySocialRankingItem(1, 1, 3L, "나", null, DefaultProfileType.DEFAULT, true))
         );
         MonthlyReportV2 report = mock(MonthlyReportV2.class);
         when(report.getUser()).thenReturn(user);
@@ -293,6 +293,7 @@ class MonthlyReportQueryServiceV2Test {
         assertThat(response.socialSummary().visible()).isTrue();
         assertThat(response.socialSummary().likeRanking()).singleElement().satisfies(item -> {
             assertThat(item.displayOrder()).isEqualTo(1);
+            assertThat(item.rank()).isEqualTo(1);
             assertThat(item.userId()).isEqualTo(2L);
             assertThat(item.profileImageUrl()).isEqualTo("https://cdn/custom-key");
             assertThat(item.topRank()).isTrue();

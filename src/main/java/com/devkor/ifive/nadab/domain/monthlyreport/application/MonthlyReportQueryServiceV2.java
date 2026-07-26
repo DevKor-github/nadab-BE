@@ -217,6 +217,7 @@ public class MonthlyReportQueryServiceV2 {
 
         return new MonthlySocialRankingItemResponse(
                 item.displayOrder(),
+                item.rank(),
                 item.userId(),
                 item.nickname(),
                 profileImageUrl,

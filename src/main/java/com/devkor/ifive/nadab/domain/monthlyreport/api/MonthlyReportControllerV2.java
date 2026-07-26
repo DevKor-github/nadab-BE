@@ -251,6 +251,7 @@ public class MonthlyReportControllerV2 {
                     socialSummary.likeRanking : 내 DailyReport에 좋아요를 많이 누른 친구 최대 3명 </br>
                     socialSummary.commentRanking : 내 DailyReport에 댓글·대댓글을 많이 작성한 친구 최대 3명 </br>
                     - displayOrder : 화면 표시 순서(1~3) </br>
+                    - rank : 동점 처리가 반영된 실제 표시 순위(예: 1, 1, 3 또는 1, 2, 2) </br>
                     - userId : 친구 사용자 ID </br>
                     - nickname : 친구 닉네임 </br>
                     - profileImageUrl : 친구 프로필 이미지 URL </br>
