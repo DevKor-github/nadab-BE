@@ -87,6 +87,11 @@ public class PdfExportController {
                             responseCode = "409",
                             description = "- ErrorCode: PDF_EXPORT_ALREADY_IN_PROGRESS - 이미 다른 조건으로 생성 중인 작업이 있음(응답 data에 그 작업의 jobId 포함)",
                             content = @Content(schema = @Schema(implementation = PdfExportInProgressResponse.class), mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "- ErrorCode: PDF_EXPORT_SERVER_BUSY - 생성 대기 줄이 길어 접수 불가(크리스탈 차감 없음, 잠시 후 재시도하면 됨)",
+                            content = @Content
                     )
             }
     )

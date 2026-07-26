@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.pdfexport.application;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.request.PdfExportStartRequest;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportPreviewResponse;
 import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportStartResponse;
+import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportRenderQueue;
 import com.devkor.ifive.nadab.domain.pdfexport.core.dto.PdfExportReserveResultDto;
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportJob;
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportStatus;
@@ -15,6 +16,7 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import com.devkor.ifive.nadab.global.exception.PdfExportInProgressException;
+import com.devkor.ifive.nadab.global.exception.TooManyRequestsException;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,6 +35,7 @@ public class PdfExportService {
     private final PdfExportJobRepository pdfExportJobRepository;
     private final PdfExportQueryRepository pdfExportQueryRepository;
     private final PdfExportTxService pdfExportTxService;
+    private final PdfExportRenderQueue renderQueue;
 
     /** 종료일 기준 최대 1년 (윤년 포함 포괄 범위) */
     private static final long MAX_PERIOD_DAYS = 366L;
@@ -64,6 +67,11 @@ public class PdfExportService {
         // 차감 전 데이터 존재 검사: 빈 PDF에 과금 방지(신규 차감 경로만, 재사용/거부는 위에서 반환)
         if (!hasExportableData(userId, type, startDate, endDate)) {
             throw new BadRequestException(ErrorCode.PDF_EXPORT_NO_DATA);
+        }
+
+        // 대기 줄이 밀려 있으면 거부(차감 0). 차감 뒤에 실행기가 거부하면 돈만 빠지고 렌더는 시작조차 안 된다.
+        if (!renderQueue.canAccept()) {
+            throw new TooManyRequestsException(ErrorCode.PDF_EXPORT_SERVER_BUSY);
         }
 
         // (Tx) job(PENDING) + 선차감 + 로그 + IN_PROGRESS + publish

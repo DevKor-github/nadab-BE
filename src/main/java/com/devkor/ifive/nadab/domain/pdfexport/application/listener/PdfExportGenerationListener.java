@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.pdfexport.application.listener;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportFileNames;
+import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportRenderQueue;
 import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfPhotoPrefetcher;
 import com.devkor.ifive.nadab.domain.pdfexport.application.PdfExportTxService;
 import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportCompletedEvent;
@@ -36,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * PDF 내보내기 비동기 렌더 파이프라인(WeeklyReportGenerationListener 미러).
+ * PDF 내보내기 비동기 렌더 파이프라인
  * reserve 커밋 후(AFTER_COMMIT) 전용 풀에서 실행: 조회 → 렌더 → 업로드 → confirm.
  * 트랜잭션 경계: 데이터는 짧은 조회 레포로 받아 커넥션을 즉시 반납한 뒤 렌더한다.
  * 핸들러에 @Transactional 을 붙이지 않는다 — 렌더(수 초)가 커넥션을 잡으면 풀이 고갈돼 다른 API까지 대기한다.
@@ -62,6 +63,7 @@ public class PdfExportGenerationListener {
     private final PdfRenderer renderer;
     private final PdfExportStorage storage;
     private final PdfExportTxService txService;
+    private final PdfExportRenderQueue renderQueue;
     private final ApplicationEventPublisher eventPublisher;
 
     @Async("pdfExportTaskExecutor")
@@ -71,6 +73,8 @@ public class PdfExportGenerationListener {
         Long userId = event.userId();
         Long crystalLogId = event.crystalLogId();
 
+        long startedAt = System.nanoTime();
+        int photoCount = 0;
         Path pdfFile = null;
         try {
             // ── 1) 짧은 조회들 (각자 자기 트랜잭션 → 커넥션 즉시 반납). 리포트 엔티티는 detached ──
@@ -106,6 +110,7 @@ public class PdfExportGenerationListener {
                     source -> PdfImage.coverSquareJpegBytes(source, PHOTO_PX),
                     this::skipPhoto,
                     PHOTO_DOWNLOAD_THREADS, PHOTO_PREFETCH_WINDOW);
+            photoCount = photos.size();
 
             PdfHtmlAssembler.AssembledDocument doc = assembler.assemble(type, answers, weeklies, monthlies,
                     monthlyV2s, key -> Optional.ofNullable(photos.get(key)));
@@ -130,6 +135,11 @@ public class PdfExportGenerationListener {
             if (pdfFile != null) {
                 deleteQuietly(pdfFile);
             }
+
+            // 성공·실패 무관하게 남긴다(유료 작업이라 감사·환불 문의를 쫓을 수 있어야 한다).
+            // pending = 이 렌더가 끝난 시점에 뒤에 밀려 있던 작업 수.
+            log.info("[PDF_EXPORT][RENDER_END] jobId={}, photos={}, elapsedMs={}, pending={}",
+                    jobId, photoCount, (System.nanoTime() - startedAt) / 1_000_000L, renderQueue.pending());
         }
     }
 

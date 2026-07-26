@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.pdfexport.application.listener;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
 import com.devkor.ifive.nadab.domain.pdfexport.application.PdfExportTxService;
 import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportCompletedEvent;
+import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportRenderQueue;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfHtmlAssembler;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfRenderer;
 import com.devkor.ifive.nadab.domain.pdfexport.core.dto.PdfAnswerRowDto;
@@ -69,6 +70,7 @@ class PdfExportGenerationListenerTest {
     private PdfRenderer renderer;
     private PdfExportStorage storage;
     private PdfExportTxService txService;
+    private PdfExportRenderQueue renderQueue;
     private ApplicationEventPublisher eventPublisher;
     private PdfExportGenerationListener listener;
 
@@ -83,6 +85,7 @@ class PdfExportGenerationListenerTest {
         renderer = mock(PdfRenderer.class);
         storage = mock(PdfExportStorage.class);
         txService = mock(PdfExportTxService.class);
+        renderQueue = mock(PdfExportRenderQueue.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
 
         pdfFile = Files.createTempFile("test-pdf-export-", ".pdf");
@@ -94,7 +97,7 @@ class PdfExportGenerationListenerTest {
         when(renderer.render(any(), any())).thenReturn(pdfFile);
 
         listener = new PdfExportGenerationListener(
-                jobRepository, queryRepository, assembler, renderer, storage, txService, eventPublisher);
+                jobRepository, queryRepository, assembler, renderer, storage, txService, renderQueue, eventPublisher);
     }
 
     @AfterEach

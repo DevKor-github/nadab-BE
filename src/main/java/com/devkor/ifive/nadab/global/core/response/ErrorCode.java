@@ -472,6 +472,7 @@ public enum ErrorCode {
     PDF_EXPORT_EXPIRED(HttpStatus.CONFLICT, "다운로드 보관 기간(7일)이 지나 만료되었습니다. 다시 생성해 주세요"),
     // 429 Too Many Requests
     PDF_EXPORT_DOWNLOAD_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "다운로드 요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요"),
+    PDF_EXPORT_SERVER_BUSY(HttpStatus.TOO_MANY_REQUESTS, "생성 요청이 몰려 있어 지금은 접수할 수 없습니다. 잠시 후 다시 시도해 주세요"),
     // 500 Internal Server Error
     PDF_EXPORT_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PDF 생성에 실패했습니다. 차감된 크리스탈은 자동 환불됩니다"),
 
