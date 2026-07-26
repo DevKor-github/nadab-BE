@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 /**
  * PdfExportGenerationListener 오케스트레이션 검증 — 유형별 조회 분기·업로드·확정·완료 이벤트·실패 환불·사진 스킵의 "호출 순서"만.
  * 협력자(assembler·renderer)·DB·S3·과금 Tx는 전부 목(풀컨텍스트·DB 없이 돈다). 렌더 충실도는 PdfPreviewTest 담당.
- * 사진 리졸버(resolvePhoto)만은 assembler에 넘긴 Function 을 붙잡아 실제 동작(다운로드→PdfImage / 실패 스킵)까지 검증.
+ * 사진만은 예외로, assembler 에 넘긴 조회 함수를 붙잡아 프리페치 결과(S3 원본→JPEG / 실패 스킵)까지 확인한다.
  */
 class PdfExportGenerationListenerTest {
 
@@ -103,7 +103,7 @@ class PdfExportGenerationListenerTest {
     }
 
     @Test
-    void 답변만_답변만조회하고_렌더바이트를_업로드_확정_완료이벤트() {
+    void 답변만_답변만조회하고_렌더파일을_업로드_확정_완료이벤트() {
         givenJob(PdfExportType.ANSWER_ONLY);
         List<PdfAnswerRowDto> answers = List.of(
                 answer("2026-01-05", "오늘 가장 고마웠던 순간은?", null),
@@ -200,30 +200,34 @@ class PdfExportGenerationListenerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void 사진리졸버_정상은_jpeg바이트_실패는_스킵() throws Exception {
+    void 사진준비_정상은_jpeg바이트_실패는_스킵() throws Exception {
         givenJob(PdfExportType.ANSWER_ONLY);
-        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of(
+                answer("2026-01-05", "오늘 가장 고마웠던 순간은?", "answers/7/ok.webp"),
+                answer("2026-01-06", "지금 마음의 온도는?", "answers/7/broken.webp")));
+        when(storage.download("answers/7/ok.webp")).thenReturn(syntheticPhotoBytes());
+        // 개별 사진 다운로드 실패는 전체를 막지 않고 그 사진만 건너뛴다.
+        doThrow(new RuntimeException("object not found")).when(storage).download("answers/7/broken.webp");
 
         listener.handle(EVENT);
 
-        // assembler 에 넘긴 사진 리졸버(this::resolvePhoto)를 붙잡아 실제 동작을 검증한다.
+        // 사진은 assemble 전에 미리 준비되고, assembler 는 준비된 맵을 조회만 한다.
         ArgumentCaptor<Function<String, Optional<byte[]>>> resolverCaptor =
                 ArgumentCaptor.forClass(Function.class);
         verify(assembler).assemble(any(), any(), any(), any(), any(), resolverCaptor.capture());
-        Function<String, Optional<byte[]>> resolvePhoto = resolverCaptor.getValue();
+        Function<String, Optional<byte[]>> photos = resolverCaptor.getValue();
 
         // 정상: S3 원본 → PdfImage 로 정사각 리샘플 → JPEG 바이트(asset: 서빙용).
-        when(storage.download("answers/7/ok.webp")).thenReturn(syntheticPhotoBytes());
-        Optional<byte[]> ok = resolvePhoto.apply("answers/7/ok.webp");
+        Optional<byte[]> ok = photos.apply("answers/7/ok.webp");
         assertThat(ok).isPresent();
         assertThat(ok.get()).hasSizeGreaterThan(1000);
         // JPEG SOI 매직 바이트(0xFF 0xD8) — 실제 JPEG 인코딩 결과임을 확인.
         assertThat(ok.get()[0] & 0xFF).isEqualTo(0xFF);
         assertThat(ok.get()[1] & 0xFF).isEqualTo(0xD8);
 
-        // 실패: 개별 사진 다운로드 실패는 전체를 막지 않고 그 사진만 건너뛴다(Optional.empty).
-        doThrow(new RuntimeException("object not found")).when(storage).download("answers/7/broken.webp");
-        assertThat(resolvePhoto.apply("answers/7/broken.webp")).isEmpty();
+        // 실패한 사진은 맵에 없어 그 자리만 생략된다(나머지는 정상 렌더·업로드·확정).
+        assertThat(photos.apply("answers/7/broken.webp")).isEmpty();
+        verify(txService).confirm(JOB_ID, CRYSTAL_LOG_ID);
     }
 
     /* ── helpers ── */

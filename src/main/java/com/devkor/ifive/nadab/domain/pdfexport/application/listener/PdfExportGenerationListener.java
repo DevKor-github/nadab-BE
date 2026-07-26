@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.pdfexport.application.listener;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReport;
 import com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportV2;
 import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportFileNames;
+import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfPhotoPrefetcher;
 import com.devkor.ifive.nadab.domain.pdfexport.application.PdfExportTxService;
 import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportCompletedEvent;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfHtmlAssembler;
@@ -31,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -47,6 +49,12 @@ public class PdfExportGenerationListener {
 
     /** 답변 사진 임베드 한 변 px(표시 ~431px의 오버샘플 — 프리뷰 PHOTO_PX와 동일). */
     private static final int PHOTO_PX = 640;
+
+    /** 사진 다운로드 스레드 수. S3 대기는 CPU를 쓰지 않아 렌더 스레드와 코어를 다투지 않는다. */
+    private static final int PHOTO_DOWNLOAD_THREADS = 3;
+
+    /** 동시에 들고 있을 원본 사진 장수 — 이 값이 곧 추가 힙(장당 ~136KB). */
+    private static final int PHOTO_PREFETCH_WINDOW = 4;
 
     private final PdfExportJobRepository pdfExportJobRepository;
     private final PdfExportQueryRepository pdfExportQueryRepository;
@@ -88,9 +96,19 @@ public class PdfExportGenerationListener {
                 monthlyV2s = pdfExportQueryRepository.findMonthlyReportsV2InPeriod(userId, start, end);
             }
 
-            // ── 2) Tx/커넥션 밖: 무거운 렌더(S3 사진 디코드·차트·HTML·PDF) ──
-            PdfHtmlAssembler.AssembledDocument doc =
-                    assembler.assemble(type, answers, weeklies, monthlies, monthlyV2s, this::resolvePhoto);
+            // ── 2) Tx/커넥션 밖: 무거운 렌더(S3 사진 다운로드·디코드·차트·HTML·PDF) ──
+            //     사진은 assemble 전에 미리 준비한다(null·중복 키는 프리페처가 거른다).
+            List<String> imageKeys = answers.stream()
+                    .map(PdfAnswerRowDto::imageKey)
+                    .toList();
+            Map<String, byte[]> photos = PdfPhotoPrefetcher.prefetch(imageKeys,
+                    storage::download,
+                    source -> PdfImage.coverSquareJpegBytes(source, PHOTO_PX),
+                    this::skipPhoto,
+                    PHOTO_DOWNLOAD_THREADS, PHOTO_PREFETCH_WINDOW);
+
+            PdfHtmlAssembler.AssembledDocument doc = assembler.assemble(type, answers, weeklies, monthlies,
+                    monthlyV2s, key -> Optional.ofNullable(photos.get(key)));
             pdfFile = renderer.render(doc.xhtml(), doc.inlineAssets());
 
             // ── 3) 업로드(파일명 Content-Disposition 각인) → 완료 확정(markCompleted·completed_at·dedup 자동) ──
@@ -125,18 +143,11 @@ public class PdfExportGenerationListener {
     }
 
     /**
-     * imageKey → 답변 사진 JPEG 바이트. S3에서 원본(webp 등)을 받아 정중앙 정사각 cover 크롭/리샘플(PdfImage).
-     * 바이트는 어셈블러가 asset:photo-N 으로 참조·수집하고 렌더러가 서빙한다.
-     * 개별 사진 실패는 전체 export를 막지 않는다 — 그 사진만 건너뛰고(WARN) 나머지는 렌더한다.
+     * 사진 한 장의 다운로드·디코드가 실패했을 때. 그 사진만 건너뛰고 나머지는 렌더한다.
      * 유료 '내 기록 전부' 특성상 썸네일 1장 손상으로 전액 환불+산출물 0은 과함(과금은 유형별 고정이라 사진 누락과 무관).
+     * 준비된 바이트는 어셈블러가 asset:photo-N 으로 참조·수집하고 렌더러가 서빙한다.
      */
-    private Optional<byte[]> resolvePhoto(String imageKey) {
-        try {
-            byte[] source = storage.download(imageKey);
-            return Optional.of(PdfImage.coverSquareJpegBytes(source, PHOTO_PX));
-        } catch (RuntimeException e) {
-            log.warn("[PDF_EXPORT] 답변 사진 스킵(다운로드/디코드 실패): imageKey={}", imageKey, e);
-            return Optional.empty();
-        }
+    private void skipPhoto(String imageKey, RuntimeException e) {
+        log.warn("[PDF_EXPORT] 답변 사진 스킵(다운로드/디코드 실패): imageKey={}", imageKey, e);
     }
 }
