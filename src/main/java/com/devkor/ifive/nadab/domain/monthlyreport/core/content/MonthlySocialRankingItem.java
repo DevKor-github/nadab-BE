@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.user.core.entity.DefaultProfileType;
 
 public record MonthlySocialRankingItem(
         int displayOrder,
+        int rank,
         Long userId,
         String nickname,
         String profileImageKey,
@@ -13,6 +14,7 @@ public record MonthlySocialRankingItem(
     public MonthlySocialRankingItem normalized() {
         return new MonthlySocialRankingItem(
                 Math.max(1, displayOrder),
+                Math.max(1, rank),
                 userId,
                 nickname == null ? "" : nickname.trim(),
                 profileImageKey,

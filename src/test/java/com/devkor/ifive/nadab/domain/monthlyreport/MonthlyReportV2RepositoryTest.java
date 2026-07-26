@@ -70,10 +70,10 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 true,
                 5,
                 List.of(
-                        new MonthlySocialRankingItem(1, 10L, "가", null, null, true),
-                        new MonthlySocialRankingItem(2, 11L, "나", null, null, true)
+                        new MonthlySocialRankingItem(1, 1, 10L, "가", null, null, true),
+                        new MonthlySocialRankingItem(2, 1, 11L, "나", null, null, true)
                 ),
-                List.of(new MonthlySocialRankingItem(1, 12L, "다", null, null, true))
+                List.of(new MonthlySocialRankingItem(1, 1, 12L, "다", null, null, true))
         ));
         em.flush();
         em.clear();
@@ -207,7 +207,7 @@ class MonthlyReportV2RepositoryTest extends PostgresIntegrationTestSupport {
                 "{\"totalCount\":10,\"dominantEmotionCode\":\"ACHIEVEMENT\",\"positivePercent\":71,\"emotions\":[]}",
                 "{\"interests\":[]}",
                 emotionComparisonJson,
-                "{\"visible\":true,\"month\":5,\"likeRanking\":[{\"displayOrder\":1,\"userId\":10,\"nickname\":\"가\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}],\"commentRanking\":[{\"displayOrder\":1,\"userId\":11,\"nickname\":\"나\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}]}",
+                "{\"visible\":true,\"month\":5,\"likeRanking\":[{\"displayOrder\":1,\"rank\":1,\"userId\":10,\"nickname\":\"가\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}],\"commentRanking\":[{\"displayOrder\":1,\"rank\":1,\"userId\":11,\"nickname\":\"나\",\"profileImageKey\":null,\"defaultProfileType\":null,\"topRank\":true}]}",
                 MonthlyReportStatus.TEXT_COMPLETED.name()
         );
     }

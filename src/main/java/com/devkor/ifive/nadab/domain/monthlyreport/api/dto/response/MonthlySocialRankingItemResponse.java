@@ -6,6 +6,9 @@ public record MonthlySocialRankingItemResponse(
         @Schema(description = "화면 표시 순서", example = "1")
         int displayOrder,
 
+        @Schema(description = "동점 처리가 반영된 실제 표시 순위", example = "1")
+        int rank,
+
         @Schema(description = "친구 사용자 ID", example = "12")
         Long userId,
 

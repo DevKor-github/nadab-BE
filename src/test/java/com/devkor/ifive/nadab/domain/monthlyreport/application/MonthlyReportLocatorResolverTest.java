@@ -91,11 +91,61 @@ class MonthlyReportLocatorResolverTest {
         );
     }
 
+    @Test
+    void resolves_latest_previous_completed_report_across_v1_and_v2() {
+        LocalDate currentMonthStartDate = LocalDate.of(2026, 6, 1);
+        MonthlyReportV2 v2Report = v2ReportWithMonthStartDate(LocalDate.of(2026, 4, 1));
+        MonthlyReport v1Report = v1Report(10L, LocalDate.of(2026, 5, 1), MonthlyReportStatus.COMPLETED);
+        when(monthlyReportV2Repository.findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                1L, MonthlyReportStatus.COMPLETED, currentMonthStartDate
+        )).thenReturn(Optional.of(v2Report));
+        when(monthlyReportRepository.findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                1L, MonthlyReportStatus.COMPLETED, currentMonthStartDate
+        )).thenReturn(Optional.of(v1Report));
+
+        Optional<MonthlyReportLocatorResponse> result = resolver.findLatestCompletedBefore(1L, currentMonthStartDate);
+
+        assertThat(result).contains(new MonthlyReportLocatorResponse(
+                10L, 1, 5, MonthlyReportStatus.COMPLETED
+        ));
+    }
+
+    @Test
+    void resolves_v2_when_it_is_latest_previous_completed_report() {
+        LocalDate currentMonthStartDate = LocalDate.of(2026, 6, 1);
+        MonthlyReportV2 v2Report = v2Report(20L, LocalDate.of(2026, 5, 1), MonthlyReportStatus.COMPLETED);
+        MonthlyReport v1Report = v1ReportWithMonthStartDate(LocalDate.of(2026, 4, 1));
+        when(monthlyReportV2Repository.findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                1L, MonthlyReportStatus.COMPLETED, currentMonthStartDate
+        )).thenReturn(Optional.of(v2Report));
+        when(monthlyReportRepository.findFirstByUserIdAndStatusAndMonthStartDateBeforeOrderByMonthStartDateDesc(
+                1L, MonthlyReportStatus.COMPLETED, currentMonthStartDate
+        )).thenReturn(Optional.of(v1Report));
+
+        Optional<MonthlyReportLocatorResponse> result = resolver.findLatestCompletedBefore(1L, currentMonthStartDate);
+
+        assertThat(result).contains(new MonthlyReportLocatorResponse(
+                20L, 2, 5, MonthlyReportStatus.COMPLETED
+        ));
+    }
+
+    private MonthlyReportV2 v2ReportWithMonthStartDate(LocalDate monthStartDate) {
+        MonthlyReportV2 report = mock(MonthlyReportV2.class);
+        when(report.getMonthStartDate()).thenReturn(monthStartDate);
+        return report;
+    }
+
     private MonthlyReportV2 v2Report(Long id, LocalDate monthStartDate, MonthlyReportStatus status) {
         MonthlyReportV2 report = mock(MonthlyReportV2.class);
         when(report.getId()).thenReturn(id);
         when(report.getMonthStartDate()).thenReturn(monthStartDate);
         when(report.getStatus()).thenReturn(status);
+        return report;
+    }
+
+    private MonthlyReport v1ReportWithMonthStartDate(LocalDate monthStartDate) {
+        MonthlyReport report = mock(MonthlyReport.class);
+        when(report.getMonthStartDate()).thenReturn(monthStartDate);
         return report;
     }
 
