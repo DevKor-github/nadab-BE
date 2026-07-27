@@ -77,8 +77,6 @@ public class AskChatWalletChargeService {
         ));
 
         return AskChatTurnChargeResponse.of(
-                ASK_CHAT_TURN_CHARGE_COUNT,
-                ASK_CHAT_TURN_CHARGE_CRYSTAL_COST,
                 crystalWallet.getCrystalBalance(),
                 askChatWallet
         );

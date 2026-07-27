@@ -84,12 +84,8 @@ class AskChatWalletChargeServiceTest {
 
         var response = service.chargeTurns(1L);
 
-        assertThat(response.chargedTurnCount()).isEqualTo(10);
-        assertThat(response.crystalCost()).isEqualTo(200L);
         assertThat(response.crystalBalance()).isEqualTo(70L);
-        assertThat(response.freeTurnBalance()).isEqualTo(2);
-        assertThat(response.paidTurnBalance()).isEqualTo(10);
-        assertThat(response.totalTurnBalance()).isEqualTo(12);
+        assertThat(response.remainingMessageCount()).isEqualTo(12);
 
         ArgumentCaptor<CrystalLog> crystalLogCaptor = ArgumentCaptor.forClass(CrystalLog.class);
         verify(crystalLogRepository).save(crystalLogCaptor.capture());

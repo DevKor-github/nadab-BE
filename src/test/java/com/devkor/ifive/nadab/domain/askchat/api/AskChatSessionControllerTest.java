@@ -145,11 +145,7 @@ class AskChatSessionControllerTest {
         AskChatSessionController controller = controller();
         UserPrincipal principal = new UserPrincipal(1L);
         AskChatTurnChargeResponse chargeResponse = new AskChatTurnChargeResponse(
-                10,
-                200L,
                 70L,
-                2,
-                10,
                 12
         );
         when(askChatWalletChargeService.chargeTurns(1L)).thenReturn(chargeResponse);
@@ -159,10 +155,8 @@ class AskChatSessionControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getData().chargedTurnCount()).isEqualTo(10);
-        assertThat(response.getBody().getData().crystalCost()).isEqualTo(200L);
         assertThat(response.getBody().getData().crystalBalance()).isEqualTo(70L);
-        assertThat(response.getBody().getData().totalTurnBalance()).isEqualTo(12);
+        assertThat(response.getBody().getData().remainingMessageCount()).isEqualTo(12);
         verify(askChatWalletChargeService).chargeTurns(1L);
     }
 
