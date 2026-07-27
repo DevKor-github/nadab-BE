@@ -42,7 +42,7 @@ public abstract class PdfExportIntegrationTestSupport extends PostgresIntegratio
     protected static final LocalDate START = LocalDate.parse("2026-01-01");
     protected static final LocalDate END = LocalDate.parse("2026-01-31");
 
-    /** 결과 키 각인에만 쓰인다 */
+    /** 결과 키 각인·서명 URL 발급·dedup S3 삭제가 전부 여기로 간다. 필요한 스텁은 각 테스트가 건다 */
     @MockitoBean
     protected PdfExportStorage storage;
 

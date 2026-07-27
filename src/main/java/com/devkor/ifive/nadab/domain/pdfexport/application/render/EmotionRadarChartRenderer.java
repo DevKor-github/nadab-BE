@@ -190,7 +190,7 @@ public class EmotionRadarChartRenderer {
             ImageIO.write(img, "png", baos);
             return Optional.of("data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray()));
         } catch (IOException e) {
-            log.warn("감정 레이더 PNG 인코딩 실패 — 차트 생략", e);
+            log.warn("[PDF_EXPORT] 감정 레이더 PNG 인코딩 실패 — 차트 생략", e);
             return Optional.empty();
         }
     }

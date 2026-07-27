@@ -55,15 +55,11 @@ import static org.mockito.Mockito.when;
 
 /**
  * 트랜잭션 경계가 실제로 커밋·롤백되는지 검증한다.
- *
- * 다른 pdfexport 테스트와 달리 테스트를 트랜잭션으로 감싸지 않는다(NOT_SUPPORTED). 감싸면 서비스의
- * 트랜잭션이 테스트 트랜잭션에 참여만 해서 아무것도 커밋되지 않고, "롤백돼서 안 남았다"와
- * "애초에 커밋된 적이 없다"를 구분할 수 없다.
- *
- * 대신 롤백으로 데이터가 자동 정리되지 않으므로 만든 행을 tearDown 에서 직접 지운다. 컨테이너를 다른
- * 테스트와 공유하고 그중에는 job 을 전수 조회해 불변식을 확인하는 것이 있어, 남기면 그쪽이 깨진다.
- *
- * 리스너도 함께 띄운다. 이 컨텍스트엔 비동기가 켜져 있지 않아 커밋 직후 같은 스레드에서 실행된다.
+ * 이 파일만 테스트를 트랜잭션으로 안 감싼다(NOT_SUPPORTED) — 감싸면 서비스 트랜잭션이 참여만 해서
+ * "롤백돼서 안 남았다"와 "애초에 커밋된 적이 없다"를 구분할 수 없다.
+ * 대신 자동 정리가 없으니 만든 행을 tearDown 에서 직접 지운다. 컨테이너를 공유하는 다른 테스트가
+ * job 을 전수 조회해 불변식을 보므로 남기면 그쪽이 깨진다.
+ * 리스너도 함께 띄운다. 이 컨텍스트엔 비동기가 꺼져 있어 커밋 직후 같은 스레드에서 실행된다.
  */
 @DataJpaTest
 @ActiveProfiles("test")
@@ -124,8 +120,6 @@ class PdfExportRollbackBoundaryTest extends PostgresIntegrationTestSupport {
         deleteUserData(brokeUser);
     }
 
-    /* ── 예약 롤백 ───────────────────────────────────────────────────── */
-
     @Test
     void 예약이_실패하면_차감도_job도_남지_않는다() {
         assertThatThrownBy(() -> txService.reserveAndPublish(brokeUser, TYPE, START, END))
@@ -135,8 +129,6 @@ class PdfExportRollbackBoundaryTest extends PostgresIntegrationTestSupport {
         assertThat(crystalLogsOf(brokeUser)).isEmpty();
         assertThat(balanceOf(brokeUser)).isZero();
     }
-
-    /* ── 롤백된 예약은 렌더를 트리거하지 않는다 ─────────────────────────── */
 
     @Test
     void 예약이_커밋되면_렌더가_시작된다() {
@@ -154,8 +146,6 @@ class PdfExportRollbackBoundaryTest extends PostgresIntegrationTestSupport {
         verify(assembler, never()).assemble(any(), any(), any(), any(), any(), any());
     }
 
-    /* ── 완료 확정 롤백 ──────────────────────────────────────────────── */
-
     @Test
     void dedup이_실패하면_완료_확정이_통째로_롤백된다() {
         Reserved reserved = inProgressJob(fundedUser);
@@ -166,13 +156,10 @@ class PdfExportRollbackBoundaryTest extends PostgresIntegrationTestSupport {
         assertThatThrownBy(() -> txService.confirm(reserved.jobId(), reserved.logId()))
                 .isInstanceOf(IllegalStateException.class);
 
-        // 같은 트랜잭션이라 markCompleted·markConfirmed 가 함께 되돌아간다.
         assertThat(statusOf(reserved.jobId())).isEqualTo(PdfExportStatus.IN_PROGRESS);
         assertThat(logStatusOf(reserved.logId())).isEqualTo(CrystalLogStatus.PENDING);
         assertThat(balanceOf(fundedUser)).isEqualTo(FUNDED_BALANCE - COST);
     }
-
-    /* ── 환불 롤백 ──────────────────────────────────────────────────── */
 
     @Test
     void 환불이_실패하면_실패_표시도_되돌아간다() {
@@ -184,13 +171,10 @@ class PdfExportRollbackBoundaryTest extends PostgresIntegrationTestSupport {
                 ErrorCode.PDF_EXPORT_GENERATION_FAILED.name()))
                 .isInstanceOf(NotFoundException.class);
 
-        // "실패로 표시됐는데 환불은 안 된" 중간 상태가 안 남는다 — 다음 스윕이 다시 주울 수 있다.
         assertThat(statusOf(reserved.jobId())).isEqualTo(PdfExportStatus.IN_PROGRESS);
         assertThat(logStatusOf(reserved.logId())).isEqualTo(CrystalLogStatus.PENDING);
         assertThat(balanceOf(fundedUser)).isEqualTo(FUNDED_BALANCE - COST);
     }
-
-    /* ── 커밋 이후 S3 삭제 ───────────────────────────────────────────── */
 
     @Test
     void 이전_결과물_삭제는_완료가_커밋된_뒤에_일어난다() {
@@ -283,7 +267,7 @@ class PdfExportRollbackBoundaryTest extends PostgresIntegrationTestSupport {
         return walletRepository.findByUserId(user.getId()).orElseThrow().getCrystalBalance();
     }
 
-    /** 롤백이 없으므로 이 테스트가 만든 행을 참조 순서대로 직접 지운다. */
+    /** 참조 순서대로 지운다(job → 크리스탈 로그 → 지갑 → 유저). */
     private void deleteUserData(User user) {
         if (user == null) {
             return;

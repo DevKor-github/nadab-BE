@@ -40,11 +40,10 @@ import java.util.function.Function;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 렌더 파이프라인 스모크 — DB/S3 없이 합성 샘플 데이터로 실제 assemble→render 경로를 태워 유효한 PDF 바이트가 나오는지 검증한다.
- *
- * 원칙: 렌더 로직은 프로덕션 코드(어셈블러·PdfImage 등)에 있고 테스트는 "날것 데이터만 주입"한다.
- *  - 리포트 content/emotion_stats: jsonb 문자열을 Jackson 역직렬화 = 프로덕션 Hibernate 엔티티화와 동일(손 전사 오류 방지).
- *  - 답변 사진: 날것 이미지 바이트를 주입하고, 정사각 cover 크롭/리샘플은 프로덕션 PdfImage 가 수행.
+ * 렌더 파이프라인 스모크 — DB/S3 없이 합성 데이터로 실제 assemble→render 를 태워 유효한 PDF 가 나오는지 본다.
+ * 테스트는 날것 데이터만 주입하고 렌더 로직은 전부 프로덕션 코드(어셈블러·PdfImage)가 한다.
+ * jsonb 컬럼은 DB 에 들어가는 문자열 그대로 역직렬화한다. 일부만 파싱해 나머지를 손으로 조립하면 실제 모양과 어긋나는데,
+ * 이 매퍼는 모르는 필드를 무시하므로 예외 없이 값만 null 로 비어 버린다(레이더가 2계열 대신 1계열로 그려지는 식).
  */
 class PdfPreviewTest {
 
@@ -77,7 +76,6 @@ class PdfPreviewTest {
 
         Path pdfFile = renderer.render(doc.xhtml(), doc.inlineAssets());
 
-        // 전체 파이프라인이 예외 없이 돌고 유효한 PDF 헤더의 파일을 만든다(디자인 충실도가 아니라 "렌더가 깨지지 않음"을 지킴).
         try {
             assertThat(Files.size(pdfFile)).isGreaterThan(1000);
             byte[] header = new byte[5];
@@ -90,7 +88,7 @@ class PdfPreviewTest {
         }
     }
 
-    /* ── 답변 (합성 5건 — 긴/짧은·사진 有/無·관심사 "관계" 커버) ── */
+    /* ── 답변 5건 — 긴 글/짧은 글, 사진 유무, RELATIONSHIP(어셈블러가 "관계"로 라벨을 바꾸는 유일한 관심사)을 섞는다 ── */
 
     private List<PdfAnswerRowDto> sampleAnswers() {
         return List.of(
@@ -118,7 +116,7 @@ class PdfPreviewTest {
                 question, interest, emotion);
     }
 
-    /* ── 주간 리포트 (합성 3건 — 마크 有/無 커버, content jsonb 그대로 파싱) ── */
+    /* ── 주간 리포트 3건 — 하이라이트 마크가 붙은 문장과 안 붙은 문장을 모두 태운다 ── */
 
     private List<WeeklyReport> sampleWeeklies() throws Exception {
         return List.of(
@@ -168,15 +166,13 @@ class PdfPreviewTest {
                 """, TypeEmotionStatsContent.class);
         setField(m, "emotionStats", stats);
 
-        // 테스트용 지난 달 비교 데이터(2계열 레이더 + 부제·월 라벨 검증). 실제 BASELINE 이면 null → 단일 계열.
-        TypeEmotionStatsContent prevStats = MAPPER.readValue("""
-                {"emotions":[{"count":3,"percent":16,"emotionCode":"WILL","emotionName":"의지"},{"count":5,"percent":28,"emotionCode":"PEACE","emotionName":"평온"},{"count":2,"percent":11,"emotionCode":"ACHIEVEMENT","emotionName":"성취"},{"count":2,"percent":11,"emotionCode":"ETC","emotionName":"기타"},{"count":2,"percent":11,"emotionCode":"DEPRESSION","emotionName":"우울"},{"count":1,"percent":6,"emotionCode":"INTEREST","emotionName":"흥미"},{"count":2,"percent":11,"emotionCode":"PLEASURE","emotionName":"즐거움"},{"count":1,"percent":6,"emotionCode":"REGRET","emotionName":"후회"}],"totalCount":18,"positivePercent":66,"dominantEmotionCode":"PEACE"}
-                """, TypeEmotionStatsContent.class);
-        MonthlyEmotionComparisonContent comparison =
-                new MonthlyEmotionComparisonContent(null, 5, prevStats, 12);
+        // emotion_comparison 컬럼에 통째로 들어가는 모양. BASELINE 이면 이 값이 null 이라 레이더가 1계열이 된다.
+        MonthlyEmotionComparisonContent comparison = MAPPER.readValue("""
+                {"previousReportId":6,"previousMonth":5,"positivePercentPointChange":12,"previousEmotionStats":{"emotions":[{"count":3,"percent":16,"emotionCode":"WILL","emotionName":"의지"},{"count":5,"percent":28,"emotionCode":"PEACE","emotionName":"평온"},{"count":2,"percent":11,"emotionCode":"ACHIEVEMENT","emotionName":"성취"},{"count":2,"percent":11,"emotionCode":"ETC","emotionName":"기타"},{"count":2,"percent":11,"emotionCode":"DEPRESSION","emotionName":"우울"},{"count":1,"percent":6,"emotionCode":"INTEREST","emotionName":"흥미"},{"count":2,"percent":11,"emotionCode":"PLEASURE","emotionName":"즐거움"},{"count":1,"percent":6,"emotionCode":"REGRET","emotionName":"후회"}],"totalCount":18,"positivePercent":66,"dominantEmotionCode":"PEACE"}}
+                """, MonthlyEmotionComparisonContent.class);
         setField(m, "emotionComparison", comparison);
 
-        // 감정 요약(레이더 박스 안 문구) = 실제 emotionSummaryContent 스타일드 텍스트.
+        // 레이더 박스 안에 들어가는 비교 문구.
         TypeTextContent emotionSummary = MAPPER.readValue("""
                 {"styledText": {"segments": [{"text": "이번 달은 ", "marks": []}, {"text": "의지", "marks": ["BOLD", "HIGHLIGHT"]}, {"text": ", ", "marks": []}, {"text": "평온", "marks": ["BOLD", "HIGHLIGHT"]}, {"text": ", ", "marks": []}, {"text": "성취", "marks": ["BOLD", "HIGHLIGHT"]}, {"text": "가 함께한 한 달이었어요. 자신을 돌보며 ", "marks": []}, {"text": "목표를 향해 나아가는 의지", "marks": ["BOLD", "HIGHLIGHT"]}, {"text": " 속에서 평온을 지키려는 마음이 돋보여요.", "marks": []}]}}
                 """, TypeTextContent.class);
@@ -185,19 +181,18 @@ class PdfPreviewTest {
         return List.of(m);
     }
 
-    /* ── 샘플 사진: 파일 없이 코드로 만든 합성 사진을 프로덕션 PdfImage(정사각 cover 크롭)로 태운다 ── */
-
     private byte[] samplePhotoBytes() throws Exception {
         return PdfImage.coverSquareJpegBytes(syntheticPhotoBytes(), PHOTO_PX);
     }
 
-    /** 비정사각 800×600 그라디언트 → cover-crop 경로까지 태우는 합성 사진 바이트(레포에 바이너리 파일을 두지 않는다). */
+    /** 실서비스가 받는 답변 사진과 같은 1280×1280 합성 이미지(레포에 바이너리를 두지 않는다). */
     private static byte[] syntheticPhotoBytes() throws Exception {
-        BufferedImage img = new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB);
+        int side = 1280;
+        BufferedImage img = new BufferedImage(side, side, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
         try {
-            g.setPaint(new GradientPaint(0, 0, new Color(0x5D57F6), 800, 600, new Color(0xB5E7FF)));
-            g.fillRect(0, 0, 800, 600);
+            g.setPaint(new GradientPaint(0, 0, new Color(0x5D57F6), side, side, new Color(0xB5E7FF)));
+            g.fillRect(0, 0, side, side);
         } finally {
             g.dispose();
         }

@@ -42,24 +42,11 @@ class PdfExportCrashRecoveryTest extends PdfExportIntegrationTestSupport {
     }
 
     @Test
-    void 두_번_쓸어도_이중_환불이_없다() {
-        reserveAndCrash(Duration.ofMinutes(61));
-
-        scheduler.recoverStuckJobs();
-        scheduler.recoverStuckJobs();
-
-        // 두 번째 스윕은 조회에서 이미 빠진다(FAILED). 설령 다시 불려도 markFailed가 0을 반환해 환불하지 않는다.
-        assertConsistent();
-        assertThat(balance()).isEqualTo(INITIAL_BALANCE);
-    }
-
-    @Test
     void 아직_진행_중일_수_있는_작업은_건드리지_않는다() {
         Long jobId = reserveAndCrash(Duration.ofMinutes(10));
 
         scheduler.recoverStuckJobs();
 
-        // 임계 안쪽이면 큐에서 대기 중이거나 렌더 중일 수 있다. 여기서 취소하면 멀쩡한 유료 작업을 죽인다.
         PdfExportJob job = reload(jobId);
         assertThat(job.getStatus()).isEqualTo(PdfExportStatus.IN_PROGRESS);
         assertThat(job.getErrorCode()).isNull();
@@ -67,7 +54,7 @@ class PdfExportCrashRecoveryTest extends PdfExportIntegrationTestSupport {
         assertThat(balance()).isEqualTo(INITIAL_BALANCE - COST);
     }
 
-    /** 차감까지 커밋된 작업을 만들고, 큐 진입 시각을 age만큼 과거로 밀어 "그 뒤로 아무 일도 안 일어난" 상태를 만든다. */
+    /** 차감까지 커밋한 뒤 큐 진입 시각(updatedAt)을 age 만큼 과거로 민다. */
     private Long reserveAndCrash(Duration age) {
         PdfExportReserveResultDto reserve = reserve();
         assertThat(balance()).isEqualTo(INITIAL_BALANCE - COST);

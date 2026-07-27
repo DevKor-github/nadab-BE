@@ -16,6 +16,7 @@ import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotEnoughCrystalException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PdfExportTxService {
 
     private final PdfExportJobRepository pdfExportJobRepository;
@@ -67,19 +69,19 @@ public class PdfExportTxService {
         long balanceAfter = wallet.getCrystalBalance();
 
         // 차감 로그(PENDING)
-        CrystalLog log = crystalLogRepository.save(
+        CrystalLog crystalLog = crystalLogRepository.save(
                 CrystalLog.createPending(user, -cost, balanceAfter, CrystalLogReason.PDF_EXPORT_GENERATE, REF_TYPE, jobId)
         );
 
         // job을 IN_PROGRESS로 바꾸고 차감 로그 id를 기록한다.
         // 방금 같은 트랜잭션에서 만든 job이라 정상이면 반드시 1건이 바뀐다.
         // 0이면 있을 수 없는 상황이므로, 예외를 던져 트랜잭션 전체를 롤백한다(차감·job 생성 되돌림 → 돈만 빠지는 일 방지).
-        if (pdfExportJobRepository.startProcessing(jobId, log.getId()) == 0) {
+        if (pdfExportJobRepository.startProcessing(jobId, crystalLog.getId()) == 0) {
             throw new IllegalStateException("PDF 작업을 진행 중 상태로 바꾸지 못했습니다. jobId=" + jobId);
         }
 
         // 트랜잭션 안에서 publish (AFTER_COMMIT 트리거 보장)
-        eventPublisher.publishEvent(new PdfExportRequestedEventDto(jobId, user.getId(), log.getId()));
+        eventPublisher.publishEvent(new PdfExportRequestedEventDto(jobId, user.getId(), crystalLog.getId()));
 
         return new PdfExportReserveResultDto(jobId, balanceAfter);
     }
@@ -87,6 +89,7 @@ public class PdfExportTxService {
     public void confirm(Long jobId, Long logId) {
         // 진행 중일 때만 성공(1). 0이면 그 사이 다른 곳(복구 스윕)에서 이미 실패·환불된 job이라 확정하지 않는다.
         if (pdfExportJobRepository.markCompleted(jobId) == 0) {
+            log.warn("[PDF_EXPORT][CONFIRM_SKIPPED] jobId={} — 이미 실패·환불 처리된 작업이라 확정하지 않는다", jobId);
             return;
         }
         crystalLogRepository.markConfirmed(logId);
@@ -127,13 +130,15 @@ public class PdfExportTxService {
     public void failAndRefund(Long userId, Long jobId, Long logId, String errorCode) {
         // 진행 중일 때만 성공(1)한 호출만 환불을 책임진다. 0이면 이미 완료·환불된 job → 공짜 PDF·이중 환불 방지.
         if (pdfExportJobRepository.markFailed(jobId, errorCode) == 0) {
+            log.warn("[PDF_EXPORT][REFUND_SKIPPED] jobId={}, errorCode={} — 이미 완료·환불된 작업이라 환불하지 않는다",
+                    jobId, errorCode);
             return;
         }
 
         // 실제 차감된 값(CrystalLog.delta, 음수)을 그대로 되돌린다 — 로그에서 읽어 가격이 바뀌어도 차감액=환불액 보장.
-        CrystalLog log = crystalLogRepository.findById(logId)
+        CrystalLog crystalLog = crystalLogRepository.findById(logId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.CRYSTAL_LOG_NOT_FOUND));
-        long refundAmount = -log.getDelta();
+        long refundAmount = -crystalLog.getDelta();
 
         int updated = userWalletRepository.refund(userId, refundAmount);
         if (updated == 0) {
@@ -141,5 +146,7 @@ public class PdfExportTxService {
         }
 
         crystalLogRepository.markRefunded(logId);
+        log.warn("[PDF_EXPORT][REFUNDED] jobId={}, userId={}, refund={}, errorCode={}",
+                jobId, userId, refundAmount, errorCode);
     }
 }

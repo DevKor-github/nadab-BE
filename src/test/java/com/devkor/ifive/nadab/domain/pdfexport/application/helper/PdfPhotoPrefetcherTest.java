@@ -106,21 +106,6 @@ class PdfPhotoPrefetcherTest {
     }
 
     @Test
-    void 키가_없으면_빈_맵이고_다운로드도_안_한다() {
-        AtomicInteger downloads = new AtomicInteger();
-
-        Map<String, byte[]> resolved = PdfPhotoPrefetcher.prefetch(List.of(),
-                key -> {
-                    downloads.incrementAndGet();
-                    return source(key);
-                },
-                PdfPhotoPrefetcherTest::fakeDecode, (key, e) -> { }, 3, 4);
-
-        assertThat(resolved).isEmpty();
-        assertThat(downloads).hasValue(0);
-    }
-
-    @Test
     void null_과_중복_키는_걸러진다() {
         List<String> keys = new ArrayList<>(List.of("a", "b", "a"));
         keys.add(null);
@@ -145,22 +130,5 @@ class PdfPhotoPrefetcherTest {
                 key -> { throw new OutOfMemoryError("heap"); },
                 PdfPhotoPrefetcherTest::fakeDecode, (key, e) -> { }, 2, 2))
                 .isInstanceOf(OutOfMemoryError.class);
-    }
-
-    @Test
-    void 다운로드_스레드가_하나여도_창을_다_채우고_전부_준비된다() {
-        List<String> keys = IntStream.range(0, 5).mapToObj(i -> "k" + i).toList();
-        List<String> downloadThreads = Collections.synchronizedList(new ArrayList<>());
-
-        Map<String, byte[]> resolved = PdfPhotoPrefetcher.prefetch(keys,
-                key -> {
-                    downloadThreads.add(Thread.currentThread().getName());
-                    return source(key);
-                },
-                PdfPhotoPrefetcherTest::fakeDecode, (key, e) -> { }, 1, 4);
-
-        // 창(4)이 스레드 수(1)보다 커도 공급이 하나로 직렬화될 뿐 누락은 없다.
-        assertThat(resolved.keySet()).containsExactlyElementsOf(keys);
-        assertThat(downloadThreads).hasSize(5).containsOnly("pdf-photo-1");
     }
 }

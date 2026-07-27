@@ -32,9 +32,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -106,13 +106,21 @@ public class PdfExportGenerationListener {
             List<String> imageKeys = answers.stream()
                     .map(PdfAnswerRowDto::imageKey)
                     .toList();
+            List<String> skipped = new ArrayList<>();
             Map<String, byte[]> photos = PdfPhotoPrefetcher.prefetch(imageKeys,
                     storage::download,
                     source -> PdfImage.coverSquareJpegBytes(source, PHOTO_PX),
-                    this::skipPhoto,
+                    (key, e) -> skipPhoto(jobId, skipped, key, e),
                     PHOTO_DOWNLOAD_THREADS, PHOTO_PREFETCH_WINDOW);
             photoCount = photos.size();
-            requirePhotosWhenExpected(imageKeys, photos);
+
+            // 준비된 장수 + 스킵된 장수 = 실제로 받아오려 한 사진 수(프리페처가 null·중복을 이미 걸렀다).
+            int photosRequested = photoCount + skipped.size();
+            if (!skipped.isEmpty()) {
+                log.warn("[PDF_EXPORT][PHOTOS_SKIPPED] jobId={}, skipped={}/{}",
+                        jobId, skipped.size(), photosRequested);
+            }
+            requirePhotosWhenExpected(jobId, photosRequested, photos);
 
             PdfHtmlAssembler.AssembledDocument doc = assembler.assemble(type, answers, weeklies, monthlies,
                     monthlyV2s, key -> Optional.ofNullable(photos.get(key)));
@@ -124,8 +132,8 @@ public class PdfExportGenerationListener {
                     PdfExportFileNames.asciiFallbackFileName(job));
             txService.confirm(jobId, crystalLogId);
 
-            // ── 4) 완료 이벤트(FCM 알림용) ──
-            eventPublisher.publishEvent(new PdfExportCompletedEvent(jobId, userId));
+            // ── 4) 완료 이벤트(FCM 알림용). 확정 이후라 여기서 실패해도 실패로 되돌리지 않는다 ──
+            notifyCompleted(jobId, userId);
 
         } catch (Exception e) {
             // 렌더·업로드·confirm 어디서 실패해도: 실패 확정 + 환불(별도 Tx). CAS 가드로 이중 환불·공짜 PDF 방지.
@@ -139,9 +147,22 @@ public class PdfExportGenerationListener {
             }
 
             // 성공·실패 무관하게 남긴다(유료 작업이라 감사·환불 문의를 쫓을 수 있어야 한다).
-            // pending = 이 렌더가 끝난 시점에 뒤에 밀려 있던 작업 수.
+            // pending = 이 시점의 대기 줄 깊이(대기 중 + 렌더 중). 자기 자신을 포함해 최소 1이다.
             log.info("[PDF_EXPORT][RENDER_END] jobId={}, photos={}, elapsedMs={}, pending={}",
                     jobId, photoCount, (System.nanoTime() - startedAt) / 1_000_000L, renderQueue.pending());
+        }
+    }
+
+    /**
+     * 완료 알림 발행. 알림 큐가 포화면 여기서 예외가 나는데, 그때 PDF 는 이미 S3 에 올라가고 과금도 확정된 뒤다.
+     * 위 catch 로 흘려보내면 멀쩡히 완료된 작업이 GENERATION_FAILED 로 기록되므로 여기서 삼킨다.
+     */
+    private void notifyCompleted(Long jobId, Long userId) {
+        try {
+            eventPublisher.publishEvent(new PdfExportCompletedEvent(jobId, userId));
+        } catch (Exception e) {
+            log.warn("[PDF_EXPORT][NOTIFY_FAILED] jobId={}, userId={} — PDF 는 정상 완료됐고 알림만 실패했다",
+                    jobId, userId, e);
         }
     }
 
@@ -155,19 +176,23 @@ public class PdfExportGenerationListener {
     }
 
     /** 사진이 실려야 하는데 한 장도 준비되지 못했으면 job 실패(기존 catch 가 환불까지 처리). 일부 실패는 스킵으로 둔다 */
-    private void requirePhotosWhenExpected(List<String> imageKeys, Map<String, byte[]> photos) {
-        boolean expected = imageKeys.stream().anyMatch(Objects::nonNull);
-        if (expected && photos.isEmpty()) {
-            throw new IllegalStateException("답변 사진을 한 장도 준비하지 못했습니다(요청 " + imageKeys.size() + "건)");
+    private void requirePhotosWhenExpected(Long jobId, int photosRequested, Map<String, byte[]> photos) {
+        if (photosRequested > 0 && photos.isEmpty()) {
+            // 렌더가 터진 게 아니라 사진 공급이 전멸
+            log.error("[PDF_EXPORT][PHOTOS_ALL_FAILED] jobId={}, requested={}", jobId, photosRequested);
+            throw new IllegalStateException("답변 사진을 한 장도 준비하지 못했습니다(요청 " + photosRequested + "건)");
         }
     }
 
     /**
      * 사진 한 장의 다운로드·디코드가 실패했을 때. 그 사진만 건너뛰고 나머지는 렌더한다.
-     * 유료 '내 기록 전부' 특성상 썸네일 1장 손상으로 전액 환불+산출물 0은 과함(과금은 유형별 고정이라 사진 누락과 무관).
-     * 준비된 바이트는 어셈블러가 asset:photo-N 으로 참조·수집하고 렌더러가 서빙한다.
+     * S3 장애면 한 렌더에서 수백 장이 같은 이유로 실패하므로 원인(스택)은 첫 건에만 남기고 나머지는 모아서 센다.
+     * 프리페처가 다운로드 결과를 호출 스레드에서 순서대로 꺼내며 부르므로 리스트를 그대로 써도 된다.
      */
-    private void skipPhoto(String imageKey, RuntimeException e) {
-        log.warn("[PDF_EXPORT] 답변 사진 스킵(다운로드/디코드 실패): imageKey={}", imageKey, e);
+    private void skipPhoto(Long jobId, List<String> skipped, String imageKey, RuntimeException e) {
+        if (skipped.isEmpty()) {
+            log.warn("[PDF_EXPORT] 답변 사진 스킵(다운로드/디코드 실패): jobId={}, imageKey={}", jobId, imageKey, e);
+        }
+        skipped.add(imageKey);
     }
 }

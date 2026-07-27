@@ -19,8 +19,8 @@ import java.util.Iterator;
 
 /**
  * 답변 사진 렌더 유틸(정중앙 정사각 크롭 + 리샘플 → JPEG 바이트). openhtmltopdf가 object-fit/aspect-ratio 미지원이라 여기서 굽는다.
- * 프로덕션 Listener·프리뷰 하네스 공유 단일 지점. webp는 twelvemonkeys 리더로 ImageIO 가 바로 디코드(사전 변환 불필요).
- * 결과 바이트는 어셈블러가 asset: 토큰으로 참조하고 렌더러 스트림 팩토리가 서빙한다 — XHTML 에 base64 로 인라인되지 않는다.
+ * webp는 twelvemonkeys 리더로 ImageIO 가 바로 디코드한다(사전 변환 불필요).
+ * 결과 바이트는 어셈블러가 asset: 토큰으로 참조하고 렌더러 스트림 팩토리가 서빙한다.
  */
 public final class PdfImage {
 

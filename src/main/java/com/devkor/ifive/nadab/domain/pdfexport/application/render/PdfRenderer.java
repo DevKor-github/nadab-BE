@@ -25,8 +25,7 @@ import java.util.Map;
  * XHTML → PDF (openhtmltopdf/PDFBox). Pretendard TTF를 임베드(subset)한다.
  * 레이더·하이라이트는 data URI(1회/고유)지만, 반복 baked 에셋(배너·divider·아이콘·로고·섹션·그림자)과 답변 사진은
  * asset: 프로토콜로 서빙한다 — 어셈블러가 asset:키 토큰만 박고, 여기 스트림 팩토리가 바이트를 준다.
- * 반복 에셋은 URI 캐시로 1회만 디코드되고, 답변 사진은 고유라 캐시는 없지만 XHTML 에 base64 로 인라인되지 않는다.
- * 결과 PDF는 힙 대신 임시파일로 스트리밍하고, PDFBox 문서모델도 디스크 임시파일에 둔다(힙 사용 감축).
+ * 결과 PDF와 PDFBox 문서모델은 힙 밖 임시파일에 둔다.
  */
 @Slf4j
 @Component
@@ -48,7 +47,7 @@ public class PdfRenderer {
             throw new IllegalStateException("PDF 임시파일 생성 실패", e);
         }
         boolean rendered = false;
-        // PDFBox 문서모델을 힙 대신 디스크 임시파일에 둔다(createTempFileOnlyStreamCache). usePDDocument 사용 시 close 는 우리 책임.
+        // PDFBox 문서모델을 힙 밖 임시파일에 둔다(createTempFileOnlyStreamCache). usePDDocument 사용 시 close 는 우리 책임.
         try (OutputStream os = Files.newOutputStream(pdfFile);
              PDDocument pdDocument = new PDDocument(IOUtils.createTempFileOnlyStreamCache())) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
@@ -79,7 +78,7 @@ public class PdfRenderer {
         try {
             Files.deleteIfExists(file);
         } catch (IOException e) {
-            log.warn("PDF 임시파일 삭제 실패: {}", file, e);
+            log.warn("[PDF_EXPORT] PDF 임시파일 삭제 실패: {}", file, e);
         }
     }
 

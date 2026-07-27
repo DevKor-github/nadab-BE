@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 카드 소프트 그림자 PNG(openhtmltopdf box-shadow 미지원 우회). 크기별 캐시.
- * 목업 토큰(offset y4·blur 12·#00000033=검정 20%) 재현 = 20% 라운드렉트를 박스블러로 퍼뜨림.
+ * offset y4·blur 12·검정 20% — 20% 라운드렉트를 박스블러로 퍼뜨려 만든다.
  */
 @Component
 class PdfShadowRenderer {

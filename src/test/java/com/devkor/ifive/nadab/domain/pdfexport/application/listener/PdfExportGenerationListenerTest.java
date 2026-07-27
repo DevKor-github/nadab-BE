@@ -48,9 +48,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * PdfExportGenerationListener 오케스트레이션 검증 — 유형별 조회 분기·업로드·확정·완료 이벤트·실패 환불·사진 스킵의 "호출 순서"만.
- * 협력자(assembler·renderer)·DB·S3·과금 Tx는 전부 목(풀컨텍스트·DB 없이 돈다). 렌더 충실도는 PdfPreviewTest 담당.
- * 사진만은 예외로, assembler 에 넘긴 조회 함수를 붙잡아 프리페치 결과(S3 원본→JPEG / 실패 스킵)까지 확인한다.
+ * PdfExportGenerationListener 가 무엇을 부르고 무엇을 안 부르는지 검증한다.
+ * 유형별 조회 분기 · 업로드 · 완료 확정 · 완료 이벤트 · 실패 시 환불 · 사진 스킵이 대상이다.
+ * 협력자(assembler·renderer)·DB·S3·과금 트랜잭션은 전부 목이라 스프링도 DB도 없이 돈다. 렌더 결과물의 품질은 PdfPreviewTest 몫.
+ * 사진만은 예외로, assembler 에 넘긴 조회 함수를 붙잡아 실제로 준비된 바이트(S3 원본 → JPEG / 실패는 빈 값)까지 확인한다.
  */
 class PdfExportGenerationListenerTest {
 
@@ -106,7 +107,7 @@ class PdfExportGenerationListenerTest {
     }
 
     @Test
-    void 답변만_답변만조회하고_렌더파일을_업로드_확정_완료이벤트() throws Exception {
+    void 답변만_유형은_답변만_조회해_업로드하고_확정한_뒤_완료를_알린다() throws Exception {
         givenJob(PdfExportType.ANSWER_ONLY);
         List<PdfAnswerRowDto> answers = List.of(
                 answer("2026-01-05", "오늘 가장 고마웠던 순간은?", null),
@@ -116,14 +117,14 @@ class PdfExportGenerationListenerTest {
 
         listener.handle(EVENT);
 
-        // 답변 유형 = 답변만 조회, 리포트 조회 없음(리스트 빈 채 assemble).
+        // ANSWER_ONLY 는 답변만 조회한다. 리포트 3종은 조회 자체를 안 하고 빈 리스트로 assemble 에 넘어간다.
         verify(assembler).assemble(eq(PdfExportType.ANSWER_ONLY), eq(answers),
                 eq(List.of()), eq(List.of()), eq(List.of()), any());
         verify(queryRepository, never()).findWeeklyReportsInPeriod(anyLong(), any(), any());
         verify(queryRepository, never()).findMonthlyReportsInPeriod(anyLong(), any(), any());
         verify(queryRepository, never()).findMonthlyReportsV2InPeriod(anyLong(), any(), any());
 
-        // job 결과 키로 업로드 + 파일명 2종(한글·ASCII 폴백) 각인.
+        // job 이 들고 있던 결과 키로 업로드하고, 파일명 2종(한글 + ASCII 폴백)을 S3 객체에 각인한다.
         verify(storage).upload(RESULT_KEY, pdfFile,
                 "나답_나에게답하다_20260101-20260131.pdf",
                 "nadab_20260101-20260131.pdf");
@@ -138,7 +139,7 @@ class PdfExportGenerationListenerTest {
     }
 
     @Test
-    void 리포트만_주간과_월간V1V2를_조회하고_답변조회는안함() {
+    void 리포트만_유형은_주간과_월간_V1_V2를_조회하고_답변은_조회하지_않는다() {
         givenJob(PdfExportType.REPORT_ONLY);
         when(queryRepository.findWeeklyReportsInPeriod(USER_ID, START, END)).thenReturn(List.of());
         when(queryRepository.findMonthlyReportsInPeriod(USER_ID, START, END)).thenReturn(List.of());
@@ -170,7 +171,22 @@ class PdfExportGenerationListenerTest {
     }
 
     @Test
-    void 리포트답변_답변과_리포트4종전부_조회() {
+    void 알림_발행이_실패해도_완료를_되돌리지_않는다() {
+        givenJob(PdfExportType.ANSWER_ONLY);
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
+        doThrow(new RuntimeException("알림 큐 포화"))
+                .when(eventPublisher).publishEvent(any(PdfExportCompletedEvent.class));
+
+        listener.handle(EVENT);
+
+        // 알림이 터진 시점엔 업로드·확정이 이미 끝나 있다. 여기서 실패로 되돌리면 멀쩡히 완료된 작업이 실패로 기록된다.
+        verify(storage).upload(eq(RESULT_KEY), eq(pdfFile), any(), any());
+        verify(txService).confirm(JOB_ID, CRYSTAL_LOG_ID);
+        verify(txService, never()).failAndRefund(anyLong(), anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void 리포트답변_유형은_답변과_리포트를_모두_조회한다() {
         givenJob(PdfExportType.REPORT_AND_ANSWER);
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
         when(queryRepository.findWeeklyReportsInPeriod(USER_ID, START, END)).thenReturn(List.of());
@@ -187,7 +203,7 @@ class PdfExportGenerationListenerTest {
     }
 
     @Test
-    void 렌더실패시_확정없이_실패환불_안전한코드이름만() {
+    void 렌더가_실패하면_확정하지_않고_안전한_코드_이름으로_환불한다() {
         givenJob(PdfExportType.ANSWER_ONLY);
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END))
                 .thenReturn(List.of(answer("2026-01-05", "질문", null)));
@@ -195,7 +211,8 @@ class PdfExportGenerationListenerTest {
 
         listener.handle(EVENT);
 
-        // 어디서 터지든: 확정 안 하고, 실패 확정 + 환불. error_code 엔 안전한 ErrorCode enum 이름만(메시지·스택 금지).
+        // 렌더·업로드·확정 어디서 터지든 완료 확정은 안 하고 실패 처리 + 환불로 간다.
+        // error_code 에는 ErrorCode enum 이름만 넣는다 — getStatus 로 클라에 그대로 나가는 값이라 예외 메시지·스택이 새면 안 된다.
         verify(txService).failAndRefund(USER_ID, JOB_ID, CRYSTAL_LOG_ID, "PDF_EXPORT_GENERATION_FAILED");
         verify(txService, never()).confirm(anyLong(), anyLong());
         verify(storage, never()).upload(any(), any(), any(), any());
@@ -204,7 +221,7 @@ class PdfExportGenerationListenerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void 사진준비_정상은_jpeg바이트_실패는_스킵() throws Exception {
+    void 사진은_정상이면_jpeg로_준비되고_실패한_한_장만_건너뛴다() throws Exception {
         givenJob(PdfExportType.ANSWER_ONLY);
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of(
                 answer("2026-01-05", "오늘 가장 고마웠던 순간은?", "answers/7/ok.webp"),
@@ -221,7 +238,7 @@ class PdfExportGenerationListenerTest {
         verify(assembler).assemble(any(), any(), any(), any(), any(), resolverCaptor.capture());
         Function<String, Optional<byte[]>> photos = resolverCaptor.getValue();
 
-        // 정상: S3 원본 → PdfImage 로 정사각 리샘플 → JPEG 바이트(asset: 서빙용).
+        // 정상 사진: S3 원본을 PdfImage 가 640×640 정사각으로 리샘플해 JPEG 바이트로 만든다(asset: 로 서빙될 형태).
         Optional<byte[]> ok = photos.apply("answers/7/ok.webp");
         assertThat(ok).isPresent();
         assertThat(ok.get()).hasSizeGreaterThan(1000);
@@ -276,13 +293,17 @@ class PdfExportGenerationListenerTest {
                 question, InterestCode.EMOTION, EmotionCode.PEACE);
     }
 
-    /** 파일 없이 코드로 만든 합성 사진 바이트(비정사각 800×600 → PdfImage 의 cover-crop 경로도 탄다). */
+    /**
+     * 파일 없이 코드로 만든 합성 사진 바이트(레포에 바이너리를 두지 않는다).
+     * 크기는 실서비스가 받는 답변 사진과 같은 1280×1280 — PdfImage 가 640으로 줄일 때 서브샘플 디코드까지 탄다.
+     */
     private static byte[] syntheticPhotoBytes() throws Exception {
-        BufferedImage img = new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB);
+        int side = 1280;
+        BufferedImage img = new BufferedImage(side, side, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
         try {
-            g.setPaint(new GradientPaint(0, 0, new Color(0x5D57F6), 800, 600, new Color(0xB5E7FF)));
-            g.fillRect(0, 0, 800, 600);
+            g.setPaint(new GradientPaint(0, 0, new Color(0x5D57F6), side, side, new Color(0xB5E7FF)));
+            g.fillRect(0, 0, side, side);
         } finally {
             g.dispose();
         }

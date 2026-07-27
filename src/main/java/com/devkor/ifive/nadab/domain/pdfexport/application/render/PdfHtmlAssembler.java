@@ -60,15 +60,15 @@ public class PdfHtmlAssembler {
     private static final int REPORT_BODY_LH = 26;
     /** 발견/레이더 흰 박스 오버헤드: border 2 + padding 32. */
     private static final int BOX_OVERHEAD = 34;
-    /** 한 마디 박스 오버헤드: 테두리 없음 + padding 상하 8(=16). Figma: 테두리 X, padding 8/16. */
+    /** 한 마디 박스 오버헤드: 테두리 없음 + padding 상하 8(=16). */
     private static final int COMMENT_BOX_OVERHEAD = 16;
     /** 한 마디 박스 사이 간격 = 박스와 양옆 사이드 여백(카드 padding 16)과 동일. */
     private static final int COMMENT_BOX_GAP = 16;
     /** 섹션 head: 라인 24 + 하단 margin 8. */
     private static final int SECTION_HEAD_H = 32;
-    /** 배너 아래 블록들(발견·한마디·부제+레이더 묶음) 사이 간격 — Figma 32. */
+    /** 배너 아래 블록들(발견·한마디·부제+레이더 묶음) 사이 간격. */
     private static final int SECTION_GAP = 32;
-    /** 부제(emotionTrend) → 레이더 박스 간격 = head→box(8)과 동일(사용자 요청). */
+    /** 부제(emotionTrend) → 레이더 박스 간격 = head→box(8)과 동일. */
     private static final int SUBTITLE_RADAR_GAP = 8;
     /** 레이더 박스 안: 월 라벨 아래 문구와의 간격. */
     private static final int RADAR_NOTE_GAP = 12;
@@ -229,7 +229,7 @@ public class PdfHtmlAssembler {
         // 본문↔사진 간격은 본문 블록의 margin-bottom 으로 준다(wrapper margin-top 은 openhtmltopdf 가 드롭).
         String bodyClass = hasPhoto ? "a-body has-photo" : "a-body";
 
-        // 사진은 흰 답변 박스 '안쪽'(내용 아래)에 위치 — Figma 스펙(width 399 = 흰박스 내부폭).
+        // 사진은 흰 답변 박스 '안쪽'(내용 아래)에 위치 — 폭은 WHITE_INNER(흰박스 내부폭)에 맞춘다.
         String html = "<div class=\"a-head\"><span class=\"date\">" + PdfHtml.escape(DATE.format(a.date())) + "</span>"
                 + tags + "</div>"
                 + "<div class=\"q-title\">" + PdfHtml.escape(a.questionText()) + "</div>"
@@ -351,13 +351,13 @@ public class PdfHtmlAssembler {
                 + "<div class=\"r-box\"><div class=\"r-box-body\">" + bodyHtml + "</div></div></div>";
     }
 
-    /** 한 마디 섹션 = head + 문장별 흰 박스(FE splitSegmentsBySentence 미러). */
+    /** 한 마디 섹션 = head + 문장별 흰 박스. */
     private String commentSection(StyledText body) {
         List<StyledTextHtmlRenderer.Sentence> sentences = StyledTextHtmlRenderer.renderSentences(body);
         if (sentences.isEmpty()) {
             return "";
         }
-        // 한 마디 박스 = 테두리 없음·padding 8/16·박스 간격 16(Figma). 발견 박스(.r-box)와 구분되는 .r-comment-box.
+        // 한 마디 박스 = 테두리 없음·padding 8/16·박스 간격 16. 발견 박스(.r-box)와 구분되는 .r-comment-box.
         StringBuilder boxes = new StringBuilder();
         for (StyledTextHtmlRenderer.Sentence s : sentences) {
             boxes.append("<div class=\"r-comment-box\"><div class=\"r-box-body\">")

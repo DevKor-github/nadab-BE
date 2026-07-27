@@ -25,7 +25,7 @@ import java.util.UUID;
 
 /**
  * PDF 결과물 S3 저장 + CloudFront signed URL 다운로드.
- * - 업로드: 렌더링 완료된 PDF 바이트를 결정적 키로 저장(파일명 Content-Disposition 각인 포함)
+ * - 업로드: 렌더 결과 임시파일을 열거불가 키로 저장(파일명 Content-Disposition 각인 포함)
  * - 다운로드: CloudFront signed URL 발급(COMPLETED 조회 시). S3는 OAC로 은닉, 엣지가 서명 검증
  * - 삭제: dedup(동일 기간 재생성 시 이전 결과물 제거)
  */
@@ -92,7 +92,7 @@ public class PdfExportStorage {
         try {
             s3Client.deleteObject(builder -> builder.bucket(bucket).key(key));
         } catch (RuntimeException e) {
-            log.warn("PDF 결과물 S3 삭제 실패(lifecycle이 정리할 예정): key={}", key, e);
+            log.warn("[PDF_EXPORT] PDF 결과물 S3 삭제 실패(lifecycle이 정리할 예정): key={}", key, e);
         }
     }
 

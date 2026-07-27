@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,14 +40,15 @@ public class PdfExportRecoveryScheduler {
                 return;
             }
 
-            int recovered = 0;
+            List<Long> recovered = new ArrayList<>();
+            List<Long> failed = new ArrayList<>();
             for (PdfExportJob job : stuck) {
-                if (refundQuietly(job)) {
-                    recovered++;
+                if (refundQuietly(job, failed)) {
+                    recovered.add(job.getId());
                 }
             }
-            log.warn("[PDF_EXPORT][RECOVERY] 멈춘 작업 환불: 대상={}, 환불={}, 임계={}분",
-                    stuck.size(), recovered, STUCK_TIMEOUT.toMinutes());
+            log.warn("[PDF_EXPORT][RECOVERY] 멈춘 작업 회수: 대상={}건, 환불성공={}, 환불실패={}",
+                    stuck.size(), recovered, failed);
 
         } catch (Exception e) {
             // 스케줄러 스레드로 예외가 새면 다음 주기가 안 돌 수 있다.
@@ -55,10 +57,10 @@ public class PdfExportRecoveryScheduler {
     }
 
     /**
-     * 한 건 환불. 실패해도 삼키고 다음 건으로 넘어간다.
-     * 삼킨 건은 상태가 IN_PROGRESS로 남아 다음 주기에 다시 대상이 된다.
+     * 한 건 환불. 실패해도 삼키고 다음 건으로 넘어가며, 삼킨 건은 IN_PROGRESS로 남아 다음 주기에 다시 대상이 된다.
+     * 배치 전체가 같은 이유로 실패하는 일이 5분마다 반복될 수 있어 스택은 주기마다 첫 건에만 남긴다(나머지 jobId는 요약 줄에).
      */
-    private boolean refundQuietly(PdfExportJob job) {
+    private boolean refundQuietly(PdfExportJob job, List<Long> failed) {
         Long jobId = job.getId();
         try {
             Long userId = job.getUser().getId();   // LAZY 프록시 id 접근 — 쿼리 없음
@@ -66,7 +68,10 @@ public class PdfExportRecoveryScheduler {
                     ErrorCode.PDF_EXPORT_GENERATION_TIMEOUT.name());
             return true;
         } catch (Exception e) {
-            log.error("[PDF_EXPORT][RECOVERY] 개별 환불 실패: jobId={}", jobId, e);
+            if (failed.isEmpty()) {
+                log.error("[PDF_EXPORT][RECOVERY] 개별 환불 실패: jobId={}", jobId, e);
+            }
+            failed.add(jobId);
             return false;
         }
     }

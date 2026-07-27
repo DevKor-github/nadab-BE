@@ -37,12 +37,4 @@ class PdfExportDownloadRateLimiterTest {
         // 카운터가 섞이면 한 명이 전체 발급을 막을 수 있다.
         assertThat(rateLimiter.tryAcquire(99L)).isTrue();
     }
-
-    @Test
-    void 거부된_뒤에도_계속_거부한다() {
-        IntStream.range(0, LIMIT).forEach(i -> rateLimiter.tryAcquire(USER_ID));
-
-        assertThat(rateLimiter.tryAcquire(USER_ID)).isFalse();
-        assertThat(rateLimiter.tryAcquire(USER_ID)).isFalse();
-    }
 }

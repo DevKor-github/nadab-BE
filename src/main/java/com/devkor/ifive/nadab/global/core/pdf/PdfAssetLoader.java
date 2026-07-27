@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * PDF 렌더 정적 애셋(폰트·이미지)을 클래스패스에서 최초 1회 로드·캐시.
  * 반복 에셋(배너·divider·아이콘·로고·섹션)은 asset: 토큰으로 참조한다 — 게터는 asset:키 문자열을 주고,
- * 바이트는 assetBytes 로 렌더러 스트림 팩토리가 서빙해 동일 에셋을 1회만 디코드한다. 폰트는 필수(없으면 startup 실패).
+ * 바이트는 assetBytes 로 렌더러 스트림 팩토리가 서빙한다. 폰트는 필수(없으면 startup 실패).
  */
 @Slf4j
 @Component
