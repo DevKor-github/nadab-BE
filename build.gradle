@@ -108,51 +108,5 @@ dependencyManagement {
 }
 
 tasks.named('test') {
-	useJUnitPlatform {
-		// 렌더 실측 하네스는 무겁고 큰 힙이 필요 → 일반 test/build 에서 제외, pdfBench 로만 실행
-		excludeTags 'bench'
-	}
-}
-
-// PDF 렌더 실측 하네스: ./gradlew pdfBench (사진: -Dpdf.bench.photoDir=<webp 디렉터리>, 규모: -Dpdf.bench.days/photoRatio).
-tasks.register('pdfBench', Test) {
-	group = 'verification'
-	description = 'PDF 렌더 실측 하네스(peak heap · 시간 · CPU). @Tag("bench") 만 실행.'
-	testClassesDirs = sourceSets.test.output.classesDirs
-	classpath = sourceSets.test.runtimeClasspath
-	useJUnitPlatform {
-		includeTags 'bench'
-	}
-	// 기본 2g(peak 관측용). 힙 요구량 탐색 시 -PbenchXmx=512m 등으로 낮춤.
-	maxHeapSize = project.findProperty('benchXmx') ?: '2g'
-	// t3.small(2 vCPU) 경합 재현: -PbenchCpu=2 → JVM 이 가용 코어를 2로 인식(라이트 CPU 스로틀 근사, 코어당 속도는 여전히 dev급)
-	if (project.hasProperty('benchCpu')) {
-		jvmArgs "-XX:ActiveProcessorCount=${project.property('benchCpu')}"
-	}
-	// 실서버 GC 고정: -PbenchGc=g1(운영 t3.small) | serial(개발 t3.micro). 미지정이면 JVM ergonomic 선택.
-	if (project.hasProperty('benchGc')) {
-		def gc = project.property('benchGc').toString().toLowerCase()
-		jvmArgs(gc == 'serial' ? '-XX:+UseSerialGC' : '-XX:+UseG1GC')
-	}
-	// 원인 규명 프로파일링(옵션):
-	//  -PbenchJfr   → JFR allocation 프로파일(build/pdf-render.jfr). 분석: jfr print --events jdk.ObjectAllocationSample --stack-depth 30 build/pdf-render.jfr
-	//  -PbenchGcLog → GC 로그(build/pdf-gc.log). GC 후 live(=floor) vs GC 사이 할당(=churn) 분리용.
-	if (project.hasProperty('benchJfr')) {
-		// %p=PID → JVM 마다 별도 파일(여러 워커가 같은 파일 덮어쓰는 것 방지). 벤치 워커 = 가장 큰 파일.
-		jvmArgs "-XX:StartFlightRecording=settings=profile,filename=${project.buildDir}/pdf-render-%p.jfr,dumponexit=true"
-	}
-	if (project.hasProperty('benchGcLog')) {
-		// %p=PID → 워커 JVM 마다 별도 파일(뒤에 뜬 워커가 렌더 워커 로그를 덮어쓰는 것 방지). 벤치 워커 = 가장 큰 파일.
-		jvmArgs "-Xlog:gc*,gc+heap=debug:file=${project.buildDir}/pdf-gc-%p.log:time,level,tags"
-	}
-	forkEvery = 1
-	maxParallelForks = 1
-	// pdf.bench.* 시스템 프로퍼티를 포크 JVM 으로 전달
-	systemProperties = System.properties.findAll { it.key.toString().startsWith('pdf.bench.') }
-	testLogging {
-		showStandardStreams = true
-		events 'passed', 'failed', 'skipped'
-		exceptionFormat = 'full'
-	}
-	outputs.upToDateWhen { false }
+	useJUnitPlatform()
 }
