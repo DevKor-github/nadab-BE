@@ -235,6 +235,12 @@ public enum ErrorCode {
     // 404 Not Found
     ASK_CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 세션을 찾을 수 없습니다"),
     ASK_CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 메시지를 찾을 수 없습니다"),
+    ASK_CHAT_WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 지갑을 찾을 수 없습니다"),
+    ASK_CHAT_WALLET_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 로그를 찾을 수 없습니다"),
+
+    // 400 Bad Request
+    ASK_CHAT_NOT_ENOUGH_ANSWERS(HttpStatus.BAD_REQUEST, "물어보기 기능은 답변을 20개 이상 작성한 후 사용할 수 있습니다"),
+    ASK_CHAT_TURN_BALANCE_INSUFFICIENT(HttpStatus.BAD_REQUEST, "사용 가능한 Ask Chat 대화권이 없습니다"),
 
     // ==================== PROMPT (프롬프트) ====================
     // 400 Bad Request

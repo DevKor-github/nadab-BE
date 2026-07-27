@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.askchat.application;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerGenerationResult;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPromptContext;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatGeneratedAnswer;
+import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatTurnReservation;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageReference;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
@@ -69,6 +70,9 @@ class AskChatMessageCommandServiceTest {
     @Mock
     private AskChatAnswerLlmClient askChatAnswerLlmClient;
 
+    @Mock
+    private AskChatTurnReservationService askChatTurnReservationService;
+
     private AskChatMessageCommandService service;
     private AskChatAnswerProperties askChatAnswerProperties;
 
@@ -84,7 +88,8 @@ class AskChatMessageCommandServiceTest {
                 askChatRagDocumentRepository,
                 askChatAnswerContextService,
                 askChatAnswerLlmClient,
-                askChatAnswerProperties
+                askChatAnswerProperties,
+                askChatTurnReservationService
         );
     }
 
@@ -102,6 +107,8 @@ class AskChatMessageCommandServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
         AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
         when(askChatAnswerContextService.build(any(), any(), any())).thenReturn(context);
+        AskChatTurnReservation reservation = reservation();
+        when(askChatTurnReservationService.reserveTurn(1L, activeSession)).thenReturn(reservation);
         when(askChatAnswerLlmClient.generate(context)).thenReturn(successGeneration());
         AskChatRagDocument ragDocument = mock(AskChatRagDocument.class);
         when(askChatRagDocumentRepository.getReferenceById(100L)).thenReturn(ragDocument);
@@ -135,11 +142,18 @@ class AskChatMessageCommandServiceTest {
         assertThat(referenceCaptor.getValue().getMessage()).isSameAs(messageCaptor.getAllValues().get(1));
         assertThat(referenceCaptor.getValue().getRagDocument()).isSameAs(ragDocument);
         assertThat(referenceCaptor.getValue().getDisplayOrder()).isEqualTo(1);
-        InOrder inOrder = inOrder(askChatAnswerContextService, askChatMessageRepository, askChatAnswerLlmClient);
+        InOrder inOrder = inOrder(
+                askChatTurnReservationService,
+                askChatAnswerContextService,
+                askChatMessageRepository,
+                askChatAnswerLlmClient
+        );
+        inOrder.verify(askChatTurnReservationService).reserveTurn(1L, activeSession);
         inOrder.verify(askChatAnswerContextService).build(any(), any(), any());
         inOrder.verify(askChatMessageRepository).save(messageCaptor.getAllValues().get(0));
         inOrder.verify(askChatAnswerLlmClient).generate(context);
         verify(activeSession).completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
+        verify(askChatTurnReservationService).confirm(reservation);
     }
 
     @Test
@@ -167,6 +181,8 @@ class AskChatMessageCommandServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
         AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
         when(askChatAnswerContextService.build(any(), any(), any())).thenReturn(context);
+        AskChatTurnReservation reservation = reservation();
+        when(askChatTurnReservationService.reserveTurn(1L, activeSession)).thenReturn(reservation);
         when(askChatAnswerLlmClient.generate(context))
                 .thenThrow(new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED));
 
@@ -192,6 +208,8 @@ class AskChatMessageCommandServiceTest {
         assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isGreaterThanOrEqualTo(0L);
         verify(askChatMessageReferenceRepository, never()).save(any());
         verify(activeSession, never()).completeAnsweredTurn(anyInt());
+        verify(askChatTurnReservationService).refund(1L, activeSession, reservation);
+        verify(askChatTurnReservationService, never()).confirm(any());
     }
 
     @Test
@@ -209,6 +227,28 @@ class AskChatMessageCommandServiceTest {
                 .isInstanceOfSatisfying(ConflictException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED));
         verify(askChatMessageRepository, never()).save(any());
+    }
+
+    @Test
+    void sendQuestion_rejects_when_turn_balance_is_insufficient_before_message_save() {
+        AskChatSession activeSession = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                2,
+                OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(activeSession));
+        when(askChatTurnReservationService.reserveTurn(1L, activeSession))
+                .thenThrow(new BadRequestException(ErrorCode.ASK_CHAT_TURN_BALANCE_INSUFFICIENT));
+
+        assertThatThrownBy(() -> service.sendQuestion(1L, 10L, "더 물어볼래"))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_TURN_BALANCE_INSUFFICIENT));
+
+        verify(askChatMessageRepository, never()).save(any());
+        verify(askChatAnswerContextService, never()).build(any(), any(), any());
+        verify(askChatAnswerLlmClient, never()).generate(any());
     }
 
     @Test
@@ -265,6 +305,10 @@ class AskChatMessageCommandServiceTest {
                 new LlmTokenUsage(10L, 20L, 30L),
                 List.of(100L)
         );
+    }
+
+    private AskChatTurnReservation reservation() {
+        return new AskChatTurnReservation(1000L, -1, 0);
     }
 
     private AskChatSession session(

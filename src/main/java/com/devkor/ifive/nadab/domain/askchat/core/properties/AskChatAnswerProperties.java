@@ -30,7 +30,7 @@ public class AskChatAnswerProperties {
     private double temperature = 0.3;
 
     @Min(1)
-    private int maxTokens = 700;
+    private int maxTokens = 900;
 
     @Min(1)
     private int recentMessageLimit = 10;
@@ -39,5 +39,5 @@ public class AskChatAnswerProperties {
     private int followUpQuestionCount = 2;
 
     @Min(1)
-    private int promptVersion = 1;
+    private int promptVersion = 2;
 }

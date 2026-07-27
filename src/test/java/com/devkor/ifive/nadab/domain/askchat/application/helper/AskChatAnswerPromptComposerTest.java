@@ -41,7 +41,7 @@ class AskChatAnswerPromptComposerTest {
 
         assertThat(prompt.systemPrompt()).isEqualTo("system template");
         assertThat(prompt.userPrompt())
-                .contains("프롬프트 버전: 1")
+                .contains("프롬프트 버전: 2")
                 .contains("내가 방금 한 질문은 무엇이지?")
                 .contains("USER: 나는 어떤 사람이야?")
                 .contains("ASSISTANT: 말해준 걸 보면 관계를 중요하게 여기는 편으로 보여요.")
@@ -78,7 +78,6 @@ class AskChatAnswerPromptComposerTest {
 
     private AskChatAnswerProperties properties() {
         AskChatAnswerProperties properties = new AskChatAnswerProperties();
-        properties.setPromptVersion(1);
         properties.setFollowUpQuestionCount(2);
         return properties;
     }

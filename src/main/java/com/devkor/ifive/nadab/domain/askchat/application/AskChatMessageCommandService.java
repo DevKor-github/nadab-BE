@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSen
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerGenerationResult;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPromptContext;
+import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatTurnReservation;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageReference;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocument;
@@ -45,6 +46,7 @@ public class AskChatMessageCommandService {
     private final AskChatAnswerContextService askChatAnswerContextService;
     private final AskChatAnswerLlmClient askChatAnswerLlmClient;
     private final AskChatAnswerProperties askChatAnswerProperties;
+    private final AskChatTurnReservationService askChatTurnReservationService;
 
     @Transactional
     public AskChatQuestionSendResponse sendQuestion(Long userId, Long sessionId, String content) {
@@ -52,6 +54,7 @@ public class AskChatMessageCommandService {
         String normalizedContent = normalizeQuestionContent(content);
         AskChatSession session = getSession(userId, sessionId);
         validateTurnLimit(session);
+        AskChatTurnReservation turnReservation = askChatTurnReservationService.reserveTurn(userId, session);
 
         long generationStartedAt = System.nanoTime();
         AskChatAnswerPromptContext context = askChatAnswerContextService.build(
@@ -73,11 +76,13 @@ public class AskChatMessageCommandService {
             assistantMessage = saveCompletedAssistantMessage(session, generationResult, generationDurationMs);
             saveMessageReferences(assistantMessage, generationResult);
             session.completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
+            askChatTurnReservationService.confirm(turnReservation);
             answerGeneration = AskChatAnswerGenerationResponse.completed();
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
             long generationDurationMs = elapsedMillis(generationStartedAt);
             saveFailedAssistantMessage(session, e, generationDurationMs);
+            askChatTurnReservationService.refund(userId, session, turnReservation);
             assistantMessage = null;
             answerGeneration = AskChatAnswerGenerationResponse.failed(
                     e.getErrorCode(),

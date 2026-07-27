@@ -61,7 +61,7 @@ class AskChatAnswerLlmClientTest {
         properties.setProvider(LlmProvider.OPENAI);
         properties.setModel("gpt-4o-mini");
         properties.setTemperature(0.3);
-        properties.setMaxTokens(700);
+        properties.setMaxTokens(900);
         properties.setFollowUpQuestionCount(2);
         objectMapper = new ObjectMapper();
         client = new AskChatAnswerLlmClient(promptAugmenter, properties, llmRouter, objectMapper);

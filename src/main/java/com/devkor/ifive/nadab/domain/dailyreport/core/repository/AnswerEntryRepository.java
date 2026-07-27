@@ -30,6 +30,8 @@ public interface AnswerEntryRepository extends JpaRepository<AnswerEntry, Long> 
 
     boolean existsByUserAndDate(User user, LocalDate date);
 
+    long countByUserId(Long userId);
+
     /**
      * 특정 기간 내에 최소 N개의 답변을 작성한 사용자 조회
      */
