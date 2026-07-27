@@ -1,14 +1,18 @@
 package com.devkor.ifive.nadab.domain.askchat.application;
 
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSampleQuestion;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
-import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
-import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
-import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatWallet;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSampleQuestionRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatWalletRepository;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepository;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
+import com.devkor.ifive.nadab.domain.wallet.core.entity.UserWallet;
+import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
@@ -18,7 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -42,7 +45,13 @@ class AskChatSessionServiceTest {
     private AskChatSessionRepository askChatSessionRepository;
 
     @Mock
-    private AskChatMessageRepository askChatMessageRepository;
+    private AskChatWalletRepository askChatWalletRepository;
+
+    @Mock
+    private AskChatSampleQuestionRepository askChatSampleQuestionRepository;
+
+    @Mock
+    private UserWalletRepository userWalletRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -56,47 +65,37 @@ class AskChatSessionServiceTest {
     void setUp() {
         service = new AskChatSessionService(
                 askChatSessionRepository,
-                askChatMessageRepository,
+                askChatWalletRepository,
+                askChatSampleQuestionRepository,
+                userWalletRepository,
                 userRepository,
                 answerEntryRepository
         );
     }
 
     @Test
-    void getHome_returns_policy_and_recent_sessions_without_creating_session() {
-        OffsetDateTime createdAt = OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9));
-        OffsetDateTime lastMessageAt = OffsetDateTime.of(2026, 7, 14, 10, 3, 0, 0, ZoneOffset.ofHours(9));
-        AskChatSession session = session(10L, AskChatSessionStatus.ACTIVE, 2, createdAt, null);
-        AskChatMessage firstUserMessage = message(100L, "나는 어떤 사람이야?", createdAt);
-        AskChatMessage lastUserMessage = message(
-                102L,
-                "요즘 내가 놓치고 있는 감정은 뭐야?",
-                OffsetDateTime.of(2026, 7, 14, 10, 2, 0, 0, ZoneOffset.ofHours(9))
-        );
-        AskChatMessage lastMessage = message(103L, "최근에는 안정감을 더 찾는 것 같아요.", lastMessageAt);
-        when(askChatSessionRepository.findHistoriesByUserIdAndMessageRole(
-                1L,
-                AskChatMessageRole.USER,
-                PageRequest.of(0, 20)
-        )).thenReturn(List.of(session));
-        when(askChatMessageRepository.findFirstBySessionIdAndRoleOrderByCreatedAtAsc(10L, AskChatMessageRole.USER))
-                .thenReturn(Optional.of(firstUserMessage));
-        when(askChatMessageRepository.findFirstBySessionIdAndRoleOrderByCreatedAtDesc(10L, AskChatMessageRole.USER))
-                .thenReturn(Optional.of(lastUserMessage));
-        when(askChatMessageRepository.findFirstBySessionIdOrderByCreatedAtDesc(10L))
-                .thenReturn(Optional.of(lastMessage));
+    void getHome_returns_home_display_data_without_creating_session() {
+        User user = mock(User.class);
+        when(user.getNickname()).thenReturn("현진");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(askChatWalletRepository.findByUserId(1L)).thenReturn(Optional.of(AskChatWallet.create(user, 2, 7)));
+        when(userWalletRepository.findByUserId(1L)).thenReturn(Optional.of(UserWallet.create(user, 100L)));
+        when(askChatSampleQuestionRepository.findByActiveTrueOrderByDisplayOrderAsc()).thenReturn(List.of(
+                AskChatSampleQuestion.create(InterestCode.VALUES, "나는 어떤 사람이야?", 1),
+                AskChatSampleQuestion.create(InterestCode.PREFERENCE, "내가 좋아하는 것들의 공통점은 뭐야?", 2),
+                AskChatSampleQuestion.create(InterestCode.RELATIONSHIP, "어떤 사람과 잘 맞을까?", 3)
+        ));
 
         var response = service.getHome(1L);
 
-        assertThat(response.maxTurnCount()).isEqualTo(AskChatSessionService.MAX_TURN_COUNT);
-        assertThat(response.recentSessionsEmpty()).isFalse();
-        assertThat(response.recentSessions()).hasSize(1);
-        assertThat(response.recentSessions().get(0).sessionId()).isEqualTo(10L);
-        assertThat(response.recentSessions().get(0).title()).isEqualTo("나는 어떤 사람이야?");
-        assertThat(response.recentSessions().get(0).lastUserQuestion())
-                .isEqualTo("요즘 내가 놓치고 있는 감정은 뭐야?");
-        assertThat(response.recentSessions().get(0).lastMessageAt()).isEqualTo(lastMessageAt);
-        verifyNoInteractions(userRepository);
+        assertThat(response.remainingMessageCount()).isEqualTo(9);
+        assertThat(response.nickname()).isEqualTo("현진");
+        assertThat(response.crystalBalance()).isEqualTo(100L);
+        assertThat(response.sampleQuestions()).hasSize(3);
+        assertThat(response.sampleQuestions())
+                .extracting("category")
+                .containsExactlyInAnyOrder("VALUES", "PREFERENCE", "RELATIONSHIP");
+        verify(askChatSessionRepository, never()).save(any());
     }
 
     @Test
@@ -160,17 +159,5 @@ class AskChatSessionServiceTest {
         lenient().when(session.getCreatedAt()).thenReturn(createdAt);
         lenient().when(session.getEndedAt()).thenReturn(endedAt);
         return session;
-    }
-
-    private AskChatMessage message(
-            Long id,
-            String content,
-            OffsetDateTime createdAt
-    ) {
-        AskChatMessage message = mock(AskChatMessage.class);
-        lenient().when(message.getId()).thenReturn(id);
-        lenient().when(message.getContent()).thenReturn(content);
-        lenient().when(message.getCreatedAt()).thenReturn(createdAt);
-        return message;
     }
 }
