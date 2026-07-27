@@ -100,10 +100,10 @@ ask-chat:
     provider: OPENAI
     model: gpt-4o-mini
     temperature: 0.3
-    max-tokens: 700
+    max-tokens: 900
     recent-message-limit: 10
     follow-up-question-count: 2
-    prompt-version: 1
+    prompt-version: 2
   rag:
     embedding-model: text-embedding-3-small
     embedding-dimensions: 1536
