@@ -72,7 +72,7 @@ class AskChatWalletChargeServiceTest {
         AskChatWallet askChatWallet = askChatWallet(user, 5L, 2, 10);
         UserWallet crystalWallet = UserWallet.create(user, 70L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userWalletRepository.tryConsume(1L, 30L)).thenReturn(1);
+        when(userWalletRepository.tryConsume(1L, 200L)).thenReturn(1);
         when(askChatWalletRepository.chargePaidTurns(1L, 10)).thenReturn(1);
         when(userWalletRepository.findByUserId(1L)).thenReturn(Optional.of(crystalWallet));
         when(askChatWalletRepository.findByUserId(1L)).thenReturn(Optional.of(askChatWallet));
@@ -85,7 +85,7 @@ class AskChatWalletChargeServiceTest {
         var response = service.chargeTurns(1L);
 
         assertThat(response.chargedTurnCount()).isEqualTo(10);
-        assertThat(response.crystalCost()).isEqualTo(30L);
+        assertThat(response.crystalCost()).isEqualTo(200L);
         assertThat(response.crystalBalance()).isEqualTo(70L);
         assertThat(response.freeTurnBalance()).isEqualTo(2);
         assertThat(response.paidTurnBalance()).isEqualTo(10);
@@ -93,7 +93,7 @@ class AskChatWalletChargeServiceTest {
 
         ArgumentCaptor<CrystalLog> crystalLogCaptor = ArgumentCaptor.forClass(CrystalLog.class);
         verify(crystalLogRepository).save(crystalLogCaptor.capture());
-        assertThat(crystalLogCaptor.getValue().getDelta()).isEqualTo(-30L);
+        assertThat(crystalLogCaptor.getValue().getDelta()).isEqualTo(-200L);
         assertThat(crystalLogCaptor.getValue().getBalanceAfter()).isEqualTo(70L);
         assertThat(crystalLogCaptor.getValue().getReason()).isEqualTo(CrystalLogReason.ASK_CHAT_TURN_CHARGE);
         assertThat(crystalLogCaptor.getValue().getStatus()).isEqualTo(CrystalLogStatus.CONFIRMED);
@@ -117,7 +117,7 @@ class AskChatWalletChargeServiceTest {
     void chargeTurns_rejects_when_crystal_balance_is_insufficient() {
         User user = user(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userWalletRepository.tryConsume(1L, 30L)).thenReturn(0);
+        when(userWalletRepository.tryConsume(1L, 200L)).thenReturn(0);
 
         assertThatThrownBy(() -> service.chargeTurns(1L))
                 .isInstanceOf(NotEnoughCrystalException.class)
@@ -132,7 +132,7 @@ class AskChatWalletChargeServiceTest {
     void chargeTurns_rejects_when_ask_chat_wallet_is_missing() {
         User user = user(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userWalletRepository.tryConsume(1L, 30L)).thenReturn(1);
+        when(userWalletRepository.tryConsume(1L, 200L)).thenReturn(1);
         when(askChatWalletRepository.chargePaidTurns(1L, 10)).thenReturn(0);
 
         assertThatThrownBy(() -> service.chargeTurns(1L))

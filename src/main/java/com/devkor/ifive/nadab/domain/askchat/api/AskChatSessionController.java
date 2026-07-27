@@ -106,7 +106,7 @@ public class AskChatSessionController {
     @Operation(
             summary = "물어보기 대화권 충전",
             description = """
-                    보유 크리스탈 30개를 차감하고 물어보기 유료 대화권 10회를 충전합니다. </br>
+                    보유 크리스탈 200개를 차감하고 물어보기 유료 대화권 10회를 충전합니다. </br>
                     잔여 크리스탈이 부족하면 대화권을 충전하지 않고 WALLET_INSUFFICIENT_BALANCE 에러 코드를 반환합니다. </br>
                     응답에는 충전된 대화권 수, 차감된 크리스탈 수, 충전 후 크리스탈 잔액과 무료/유료/총 대화권 잔액을 포함합니다.
                     """,

@@ -8,7 +8,7 @@ public record AskChatTurnChargeResponse(
         @Schema(description = "충전된 대화권 수", example = "10")
         int chargedTurnCount,
 
-        @Schema(description = "차감된 크리스탈 수", example = "30")
+        @Schema(description = "차감된 크리스탈 수", example = "200")
         long crystalCost,
 
         @Schema(description = "충전 후 남은 크리스탈 수", example = "70")
