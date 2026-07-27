@@ -47,6 +47,11 @@ profile-image:
   env: prod
   base-url: ${PROFILE_IMAGE_BASE_URL}
 
+pdf-export:
+  cloudfront:
+    key-pair-id: ${CLOUDFRONT_KEY_PAIR_ID}
+    private-key: ${CLOUDFRONT_PRIVATE_KEY}
+
 app:
   cookie:
     secure: true

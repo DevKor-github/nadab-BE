@@ -19,6 +19,7 @@ module.exports = {
             "user",
             "ai",
             "report",
+            "pdf",
             "moderation",
             "search",
             "stats",
@@ -115,6 +116,9 @@ module.exports = {
                     },
                     report: {
                         description: '📔 리포트 도메인 (예: 리포트 생성, 조회, 관리)'
+                    },
+                    pdf: {
+                        description: '📄 PDF 내보내기 도메인 (예: 기록 PDF 생성, 렌더링)'
                     },
                     moderation: {
                         description: '🚨 신고/차단 도메인 (예: 공유글 신고, 공유 활동 중지)'

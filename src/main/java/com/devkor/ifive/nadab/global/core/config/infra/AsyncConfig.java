@@ -83,6 +83,22 @@ public class AsyncConfig {
     }
 
     /**
+     * PDF 내보내기(서버 렌더링) 전용 실행기
+     * - max1: 단일 렌더가 공유힙을 거의 다 씀. 렌더 1건당 사진 다운로드 스레드 3개가 별도로 뜸
+     * - queue 40: 넘치면 AbortPolicy로 차감된 작업이 버려지므로, 실제 거부는 그 전에 PdfExportRenderQueue(상한 20)가 함
+     */
+    @Bean(name = "pdfExportTaskExecutor")
+    public ThreadPoolTaskExecutor pdfExportTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(40);
+        executor.setThreadNamePrefix("async-pdf-export-");
+        executor.initialize();
+        return executor;
+    }
+
+    /**
      * 알림 이벤트 리스너 전용 실행기
      * - 알림 생성 및 DB 저장을 비동기로 처리
      * - FCM 발송은 별도 fcmTaskExecutor에서 처리

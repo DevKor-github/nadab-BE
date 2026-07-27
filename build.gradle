@@ -61,6 +61,9 @@ dependencies {
     // AWS KMS
     implementation 'software.amazon.awssdk:kms'
 
+    // AWS CloudFront
+    implementation 'software.amazon.awssdk:cloudfront'
+
     // BadWordFiltering 라이브러리
     implementation 'io.github.vaneproject:badwordfiltering:1.0.0'
     implementation 'com.modernmt.text:profanity-filter:1.0.1'
@@ -89,6 +92,12 @@ dependencies {
 
     // Firebase Admin SDK
     implementation 'com.google.firebase:firebase-admin:9.7.1'
+
+    // openhtmltopdf
+    implementation 'io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.40'
+
+    // webp 디코더
+    implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.1'
 }
 
 dependencyManagement {

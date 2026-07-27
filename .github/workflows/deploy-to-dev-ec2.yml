@@ -153,6 +153,8 @@ jobs:
             IAM_SECRET_KEY="${{ secrets.IAM_SECRET_KEY }}" \
             BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
             PROFILE_IMAGE_BASE_URL="${{ secrets.PROFILE_IMAGE_BASE_URL }}" \
+            CLOUDFRONT_KEY_PAIR_ID="${{ secrets.CLOUDFRONT_KEY_PAIR_ID }}" \
+            CLOUDFRONT_PRIVATE_KEY="${{ secrets.CLOUDFRONT_PRIVATE_KEY }}" \
             KMS_KEY_ID="${{ secrets.KMS_KEY_ID }}" \
             MAIL_ADDRESS="${{ secrets.MAIL_ADDRESS }}" \
             MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \
