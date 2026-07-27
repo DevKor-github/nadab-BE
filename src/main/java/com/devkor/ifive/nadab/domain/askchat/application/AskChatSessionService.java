@@ -8,9 +8,11 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
+import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -25,11 +27,13 @@ import java.util.List;
 public class AskChatSessionService {
 
     public static final int MAX_TURN_COUNT = 15;
+    public static final int MIN_ANSWER_COUNT_TO_START = 20;
     private static final int HOME_RECENT_SESSION_SIZE = 20;
 
     private final AskChatSessionRepository askChatSessionRepository;
     private final AskChatMessageRepository askChatMessageRepository;
     private final UserRepository userRepository;
+    private final AnswerEntryRepository answerEntryRepository;
 
     @Transactional(readOnly = true)
     public AskChatHomeResponse getHome(Long userId) {
@@ -47,8 +51,15 @@ public class AskChatSessionService {
 
     @Transactional
     public AskChatSessionResponse startSession(Long userId) {
+        validateMinimumAnswerCount(userId);
         AskChatSession session = createSession(userId);
         return AskChatSessionResponse.from(session, MAX_TURN_COUNT);
+    }
+
+    private void validateMinimumAnswerCount(Long userId) {
+        if (answerEntryRepository.countByUserId(userId) < MIN_ANSWER_COUNT_TO_START) {
+            throw new BadRequestException(ErrorCode.ASK_CHAT_NOT_ENOUGH_ANSWERS);
+        }
     }
 
     private AskChatSession createSession(Long userId) {

@@ -6,9 +6,11 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
+import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,9 @@ class AskChatSessionServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private AnswerEntryRepository answerEntryRepository;
+
     private AskChatSessionService service;
 
     @BeforeEach
@@ -52,7 +57,8 @@ class AskChatSessionServiceTest {
         service = new AskChatSessionService(
                 askChatSessionRepository,
                 askChatMessageRepository,
-                userRepository
+                userRepository,
+                answerEntryRepository
         );
     }
 
@@ -103,6 +109,7 @@ class AskChatSessionServiceTest {
                 OffsetDateTime.of(2026, 7, 14, 10, 5, 0, 0, ZoneOffset.ofHours(9)),
                 null
         );
+        when(answerEntryRepository.countByUserId(1L)).thenReturn(20L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(askChatSessionRepository.save(any(AskChatSession.class))).thenReturn(savedSession);
 
@@ -118,7 +125,19 @@ class AskChatSessionServiceTest {
     }
 
     @Test
+    void startSession_rejects_when_answer_count_is_less_than_minimum() {
+        when(answerEntryRepository.countByUserId(1L)).thenReturn(19L);
+
+        assertThatThrownBy(() -> service.startSession(1L))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_NOT_ENOUGH_ANSWERS));
+        verifyNoInteractions(userRepository);
+        verify(askChatSessionRepository, never()).save(any());
+    }
+
+    @Test
     void startSession_rejects_missing_user_when_creating_session() {
+        when(answerEntryRepository.countByUserId(1L)).thenReturn(20L);
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.startSession(1L))

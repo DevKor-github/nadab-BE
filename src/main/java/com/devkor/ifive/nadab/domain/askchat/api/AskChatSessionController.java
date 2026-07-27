@@ -75,6 +75,7 @@ public class AskChatSessionController {
             description = """
                     사용자가 새 채팅을 시작할 때 호출합니다. </br>
                     이미 ACTIVE 세션이 있어도 기존 세션을 재사용하거나 종료하지 않고 매번 새 ACTIVE 세션을 생성합니다. </br>
+                    사용자의 누적 답변 개수가 20개 이상인 경우에만 세션을 생성할 수 있습니다. </br>
                     이 API는 질문 메시지를 저장하지 않으며, 실제 질문 저장은 POST /ask-chat/messages에서 수행합니다. </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -85,6 +86,11 @@ public class AskChatSessionController {
                             content = @Content(schema = @Schema(implementation = AskChatSessionResponse.class))
                     ),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "- ErrorCode: ASK_CHAT_NOT_ENOUGH_ANSWERS - 누적 답변 20개 미만",
+                            content = @Content
+                    ),
                     @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
             }
     )
