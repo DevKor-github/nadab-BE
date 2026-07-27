@@ -13,13 +13,13 @@ import java.time.format.DateTimeFormatter;
 public final class PdfExportFileNames {
 
     private static final DateTimeFormatter FILENAME_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final String DOWNLOAD_PREFIX = "나답_나에게답하다_";
+    private static final String DOWNLOAD_PREFIX = "나답_";
     private static final String DOWNLOAD_ASCII_PREFIX = "nadab_";
 
     private PdfExportFileNames() {
     }
 
-    /** 저장 파일명(한글): 나답_나에게답하다_20251101-20251130.pdf */
+    /** 저장 파일명(한글): 나답_20251101-20251130.pdf */
     public static String downloadFileName(PdfExportJob job) {
         return build(DOWNLOAD_PREFIX, job);
     }

@@ -90,7 +90,7 @@ class PdfExportDownloadAccessTest extends PdfExportIntegrationTestSupport {
         PdfExportDownloadResponse response = queryService.issueDownloadUrl(user.getId(), jobId);
 
         assertThat(response.downloadUrl()).isEqualTo(SIGNED_URL);
-        assertThat(response.fileName()).isEqualTo("나답_나에게답하다_20260101-20260131.pdf");
+        assertThat(response.fileName()).isEqualTo("나답_20260101-20260131.pdf");
         assertThat(response.expiresAt()).isNotNull();
     }
 

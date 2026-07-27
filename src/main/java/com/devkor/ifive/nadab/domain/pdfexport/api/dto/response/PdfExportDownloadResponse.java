@@ -12,7 +12,7 @@ public record PdfExportDownloadResponse(
         String downloadUrl,
 
         @Schema(description = "저장에 사용할 파일명. 필요하면 다운로드 저장 시 이 값을 그대로 사용",
-                example = "나답_나에게답하다_20251101-20251130.pdf")
+                example = "나답_20251101-20251130.pdf")
         String fileName,
 
         @Schema(description = "다운로드 보관 만료 시각(완료 시각 + 7일). 이 시각이 지나면 재발급 불가",

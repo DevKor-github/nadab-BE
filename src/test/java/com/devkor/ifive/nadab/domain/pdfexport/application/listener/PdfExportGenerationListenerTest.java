@@ -126,7 +126,7 @@ class PdfExportGenerationListenerTest {
 
         // job 이 들고 있던 결과 키로 업로드하고, 파일명 2종(한글 + ASCII 폴백)을 S3 객체에 각인한다.
         verify(storage).upload(RESULT_KEY, pdfFile,
-                "나답_나에게답하다_20260101-20260131.pdf",
+                "나답_20260101-20260131.pdf",
                 "nadab_20260101-20260131.pdf");
 
         verify(txService).confirm(JOB_ID, CRYSTAL_LOG_ID);
