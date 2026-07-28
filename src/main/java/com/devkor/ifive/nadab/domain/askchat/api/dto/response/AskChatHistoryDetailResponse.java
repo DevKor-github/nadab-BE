@@ -17,7 +17,7 @@ public record AskChatHistoryDetailResponse(
         @Schema(description = "성공적으로 답변된 대화 횟수", example = "5")
         int answeredTurnCount,
 
-        @Schema(description = "과거 대화 상세 화면은 읽기 전용인지 여부", example = "true")
+        @Schema(description = "해당 세션에 새 질문을 입력할 수 없는지 여부", example = "false")
         boolean readOnly,
 
         @Schema(description = "채팅 시작 시각")

@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatMessageResp
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -73,7 +74,7 @@ public class AskChatHistoryQueryService {
                 session.getId(),
                 session.getStatus(),
                 session.getAnsweredTurnCount(),
-                true,
+                isReadOnly(session),
                 session.getCreatedAt(),
                 session.getEndedAt(),
                 messages
@@ -105,6 +106,11 @@ public class AskChatHistoryQueryService {
                 session.getStatus(),
                 lastMessageAt
         );
+    }
+
+    private boolean isReadOnly(AskChatSession session) {
+        return session.getStatus() != AskChatSessionStatus.ACTIVE
+                || session.getAnsweredTurnCount() >= AskChatSessionService.MAX_TURN_COUNT;
     }
 
     private void validatePageRequest(int page, int size) {

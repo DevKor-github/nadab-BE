@@ -76,7 +76,7 @@ public class AskChatHistoryController {
             description = """
                     ask_history_02 화면에서 선택한 물어보기 채팅 세션의 전체 메시지를 시간순으로 조회합니다.  </br>
                     본인의 세션만 조회할 수 있으며, 다른 사용자의 세션이거나 존재하지 않는 세션이면 ASK_CHAT_SESSION_NOT_FOUND를 반환합니다.  </br>
-                    과거 대화 상세 화면은 읽기 전용이므로 readOnly=true를 반환하며, 새 질문 입력 UI는 제공하지 않습니다.  </br>
+                    readOnly는 해당 세션에 새 질문을 입력할 수 없는지 여부입니다. 세션이 ENDED이거나 answeredTurnCount가 15 이상이면 true를 반환합니다.  </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

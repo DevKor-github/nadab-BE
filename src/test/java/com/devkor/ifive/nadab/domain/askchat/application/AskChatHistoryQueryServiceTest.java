@@ -224,6 +224,42 @@ class AskChatHistoryQueryServiceTest {
     }
 
     @Test
+    void getHistoryDetail_returns_editable_when_active_session_has_remaining_turns() {
+        AskChatSession session = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                14,
+                OffsetDateTime.of(2026, 7, 13, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(session));
+        when(askChatMessageRepository.findAllBySessionIdOrderByCreatedAtAsc(10L))
+                .thenReturn(List.of());
+
+        var response = service.getHistoryDetail(1L, 10L);
+
+        assertThat(response.readOnly()).isFalse();
+    }
+
+    @Test
+    void getHistoryDetail_returns_read_only_when_active_session_reaches_turn_limit() {
+        AskChatSession session = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                AskChatSessionService.MAX_TURN_COUNT,
+                OffsetDateTime.of(2026, 7, 13, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(session));
+        when(askChatMessageRepository.findAllBySessionIdOrderByCreatedAtAsc(10L))
+                .thenReturn(List.of());
+
+        var response = service.getHistoryDetail(1L, 10L);
+
+        assertThat(response.readOnly()).isTrue();
+    }
+
+    @Test
     void getHistoryDetail_rejects_missing_or_other_user_session() {
         when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
 
