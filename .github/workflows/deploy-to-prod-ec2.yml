@@ -117,8 +117,8 @@ jobs:
           done
 
           # scp-action Docker 컨테이너가 다른 UID로 파일을 읽을 수 있도록 전송 직전에만 권한 허용
-          chmod 755 .deploy-secrets
-          chmod 644 .deploy-secrets/*
+          chmod 755 deploy-secrets
+          chmod 644 deploy-secrets/*
 
       - name: 📤 Upload deployment secrets to EC2
         uses: appleboy/scp-action@v0.1.7
