@@ -23,6 +23,7 @@ import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.infra.llm.LlmGenerationResult;
 import com.devkor.ifive.nadab.global.infra.llm.LlmProvider;
 import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsage;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -94,14 +95,15 @@ class DailyReportServiceTest {
         Long generationLogId = 10L;
         User user = user(userId);
         DailyQuestion question = dailyQuestion(20L);
-        AnswerEntry answerEntry = AnswerEntry.create(user, question, "answer", LocalDate.now(), null);
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        AnswerEntry answerEntry = AnswerEntry.create(user, question, "answer", today, null);
         AiDailyReportResultDto aiResult = new AiDailyReportResultDto("message", "ACHIEVEMENT");
         Emotion emotion = emotion(EmotionCode.ACHIEVEMENT);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(dailyQuestionRepository.findByIdWithInterest(20L)).thenReturn(Optional.of(question));
         when(userDailyQuestionRepository.findByUserIdAndDate(eq(userId), any(LocalDate.class)))
-                .thenReturn(Optional.of(UserDailyQuestion.create(user, LocalDate.now(), question)));
+                .thenReturn(Optional.of(UserDailyQuestion.create(user, today, question)));
         when(dailyReportTxService.prepareDaily(user, question, "answer", false, null))
                 .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId));
         when(reportGenerationLogRecorder.start(
@@ -144,14 +146,15 @@ class DailyReportServiceTest {
         Long generationLogId = 10L;
         User user = user(userId);
         DailyQuestion question = dailyQuestion(20L);
-        AnswerEntry answerEntry = AnswerEntry.create(user, question, "answer", LocalDate.now(), null);
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        AnswerEntry answerEntry = AnswerEntry.create(user, question, "answer", today, null);
         AiDailyReportResultDto aiResult = new AiDailyReportResultDto("message", "ACHIEVEMENT");
         Emotion emotion = emotion(EmotionCode.ACHIEVEMENT);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(dailyQuestionRepository.findByIdWithInterest(20L)).thenReturn(Optional.of(question));
         when(userDailyQuestionRepository.findByUserIdAndDate(eq(userId), any(LocalDate.class)))
-                .thenReturn(Optional.of(UserDailyQuestion.create(user, LocalDate.now(), question)));
+                .thenReturn(Optional.of(UserDailyQuestion.create(user, today, question)));
         when(dailyReportTxService.prepareDaily(user, question, "answer", false, null))
                 .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId));
         when(reportGenerationLogRecorder.start(any(), any(), any(), any(), any(), any()))
