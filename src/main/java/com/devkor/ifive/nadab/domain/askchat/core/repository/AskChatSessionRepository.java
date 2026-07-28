@@ -5,9 +5,11 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +25,30 @@ public interface AskChatSessionRepository extends JpaRepository<AskChatSession, 
     List<AskChatSession> findAllByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     long countByUserId(Long userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        update AskChatSession s
+        set s.answeredTurnCount = s.answeredTurnCount + 1,
+            s.status = case
+                when s.answeredTurnCount + 1 >= :maxTurnCount
+                    then com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus.ENDED
+                else s.status
+            end,
+            s.endedAt = case
+                when s.answeredTurnCount + 1 >= :maxTurnCount then :completedAt
+                else s.endedAt
+            end,
+            s.updatedAt = :completedAt
+        where s.id = :sessionId
+          and s.status = com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus.ACTIVE
+          and s.answeredTurnCount < :maxTurnCount
+        """)
+    int completeAnsweredTurn(
+            @Param("sessionId") Long sessionId,
+            @Param("maxTurnCount") int maxTurnCount,
+            @Param("completedAt") OffsetDateTime completedAt
+    );
 
     @Query("""
         select s

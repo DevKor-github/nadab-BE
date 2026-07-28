@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.askchat.core.repository;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessage;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageRole;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.infra.db.PostgresIntegrationTestSupport;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -77,6 +80,28 @@ class AskChatSessionRepositoryTest extends PostgresIntegrationTestSupport {
                 .extracting(AskChatSession::getId)
                 .doesNotContain(emptySession.getId(), assistantOnlySession.getId());
         assertThat(totalCount).isEqualTo(2);
+    }
+
+    @Test
+    void completeAnsweredTurn_increments_count_and_ends_session_at_limit() {
+        User user = persistUser("complete-turn@test.com");
+        AskChatSession session = persistSession(user);
+        for (int i = 0; i < 14; i++) {
+            session.completeAnsweredTurn(15);
+        }
+        em.flush();
+        em.clear();
+
+        OffsetDateTime completedAt = OffsetDateTime.of(2026, 7, 28, 20, 30, 0, 0, ZoneOffset.ofHours(9));
+        int updated = askChatSessionRepository.completeAnsweredTurn(session.getId(), 15, completedAt);
+        em.flush();
+        em.clear();
+
+        AskChatSession updatedSession = em.find(AskChatSession.class, session.getId());
+        assertThat(updated).isEqualTo(1);
+        assertThat(updatedSession.getAnsweredTurnCount()).isEqualTo(15);
+        assertThat(updatedSession.getStatus()).isEqualTo(AskChatSessionStatus.ENDED);
+        assertThat(updatedSession.getEndedAt()).isEqualTo(completedAt);
     }
 
     private User persistUser(String email) {

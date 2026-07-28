@@ -35,10 +35,11 @@ public class AskChatHistoryController {
     @Operation(
             summary = "물어보기 히스토리 목록 조회",
             description = """
-                    ask_history_01 화면에서 사용자의 물어보기 채팅 세션 목록을 최신순으로 조회합니다.  </br>
+                    사용자의 물어보기 채팅 세션 목록을 최신순으로 조회합니다.  </br>
                     USER 메시지가 1개 이상 저장된 세션만 히스토리로 노출하며, 세션만 생성되고 질문이 없는 대화는 목록에 포함하지 않습니다.  </br>
                     page는 1부터 시작하며, size는 최대 50까지 요청할 수 있습니다.  </br>
-                    응답의 empty는 현재 페이지의 목록이 비어 있는지 나타내며, 각 항목은 첫 질문 제목, 마지막 사용자 질문, 마지막 메시지 시각, createdDate를 카드 표시용으로 제공합니다.  </br>
+                    응답은 히스토리 목록과 페이지 정보를 포함하며, 목록이 비어 있는지는 histories 배열 길이로 판단할 수 있습니다.  </br>
+                    각 항목은 첫 질문 제목, 마지막 사용자 질문, 마지막 메시지 시각, createdDate를 카드 표시용으로 제공합니다.  </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
@@ -75,7 +76,7 @@ public class AskChatHistoryController {
             description = """
                     ask_history_02 화면에서 선택한 물어보기 채팅 세션의 전체 메시지를 시간순으로 조회합니다.  </br>
                     본인의 세션만 조회할 수 있으며, 다른 사용자의 세션이거나 존재하지 않는 세션이면 ASK_CHAT_SESSION_NOT_FOUND를 반환합니다.  </br>
-                    과거 대화 상세 화면은 읽기 전용이므로 readOnly=true를 반환하며, 새 질문 입력 UI는 제공하지 않습니다.  </br>
+                    readOnly는 해당 세션에 새 질문을 입력할 수 없는지 여부입니다. 세션이 ENDED이거나 answeredTurnCount가 15 이상이면 true를 반환합니다.  </br>
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {

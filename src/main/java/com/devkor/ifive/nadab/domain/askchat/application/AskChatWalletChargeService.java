@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AskChatWalletChargeService {
 
-    public static final long ASK_CHAT_TURN_CHARGE_CRYSTAL_COST = 30L;
+    public static final long ASK_CHAT_TURN_CHARGE_CRYSTAL_COST = 200L;
     public static final int ASK_CHAT_TURN_CHARGE_COUNT = 10;
 
     private final UserRepository userRepository;
@@ -77,8 +77,6 @@ public class AskChatWalletChargeService {
         ));
 
         return AskChatTurnChargeResponse.of(
-                ASK_CHAT_TURN_CHARGE_COUNT,
-                ASK_CHAT_TURN_CHARGE_CRYSTAL_COST,
                 crystalWallet.getCrystalBalance(),
                 askChatWallet
         );

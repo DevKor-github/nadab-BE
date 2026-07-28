@@ -124,7 +124,6 @@ class AskChatHistoryQueryServiceTest {
         assertThat(response.currentPage()).isEqualTo(1);
         assertThat(response.pageSize()).isEqualTo(2);
         assertThat(response.totalPages()).isEqualTo(2);
-        assertThat(response.empty()).isFalse();
         assertThat(response.hasPrevious()).isFalse();
         assertThat(response.hasNext()).isTrue();
         assertThat(response.histories())
@@ -134,7 +133,6 @@ class AskChatHistoryQueryServiceTest {
                         "lastUserQuestion",
                         "createdDate",
                         "status",
-                        "answeredTurnCount",
                         "lastMessageAt"
                 )
                 .containsExactly(
@@ -144,7 +142,6 @@ class AskChatHistoryQueryServiceTest {
                                 "요즘 내가 놓치고 있는 감정은 뭐야?",
                                 activeCreatedAt.toLocalDate(),
                                 AskChatSessionStatus.ACTIVE,
-                                2,
                                 activeLastMessageAt
                         ),
                         org.assertj.core.groups.Tuple.tuple(
@@ -153,7 +150,6 @@ class AskChatHistoryQueryServiceTest {
                                 "내 장점은 뭐야?",
                                 endedCreatedAt.toLocalDate(),
                                 AskChatSessionStatus.ENDED,
-                                15,
                                 endedLastMessageAt
                         )
                 );
@@ -172,7 +168,6 @@ class AskChatHistoryQueryServiceTest {
         var response = service.getHistories(1L, 1, 20);
 
         assertThat(response.histories()).isEmpty();
-        assertThat(response.empty()).isTrue();
         assertThat(response.totalCount()).isZero();
         assertThat(response.totalPages()).isZero();
         assertThat(response.hasPrevious()).isFalse();
@@ -226,6 +221,42 @@ class AskChatHistoryQueryServiceTest {
                         org.assertj.core.groups.Tuple.tuple(100L, AskChatMessageRole.USER, "나는 어떤 사람이야?"),
                         org.assertj.core.groups.Tuple.tuple(101L, AskChatMessageRole.ASSISTANT, "따뜻함을 자주 발견하는 사람이에요.")
                 );
+    }
+
+    @Test
+    void getHistoryDetail_returns_editable_when_active_session_has_remaining_turns() {
+        AskChatSession session = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                14,
+                OffsetDateTime.of(2026, 7, 13, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(session));
+        when(askChatMessageRepository.findAllBySessionIdOrderByCreatedAtAsc(10L))
+                .thenReturn(List.of());
+
+        var response = service.getHistoryDetail(1L, 10L);
+
+        assertThat(response.readOnly()).isFalse();
+    }
+
+    @Test
+    void getHistoryDetail_returns_read_only_when_active_session_reaches_turn_limit() {
+        AskChatSession session = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                AskChatSessionService.MAX_TURN_COUNT,
+                OffsetDateTime.of(2026, 7, 13, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(session));
+        when(askChatMessageRepository.findAllBySessionIdOrderByCreatedAtAsc(10L))
+                .thenReturn(List.of());
+
+        var response = service.getHistoryDetail(1L, 10L);
+
+        assertThat(response.readOnly()).isTrue();
     }
 
     @Test

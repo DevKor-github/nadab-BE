@@ -41,10 +41,8 @@ class AskChatHistoryControllerTest {
                         "last question",
                         LocalDate.of(2026, 7, 21),
                         AskChatSessionStatus.ACTIVE,
-                        2,
                         lastMessageAt
                 )),
-                false,
                 1,
                 2,
                 20,
