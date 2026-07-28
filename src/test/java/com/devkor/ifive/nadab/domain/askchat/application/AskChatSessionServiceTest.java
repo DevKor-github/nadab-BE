@@ -82,6 +82,7 @@ class AskChatSessionServiceTest {
     void getHome_returns_home_display_data_without_creating_session() {
         User user = mock(User.class);
         when(user.getNickname()).thenReturn("현진");
+        when(answerEntryRepository.countByUserId(1L)).thenReturn(20L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(askChatWalletRepository.findByUserId(1L)).thenReturn(Optional.of(AskChatWallet.create(user, 2, 7)));
         when(userWalletRepository.findByUserId(1L)).thenReturn(Optional.of(UserWallet.create(user, 100L)));
@@ -104,6 +105,21 @@ class AskChatSessionServiceTest {
     }
 
     @Test
+    void getHome_rejects_when_answer_count_is_less_than_minimum() {
+        when(answerEntryRepository.countByUserId(1L)).thenReturn(19L);
+
+        assertThatThrownBy(() -> service.getHome(1L))
+                .isInstanceOfSatisfying(BadRequestException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_NOT_ENOUGH_ANSWERS));
+        verifyNoInteractions(userRepository);
+        verifyNoInteractions(askChatWalletRepository);
+        verifyNoInteractions(userWalletRepository);
+        verifyNoInteractions(askChatSampleQuestionRepository);
+        verify(askChatSessionRepository, never()).save(any());
+        verifyNoInteractions(askChatMessageCommandService);
+    }
+
+    @Test
     void startSession_creates_new_session_and_sends_first_question() {
         User user = mock(User.class);
         AskChatSession savedSession = session(
@@ -113,7 +129,6 @@ class AskChatSessionServiceTest {
                 OffsetDateTime.of(2026, 7, 14, 10, 5, 0, 0, ZoneOffset.ofHours(9)),
                 null
         );
-        when(answerEntryRepository.countByUserId(1L)).thenReturn(20L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(askChatSessionRepository.save(any(AskChatSession.class))).thenReturn(savedSession);
         AskChatQuestionSendResponse sendResponse = mock(AskChatQuestionSendResponse.class);
@@ -128,23 +143,11 @@ class AskChatSessionServiceTest {
         verify(askChatSessionRepository).save(sessionCaptor.capture());
         assertThat(sessionCaptor.getValue().getAnsweredTurnCount()).isZero();
         verify(askChatMessageCommandService).sendQuestion(1L, 11L, "나는 어떤 사람이야?");
-    }
-
-    @Test
-    void startSession_rejects_when_answer_count_is_less_than_minimum() {
-        when(answerEntryRepository.countByUserId(1L)).thenReturn(19L);
-
-        assertThatThrownBy(() -> service.startSession(1L, "나는 어떤 사람이야?"))
-                .isInstanceOfSatisfying(BadRequestException.class, ex ->
-                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_NOT_ENOUGH_ANSWERS));
-        verifyNoInteractions(userRepository);
-        verify(askChatSessionRepository, never()).save(any());
-        verifyNoInteractions(askChatMessageCommandService);
+        verifyNoInteractions(answerEntryRepository);
     }
 
     @Test
     void startSession_rejects_missing_user_when_creating_session() {
-        when(answerEntryRepository.countByUserId(1L)).thenReturn(20L);
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.startSession(1L, "나는 어떤 사람이야?"))

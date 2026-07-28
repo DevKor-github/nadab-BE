@@ -44,6 +44,7 @@ public class AskChatSessionController {
             summary = "물어보기 홈 조회",
             description = """
                     홈 진입만으로 새 채팅 세션을 생성하지 않습니다. </br>
+                    사용자의 누적 답변 개수가 20개 이상인 경우에만 물어보기 홈을 조회할 수 있습니다. </br>
                     응답에는 남은 메시지 횟수, 사용자 닉네임, 보유 크리스탈 수, 예시 질문 목록을 포함합니다. </br>
                     히스토리 목록은 이 API에서 반환하지 않으며, 별도 히스토리 API를 사용해야 합니다.
                     """,
@@ -53,6 +54,11 @@ public class AskChatSessionController {
                             responseCode = "200",
                             description = "물어보기 홈 조회 성공",
                             content = @Content(schema = @Schema(implementation = AskChatHomeResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "- ErrorCode: ASK_CHAT_NOT_ENOUGH_ANSWERS - 누적 답변 20개 미만",
+                            content = @Content
                     ),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(
@@ -79,7 +85,6 @@ public class AskChatSessionController {
             summary = "물어보기 세션 시작",
             description = """
                     사용자가 새 채팅을 시작하면서 첫 질문을 함께 전송할 때 호출합니다. </br>
-                    사용자의 누적 답변 개수가 20개 이상인 경우에만 세션을 생성할 수 있습니다. </br>
                     요청 본문의 content를 첫 USER 메시지로 저장하고, 기존 POST /ask-chat/messages와 동일한 답변 생성/실패 응답 구조를 반환합니다. </br>
                     세션 생성 후 첫 질문 처리 중 대화권 부족 등 예외가 발생하면 세션 생성도 함께 롤백됩니다.
                     """,
@@ -94,7 +99,6 @@ public class AskChatSessionController {
                             responseCode = "400",
                             description = """
                                     - ErrorCode: VALIDATION_FAILED - 질문은 공백 제외 1자 이상 200자 이하로 요청해야 함
-                                    - ErrorCode: ASK_CHAT_NOT_ENOUGH_ANSWERS - 누적 답변 20개 미만
                                     - ErrorCode: ASK_CHAT_TURN_BALANCE_INSUFFICIENT - 사용 가능한 Ask Chat 대화권이 없음
                                     """,
                             content = @Content

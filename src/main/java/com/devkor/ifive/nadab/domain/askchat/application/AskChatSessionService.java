@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 public class AskChatSessionService {
 
     public static final int MAX_TURN_COUNT = 15;
-    public static final int MIN_ANSWER_COUNT_TO_START = 20;
+    public static final int MIN_ANSWER_COUNT_TO_USE_ASK_CHAT = 20;
     private static final int HOME_SAMPLE_QUESTION_SIZE = 3;
 
     private final AskChatSessionRepository askChatSessionRepository;
@@ -48,6 +48,7 @@ public class AskChatSessionService {
 
     @Transactional(readOnly = true)
     public AskChatHomeResponse getHome(Long userId) {
+        validateMinimumAnswerCount(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
         AskChatWallet askChatWallet = askChatWalletRepository.findByUserId(userId)
@@ -65,13 +66,12 @@ public class AskChatSessionService {
 
     @Transactional
     public AskChatQuestionSendResponse startSession(Long userId, String content) {
-        validateMinimumAnswerCount(userId);
         AskChatSession session = createSession(userId);
         return askChatMessageCommandService.sendQuestion(userId, session.getId(), content);
     }
 
     private void validateMinimumAnswerCount(Long userId) {
-        if (answerEntryRepository.countByUserId(userId) < MIN_ANSWER_COUNT_TO_START) {
+        if (answerEntryRepository.countByUserId(userId) < MIN_ANSWER_COUNT_TO_USE_ASK_CHAT) {
             throw new BadRequestException(ErrorCode.ASK_CHAT_NOT_ENOUGH_ANSWERS);
         }
     }
