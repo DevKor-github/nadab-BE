@@ -23,9 +23,6 @@ public record AskChatHistoryItemResponse(
         @Schema(description = "채팅 세션 상태", example = "ACTIVE")
         AskChatSessionStatus status,
 
-        @Schema(description = "성공적으로 답변된 대화 횟수", example = "3")
-        int answeredTurnCount,
-
         @Schema(description = "해당 세션의 마지막 메시지 생성 시각")
         OffsetDateTime lastMessageAt
 ) {

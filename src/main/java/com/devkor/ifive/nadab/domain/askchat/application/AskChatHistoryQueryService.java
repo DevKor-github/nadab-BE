@@ -51,7 +51,6 @@ public class AskChatHistoryQueryService {
 
         return new AskChatHistoryListResponse(
                 histories,
-                histories.isEmpty(),
                 totalCount,
                 page,
                 size,
@@ -104,7 +103,6 @@ public class AskChatHistoryQueryService {
                 lastUserQuestion,
                 session.getCreatedAt().toLocalDate(),
                 session.getStatus(),
-                session.getAnsweredTurnCount(),
                 lastMessageAt
         );
     }

@@ -124,7 +124,6 @@ class AskChatHistoryQueryServiceTest {
         assertThat(response.currentPage()).isEqualTo(1);
         assertThat(response.pageSize()).isEqualTo(2);
         assertThat(response.totalPages()).isEqualTo(2);
-        assertThat(response.empty()).isFalse();
         assertThat(response.hasPrevious()).isFalse();
         assertThat(response.hasNext()).isTrue();
         assertThat(response.histories())
@@ -134,7 +133,6 @@ class AskChatHistoryQueryServiceTest {
                         "lastUserQuestion",
                         "createdDate",
                         "status",
-                        "answeredTurnCount",
                         "lastMessageAt"
                 )
                 .containsExactly(
@@ -144,7 +142,6 @@ class AskChatHistoryQueryServiceTest {
                                 "요즘 내가 놓치고 있는 감정은 뭐야?",
                                 activeCreatedAt.toLocalDate(),
                                 AskChatSessionStatus.ACTIVE,
-                                2,
                                 activeLastMessageAt
                         ),
                         org.assertj.core.groups.Tuple.tuple(
@@ -153,7 +150,6 @@ class AskChatHistoryQueryServiceTest {
                                 "내 장점은 뭐야?",
                                 endedCreatedAt.toLocalDate(),
                                 AskChatSessionStatus.ENDED,
-                                15,
                                 endedLastMessageAt
                         )
                 );
@@ -172,7 +168,6 @@ class AskChatHistoryQueryServiceTest {
         var response = service.getHistories(1L, 1, 20);
 
         assertThat(response.histories()).isEmpty();
-        assertThat(response.empty()).isTrue();
         assertThat(response.totalCount()).isZero();
         assertThat(response.totalPages()).isZero();
         assertThat(response.hasPrevious()).isFalse();
