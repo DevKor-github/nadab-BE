@@ -116,6 +116,10 @@ jobs:
             printf '%s' "${!name}" | base64 -w 0 > ".deploy-secrets/$name"
           done
 
+          # scp-action Docker 컨테이너가 다른 UID로 파일을 읽을 수 있도록 전송 직전에만 권한 허용
+          chmod 755 .deploy-secrets
+          chmod 644 .deploy-secrets/*
+
       - name: 📤 Upload deployment secrets to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -223,7 +227,7 @@ jobs:
               --spring.profiles.active=prod > app-prod.log 2>&1 &
 
             echo "✅ 배포 완료!"
-            echo "📄 로그: ~/nadab-prod/app-prod.log"
+            echo "📄 로그: ~/nadab/app-prod.log"
 
       - name: 🧹 Cleanup deployment secrets
         if: always()
