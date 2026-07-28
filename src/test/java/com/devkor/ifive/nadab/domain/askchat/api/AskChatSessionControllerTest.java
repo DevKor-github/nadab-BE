@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.askchat.api;
 
 import com.devkor.ifive.nadab.domain.askchat.api.dto.request.AskChatQuestionRequest;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.request.AskChatSessionStartRequest;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatAnswerGenerationResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatMessageResponse;
@@ -72,28 +73,43 @@ class AskChatSessionControllerTest {
     }
 
     @Test
-    void startSession_delegates_to_session_service_each_time() {
+    void startSession_delegates_first_question_to_session_service() {
         AskChatSessionController controller = controller();
         UserPrincipal principal = new UserPrincipal(1L);
+        AskChatSessionStartRequest request = new AskChatSessionStartRequest("나는 어떤 사람이야?");
         OffsetDateTime createdAt = OffsetDateTime.of(2026, 7, 21, 10, 0, 0, 0, ZoneOffset.UTC);
-        AskChatSessionResponse sessionResponse = new AskChatSessionResponse(
-                11L,
-                AskChatSessionStatus.ACTIVE,
-                0,
-                15,
-                15,
-                createdAt,
-                null
+        AskChatQuestionSendResponse sendResponse = new AskChatQuestionSendResponse(
+                new AskChatSessionResponse(
+                        11L,
+                        AskChatSessionStatus.ACTIVE,
+                        1,
+                        15,
+                        14
+                ),
+                new AskChatMessageResponse(
+                        100L,
+                        AskChatMessageRole.USER,
+                        AskChatMessageStatus.COMPLETED,
+                        "나는 어떤 사람이야?",
+                        createdAt
+                ),
+                null,
+                AskChatAnswerGenerationResponse.failed(
+                        ErrorCode.AI_RESPONSE_PARSE_FAILED,
+                        "generation failed"
+                ),
+                List.of()
         );
-        when(askChatSessionService.startSession(1L)).thenReturn(sessionResponse);
+        when(askChatSessionService.startSession(1L, "나는 어떤 사람이야?")).thenReturn(sendResponse);
 
-        ResponseEntity<ApiResponseDto<AskChatSessionResponse>> response = controller.startSession(principal);
+        ResponseEntity<ApiResponseDto<AskChatQuestionSendResponse>> response = controller.startSession(principal, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getData().sessionId()).isEqualTo(11L);
-        assertThat(response.getBody().getData().remainingTurnCount()).isEqualTo(15);
-        verify(askChatSessionService).startSession(1L);
+        assertThat(response.getBody().getData().session().sessionId()).isEqualTo(11L);
+        assertThat(response.getBody().getData().session().remainingTurnCount()).isEqualTo(14);
+        assertThat(response.getBody().getData().userMessage().content()).isEqualTo("나는 어떤 사람이야?");
+        verify(askChatSessionService).startSession(1L, "나는 어떤 사람이야?");
     }
 
     @Test
@@ -108,9 +124,7 @@ class AskChatSessionControllerTest {
                         AskChatSessionStatus.ACTIVE,
                         1,
                         15,
-                        14,
-                        createdAt,
-                        null
+                        14
                 ),
                 new AskChatMessageResponse(
                         100L,

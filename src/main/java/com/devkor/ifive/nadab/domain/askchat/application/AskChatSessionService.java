@@ -1,8 +1,8 @@
 package com.devkor.ifive.nadab.domain.askchat.application;
 
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSampleQuestionResponse;
-import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSampleQuestion;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatWallet;
@@ -44,6 +44,7 @@ public class AskChatSessionService {
     private final UserWalletRepository userWalletRepository;
     private final UserRepository userRepository;
     private final AnswerEntryRepository answerEntryRepository;
+    private final AskChatMessageCommandService askChatMessageCommandService;
 
     @Transactional(readOnly = true)
     public AskChatHomeResponse getHome(Long userId) {
@@ -63,10 +64,10 @@ public class AskChatSessionService {
     }
 
     @Transactional
-    public AskChatSessionResponse startSession(Long userId) {
+    public AskChatQuestionSendResponse startSession(Long userId, String content) {
         validateMinimumAnswerCount(userId);
         AskChatSession session = createSession(userId);
-        return AskChatSessionResponse.from(session, MAX_TURN_COUNT);
+        return askChatMessageCommandService.sendQuestion(userId, session.getId(), content);
     }
 
     private void validateMinimumAnswerCount(Long userId) {

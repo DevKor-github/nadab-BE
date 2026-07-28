@@ -1,9 +1,9 @@
 package com.devkor.ifive.nadab.domain.askchat.api;
 
 import com.devkor.ifive.nadab.domain.askchat.api.dto.request.AskChatQuestionRequest;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.request.AskChatSessionStartRequest;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
-import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatTurnChargeResponse;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatMessageCommandService;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatSessionService;
@@ -78,31 +78,39 @@ public class AskChatSessionController {
     @Operation(
             summary = "물어보기 세션 시작",
             description = """
-                    사용자가 새 채팅을 시작할 때 호출합니다. </br>
-                    이미 ACTIVE 세션이 있어도 기존 세션을 재사용하거나 종료하지 않고 매번 새 ACTIVE 세션을 생성합니다. </br>
+                    사용자가 새 채팅을 시작하면서 첫 질문을 함께 전송할 때 호출합니다. </br>
                     사용자의 누적 답변 개수가 20개 이상인 경우에만 세션을 생성할 수 있습니다. </br>
-                    이 API는 질문 메시지를 저장하지 않으며, 실제 질문 저장은 POST /ask-chat/messages에서 수행합니다.
+                    요청 본문의 content를 첫 USER 메시지로 저장하고, 기존 POST /ask-chat/messages와 동일한 답변 생성/실패 응답 구조를 반환합니다. </br>
+                    세션 생성 후 첫 질문 처리 중 대화권 부족 등 예외가 발생하면 세션 생성도 함께 롤백됩니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "물어보기 세션 준비 성공",
-                            content = @Content(schema = @Schema(implementation = AskChatSessionResponse.class))
+                            description = "물어보기 세션 생성 및 첫 질문 전송 성공",
+                            content = @Content(schema = @Schema(implementation = AskChatQuestionSendResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "- ErrorCode: ASK_CHAT_NOT_ENOUGH_ANSWERS - 누적 답변 20개 미만",
+                            description = """
+                                    - ErrorCode: VALIDATION_FAILED - 질문은 공백 제외 1자 이상 200자 이하로 요청해야 함
+                                    - ErrorCode: ASK_CHAT_NOT_ENOUGH_ANSWERS - 누적 답변 20개 미만
+                                    - ErrorCode: ASK_CHAT_TURN_BALANCE_INSUFFICIENT - 사용 가능한 Ask Chat 대화권이 없음
+                                    """,
                             content = @Content
                     ),
                     @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
                     @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
             }
     )
-    public ResponseEntity<ApiResponseDto<AskChatSessionResponse>> startSession(
-            @AuthenticationPrincipal UserPrincipal principal
+    public ResponseEntity<ApiResponseDto<AskChatQuestionSendResponse>> startSession(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody AskChatSessionStartRequest request
     ) {
-        AskChatSessionResponse response = askChatSessionService.startSession(principal.getId());
+        AskChatQuestionSendResponse response = askChatSessionService.startSession(
+                principal.getId(),
+                request.content()
+        );
         return ApiResponseEntity.ok(response);
     }
 

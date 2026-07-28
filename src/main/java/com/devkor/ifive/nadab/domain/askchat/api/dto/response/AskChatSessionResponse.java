@@ -4,8 +4,6 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.OffsetDateTime;
-
 @Schema(description = "물어보기 채팅 세션 응답")
 public record AskChatSessionResponse(
         @Schema(description = "채팅 세션 ID", example = "1")
@@ -21,13 +19,7 @@ public record AskChatSessionResponse(
         int maxTurnCount,
 
         @Schema(description = "현재 세션의 잔여 대화 횟수", example = "12")
-        int remainingTurnCount,
-
-        @Schema(description = "채팅 세션 생성 시각")
-        OffsetDateTime createdAt,
-
-        @Schema(description = "채팅 세션 종료 시각")
-        OffsetDateTime endedAt
+        int remainingTurnCount
 ) {
 
     public static AskChatSessionResponse from(AskChatSession session, int maxTurnCount) {
@@ -38,9 +30,7 @@ public record AskChatSessionResponse(
                 session.getStatus(),
                 session.getAnsweredTurnCount(),
                 maxTurnCount,
-                remainingTurnCount,
-                session.getCreatedAt(),
-                session.getEndedAt()
+                remainingTurnCount
         );
     }
 }

@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSampleQuestion;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatWallet;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSampleQuestionRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatWalletRepository;
@@ -59,6 +60,9 @@ class AskChatSessionServiceTest {
     @Mock
     private AnswerEntryRepository answerEntryRepository;
 
+    @Mock
+    private AskChatMessageCommandService askChatMessageCommandService;
+
     private AskChatSessionService service;
 
     @BeforeEach
@@ -69,7 +73,8 @@ class AskChatSessionServiceTest {
                 askChatSampleQuestionRepository,
                 userWalletRepository,
                 userRepository,
-                answerEntryRepository
+                answerEntryRepository,
+                askChatMessageCommandService
         );
     }
 
@@ -99,7 +104,7 @@ class AskChatSessionServiceTest {
     }
 
     @Test
-    void startSession_always_creates_new_session() {
+    void startSession_creates_new_session_and_sends_first_question() {
         User user = mock(User.class);
         AskChatSession savedSession = session(
                 11L,
@@ -111,27 +116,30 @@ class AskChatSessionServiceTest {
         when(answerEntryRepository.countByUserId(1L)).thenReturn(20L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(askChatSessionRepository.save(any(AskChatSession.class))).thenReturn(savedSession);
+        AskChatQuestionSendResponse sendResponse = mock(AskChatQuestionSendResponse.class);
+        when(askChatMessageCommandService.sendQuestion(1L, 11L, "나는 어떤 사람이야?"))
+                .thenReturn(sendResponse);
 
-        var response = service.startSession(1L);
+        var response = service.startSession(1L, "나는 어떤 사람이야?");
 
-        assertThat(response.sessionId()).isEqualTo(11L);
-        assertThat(response.answeredTurnCount()).isZero();
-        assertThat(response.remainingTurnCount()).isEqualTo(15);
+        assertThat(response).isSameAs(sendResponse);
 
         ArgumentCaptor<AskChatSession> sessionCaptor = ArgumentCaptor.forClass(AskChatSession.class);
         verify(askChatSessionRepository).save(sessionCaptor.capture());
         assertThat(sessionCaptor.getValue().getAnsweredTurnCount()).isZero();
+        verify(askChatMessageCommandService).sendQuestion(1L, 11L, "나는 어떤 사람이야?");
     }
 
     @Test
     void startSession_rejects_when_answer_count_is_less_than_minimum() {
         when(answerEntryRepository.countByUserId(1L)).thenReturn(19L);
 
-        assertThatThrownBy(() -> service.startSession(1L))
+        assertThatThrownBy(() -> service.startSession(1L, "나는 어떤 사람이야?"))
                 .isInstanceOfSatisfying(BadRequestException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.ASK_CHAT_NOT_ENOUGH_ANSWERS));
         verifyNoInteractions(userRepository);
         verify(askChatSessionRepository, never()).save(any());
+        verifyNoInteractions(askChatMessageCommandService);
     }
 
     @Test
@@ -139,10 +147,11 @@ class AskChatSessionServiceTest {
         when(answerEntryRepository.countByUserId(1L)).thenReturn(20L);
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.startSession(1L))
+        assertThatThrownBy(() -> service.startSession(1L, "나는 어떤 사람이야?"))
                 .isInstanceOfSatisfying(NotFoundException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND));
         verify(askChatSessionRepository, never()).save(any());
+        verifyNoInteractions(askChatMessageCommandService);
     }
 
     private AskChatSession session(
