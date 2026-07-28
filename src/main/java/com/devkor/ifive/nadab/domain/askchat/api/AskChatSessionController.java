@@ -160,14 +160,14 @@ public class AskChatSessionController {
             summary = "물어보기 질문 전송",
             description = """
                     사용자가 질문을 보낼 때 호출합니다. </br>
-                    요청 본문의 sessionId에 해당하는 본인 채팅 세션에만 USER/ASSISTANT 메시지를 저장합니다. </br>
                     세션이 없거나 다른 사용자의 세션이면 ASK_CHAT_SESSION_NOT_FOUND를 반환하며, 질문 전송 시 새 세션을 자동 생성하지 않습니다. </br>
                     세션 생성은 POST /ask-chat/sessions에서 먼저 수행해야 합니다. </br>
                     질문 내용은 앞뒤 공백 제거 후 1자 이상 200자 이하만 허용합니다. </br>
-                    사용 가능한 무료/유료 대화권이 모두 0회이면 메시지를 저장하지 않고 ASK_CHAT_TURN_BALANCE_INSUFFICIENT 에러 코드를 반환합니다. </br>
+                    사용 가능한 대화권이 모두 0회이면 메시지를 저장하지 않고 ASK_CHAT_TURN_BALANCE_INSUFFICIENT 에러 코드를 반환합니다. </br>
                     답변 생성이 성공한 경우에만 answeredTurnCount를 1 증가시키며, 15번째 성공 답변 후 해당 세션은 ENDED로 자동 전환됩니다. </br>
                     답변 생성 실패 시에는 응답의 assistantMessage는 null로 반환합니다. </br>
-                    클라이언트에서는 answerGeneration.success=false, errorCode, message를 기준으로 채팅 말풍선이 아닌 모달/토스트를 표시해야 합니다. </br>
+                    클라이언트에서는 answerGeneration.success를 기준으로 채팅 말풍선(성공 케이스) 또는 모달/토스트(실패 케이스)를 표시해야 합니다. </br>
+                    실패 케이스에서는 answerGeneration.message를 사용합니다.
                     ENDED 세션 또는 answeredTurnCount가 15 이상인 세션에서는 메시지를 저장하지 않고 ASK_CHAT_TURN_LIMIT_EXCEEDED 에러 코드를 반환합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
