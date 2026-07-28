@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.dailyreport.application;
 
+import com.devkor.ifive.nadab.domain.dailyreport.application.event.DailyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
@@ -12,6 +13,8 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.EmotionReposito
 import com.devkor.ifive.nadab.domain.dailyreport.core.service.AnswerEntryService;
 import com.devkor.ifive.nadab.domain.dailyreport.core.service.PendingDailyReportService;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.user.core.entity.Interest;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.domain.wallet.core.entity.CrystalLog;
@@ -22,6 +25,7 @@ import com.devkor.ifive.nadab.domain.wallet.core.repository.UserWalletRepository
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +41,7 @@ public class DailyReportTxService {
     private final EmotionRepository emotionRepository;
     private final UserWalletRepository userWalletRepository;
     private final CrystalLogRepository crystalLogRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final AnswerEntryService answerEntryService;
     private final PendingDailyReportService pendingDailyReportService;
@@ -93,6 +98,7 @@ public class DailyReportTxService {
         );
 
         crystalLogRepository.save(log);
+        publishCompletedEvent(prep);
 
         return new ConfirmDailyAndRewardDto(
                 emotion,
@@ -107,5 +113,20 @@ public class DailyReportTxService {
 
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
+    }
+
+    private void publishCompletedEvent(PrepareDailyResultDto prep) {
+        Interest interest = prep.entry().getQuestion().getInterest();
+        if (interest == null) {
+            return;
+        }
+
+        InterestCode interestCode = interest.getCode();
+        eventPublisher.publishEvent(new DailyReportCompletedEvent(
+                prep.userId(),
+                prep.entry().getId(),
+                prep.reportId(),
+                interestCode
+        ));
     }
 }

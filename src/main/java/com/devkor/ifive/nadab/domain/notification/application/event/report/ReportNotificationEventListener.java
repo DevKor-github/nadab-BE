@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyRepo
 import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.notification.application.NotificationCommandService;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationType;
+import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportCompletedEvent;
 import com.devkor.ifive.nadab.domain.question.core.repository.DailyQuestionRepository;
 import com.devkor.ifive.nadab.domain.typereport.application.event.TypeReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
@@ -20,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +32,7 @@ import java.util.Map;
  * - 리포트 완성 → 사용자에게 완성 알림
  * - 리포트 제작 가능 → 사용자에게 제작 가능 알림
  * - 일일 리포트 완성 → 유형 리포트 제작 가능 여부 체크 및 알림
+ * - PDF 내보내기 완성 → 사용자에게 완성 알림
  * - @Async로 비동기 처리 (리포트 생성 스레드와 분리)
  */
 @Component
@@ -150,6 +154,41 @@ public class ReportNotificationEventListener {
         }
     }
 
+    /**
+     * PDF 내보내기 완성 알림
+     * - 렌더·업로드·confirm(COMPLETED)이 끝난 뒤 발행되는 PdfExportCompletedEvent 를 받아 알림 생성
+     * - 이벤트는 이미 트랜잭션 밖(confirm 이후)에서 발행되므로 @EventListener(주간/월간과 동일), AFTER_COMMIT 아님
+     * - 클릭 시 아카이브 화면 이동 = FCM data(type=PDF_EXPORT_COMPLETED, targetId=jobId)로 FE 라우팅
+     */
+    @Async("notificationTaskExecutor")
+    @EventListener
+    public void handlePdfExportCompleted(PdfExportCompletedEvent event) {
+        try {
+            NotificationContent content = messageFactory.createMessage(
+                NotificationType.PDF_EXPORT_COMPLETED,
+                Map.of()
+            );
+
+            String idempotencyKey = String.format("PDF_EXPORT_COMPLETED_%d", event.getJobId());
+            notificationCommandService.sendNotification(
+                event.getUserId(),
+                NotificationType.PDF_EXPORT_COMPLETED,
+                content.title(),
+                content.body(),
+                content.inboxMessage(),
+                event.getJobId().toString(),
+                idempotencyKey
+            );
+
+            log.debug("PDF export completed notification created: jobId={}, userId={}",
+                event.getJobId(), event.getUserId());
+
+        } catch (Exception e) {
+            log.error("Failed to handle PDF export completed event: jobId={}, error={}",
+                event.getJobId(), e.getMessage(), e);
+        }
+    }
+
     // ========== 리포트 제작 가능 알림 ==========
 
     /**
@@ -226,7 +265,7 @@ public class ReportNotificationEventListener {
      * - 30개, 50개, 전체 완료 시 TYPE_REPORT_AVAILABLE 알림 발송
      */
     @Async("notificationTaskExecutor")
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleDailyReportCompleted(DailyReportCompletedEvent event) {
         try {
             // 해당 InterestCode의 총 답변 개수 조회

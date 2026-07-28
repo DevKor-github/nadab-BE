@@ -79,17 +79,33 @@ public final class MonthlySocialSummaryCalculator {
         long topCount = sorted.getFirst().interactionCount();
 
         return java.util.stream.IntStream.range(0, sorted.size())
-                .mapToObj(index -> toRankingItem(sorted.get(index), index + 1, topCount))
+                .mapToObj(index -> toRankingItem(sorted.get(index), index + 1, rankAt(sorted, index), topCount))
                 .toList();
+    }
+
+    private static int rankAt(List<MonthlySocialInteractionCountDto> sorted, int index) {
+        if (index == 0) {
+            return 1;
+        }
+
+        MonthlySocialInteractionCountDto current = sorted.get(index);
+        MonthlySocialInteractionCountDto previous = sorted.get(index - 1);
+        if (current.interactionCount() == previous.interactionCount()) {
+            return rankAt(sorted, index - 1);
+        }
+
+        return index + 1;
     }
 
     private static MonthlySocialRankingItem toRankingItem(
             MonthlySocialInteractionCountDto item,
             int displayOrder,
+            int rank,
             long topCount
     ) {
         return new MonthlySocialRankingItem(
                 displayOrder,
+                rank,
                 item.userId(),
                 normalizeNickname(item.nickname()),
                 item.profileImageKey(),

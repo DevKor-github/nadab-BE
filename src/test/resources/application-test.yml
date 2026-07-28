@@ -15,3 +15,19 @@ logging:
   level:
     org.hibernate.SQL: info
     org.hibernate.type.descriptor.sql.BasicBinder: off
+
+ask-chat:
+  answer:
+    provider: OPENAI
+    model: gpt-4o-mini
+    temperature: 0.3
+    max-tokens: 700
+    recent-message-limit: 10
+    follow-up-question-count: 2
+    prompt-version: 1
+  rag:
+    embedding-retry-enabled: false
+    embedding-retry-fixed-delay-ms: 60000
+    embedding-max-retry-count: 3
+    embedding-batch-size: 20
+    backfill-batch-size: 20

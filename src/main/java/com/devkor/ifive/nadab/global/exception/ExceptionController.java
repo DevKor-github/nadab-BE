@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.global.exception;
 
 import com.devkor.ifive.nadab.domain.auth.api.dto.response.WithdrawnInfoResponse;
+import com.devkor.ifive.nadab.domain.pdfexport.api.dto.response.PdfExportInProgressResponse;
 import com.devkor.ifive.nadab.domain.weeklyreport.api.dto.response.CompletedCountResponse;
 import com.devkor.ifive.nadab.global.core.response.ApiErrorResponseDto;
 import com.devkor.ifive.nadab.global.core.response.ApiResponseEntity;
@@ -109,9 +110,21 @@ public class ExceptionController {
         return ApiResponseEntity.error(ErrorCode.FILE_STORAGE_NOT_FOUND);
     }
 
+    @ExceptionHandler(PdfExportInProgressException.class)
+    public ResponseEntity<ApiErrorResponseDto<PdfExportInProgressResponse>> handlePdfExportInProgressException(PdfExportInProgressException ex) {
+        log.warn("PdfExportInProgressException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(ex.getErrorCode(), ex.getInProgressJob());
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiErrorResponseDto<Void>> handleConflictException(ConflictException ex) {
         log.warn("ConflictException: {}", ex.getMessage(), ex);
+        return ApiResponseEntity.error(ex.getErrorCode());
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiErrorResponseDto<Void>> handleTooManyRequestsException(TooManyRequestsException ex) {
+        log.warn("TooManyRequestsException: {}", ex.getMessage(), ex);
         return ApiResponseEntity.error(ex.getErrorCode());
     }
 

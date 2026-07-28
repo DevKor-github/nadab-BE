@@ -29,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
@@ -68,9 +67,6 @@ class DailyReportServiceTest {
     ReportGenerationLogRecorder reportGenerationLogRecorder;
 
     @Mock
-    ApplicationEventPublisher eventPublisher;
-
-    @Mock
     ProfileImageUrlBuilder profileImageUrlBuilder;
 
     DailyReportService dailyReportService;
@@ -85,7 +81,6 @@ class DailyReportServiceTest {
                 profileImageService,
                 dailyReportLlmClient,
                 reportGenerationLogRecorder,
-                eventPublisher,
                 profileImageUrlBuilder
         );
         ReflectionTestUtils.setField(dailyReportService, "env", "test");

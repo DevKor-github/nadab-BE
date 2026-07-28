@@ -228,6 +228,20 @@ public enum ErrorCode {
     // 404 Not Found
     SEARCH_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색어를 찾을 수 없습니다"),
 
+    // ==================== ASK_CHAT (물어보기) ====================
+    // 409 Conflict
+    ASK_CHAT_TURN_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "세션당 대화 횟수를 모두 사용했습니다"),
+
+    // 404 Not Found
+    ASK_CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 세션을 찾을 수 없습니다"),
+    ASK_CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 메시지를 찾을 수 없습니다"),
+    ASK_CHAT_WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 지갑을 찾을 수 없습니다"),
+    ASK_CHAT_WALLET_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "Ask Chat 대화권 로그를 찾을 수 없습니다"),
+
+    // 400 Bad Request
+    ASK_CHAT_NOT_ENOUGH_ANSWERS(HttpStatus.BAD_REQUEST, "물어보기 기능은 답변을 20개 이상 작성한 후 사용할 수 있습니다"),
+    ASK_CHAT_TURN_BALANCE_INSUFFICIENT(HttpStatus.BAD_REQUEST, "사용 가능한 Ask Chat 대화권이 없습니다"),
+
     // ==================== PROMPT (프롬프트) ====================
     // 400 Bad Request
     PROMPT_DAILY_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "일간 리포트 프롬프트 파일이 존재하지 않습니다"),
@@ -261,6 +275,10 @@ public enum ErrorCode {
     PROMPT_TYPE_REPAIR_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "유형 리포트 Repair 프롬프트 파일이 존재하지 않습니다"),
     PROMPT_TYPE_REPAIR_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 유형 리포트 Repair 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_TYPE_REPAIR_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "REPAIR_TYPE_PROMPT 환경 변수에 프롬프트가 설정되어 있지 않습니다"),
+
+    PROMPT_ASK_CHAT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "Ask Chat 답변 프롬프트 파일이 존재하지 않습니다"),
+    PROMPT_ASK_CHAT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 Ask Chat 답변 프롬프트 파일을 읽을 수 없습니다"),
+    PROMPT_ASK_CHAT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "Ask Chat 답변 프롬프트 환경 변수가 설정되어 있지 않습니다"),
 
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
@@ -439,6 +457,25 @@ public enum ErrorCode {
     APP_VERSION_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 플랫폼의 같은 버전이 이미 존재합니다"),
     APP_VERSION_MUST_BE_GREATER_THAN_EXISTING(HttpStatus.CONFLICT, "앱 버전은 같은 플랫폼의 다른 모든 버전보다 높아야 합니다"),
     APP_VERSION_ITEM_DISPLAY_ORDER_DUPLICATED(HttpStatus.CONFLICT, "같은 버전 내 displayOrder가 중복됩니다"),
+
+    // ==================== PDF_EXPORT (PDF 내보내기) ====================
+    // 400 Bad Request
+    PDF_EXPORT_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "PDF 내보내기 기간이 올바르지 않습니다 (시작일이 종료일보다 앞서야 하고, 종료일은 오늘 이후일 수 없으며, 최대 1년까지 가능합니다)"),
+    PDF_EXPORT_NO_DATA(HttpStatus.BAD_REQUEST, "선택한 유형·기간에 내보낼 기록이 없습니다"),
+    // 403 Forbidden
+    PDF_EXPORT_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 PDF 내보내기 작업만 조회할 수 있습니다"),
+    // 404 Not Found
+    PDF_EXPORT_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "PDF 내보내기 작업을 찾을 수 없습니다"),
+    // 409 Conflict
+    PDF_EXPORT_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "이미 생성 중인 PDF가 있습니다. 완료된 뒤 새로 생성해 주세요"),
+    PDF_EXPORT_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 생성이 완료되지 않아 다운로드할 수 없습니다"),
+    PDF_EXPORT_EXPIRED(HttpStatus.CONFLICT, "다운로드 보관 기간(7일)이 지나 만료되었습니다. 다시 생성해 주세요"),
+    // 429 Too Many Requests
+    PDF_EXPORT_DOWNLOAD_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "다운로드 요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요"),
+    PDF_EXPORT_SERVER_BUSY(HttpStatus.TOO_MANY_REQUESTS, "생성 요청이 몰려 있어 지금은 접수할 수 없습니다. 잠시 후 다시 시도해 주세요"),
+    // 500 Internal Server Error
+    PDF_EXPORT_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PDF 생성에 실패했습니다. 차감된 크리스탈은 자동 환불됩니다"),
+    PDF_EXPORT_GENERATION_TIMEOUT(HttpStatus.INTERNAL_SERVER_ERROR, "시간 내에 생성이 완료되지 않아 취소되었습니다. 차감된 크리스탈은 자동 환불됩니다"),
 
     // ==================== ADMIN (어드민) ====================
     // 401 Unauthorized

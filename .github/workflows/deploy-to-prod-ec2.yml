@@ -111,6 +111,14 @@ jobs:
             REPAIR_TYPE_PROMPT="$(printf '%s' "$REPAIR_TYPE_PROMPT_B64" | base64 -d | tr -d '\r')"
             export REPAIR_TYPE_PROMPT
 
+            ASK_CHAT_ANSWER_SYSTEM_PROMPT_B64="${{ secrets.ASK_CHAT_ANSWER_SYSTEM_PROMPT_B64 }}"
+            ASK_CHAT_ANSWER_SYSTEM_PROMPT="$(printf '%s' "$ASK_CHAT_ANSWER_SYSTEM_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export ASK_CHAT_ANSWER_SYSTEM_PROMPT
+
+            ASK_CHAT_ANSWER_USER_PROMPT_B64="${{ secrets.ASK_CHAT_ANSWER_USER_PROMPT_B64 }}"
+            ASK_CHAT_ANSWER_USER_PROMPT="$(printf '%s' "$ASK_CHAT_ANSWER_USER_PROMPT_B64" | base64 -d | tr -d '\r')"
+            export ASK_CHAT_ANSWER_USER_PROMPT
+
             NOTIFICATION_MESSAGES_B64="${{ secrets.NOTIFICATION_MESSAGES_B64 }}"
             NOTIFICATION_MESSAGES="$(printf '%s' "$NOTIFICATION_MESSAGES_B64" | base64 -d | tr -d '\r')"
             export NOTIFICATION_MESSAGES
@@ -142,6 +150,8 @@ jobs:
             IAM_SECRET_KEY="${{ secrets.IAM_SECRET_KEY }}" \
             BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
             PROFILE_IMAGE_BASE_URL="${{ secrets.PROFILE_IMAGE_BASE_URL }}" \
+            CLOUDFRONT_KEY_PAIR_ID="${{ secrets.CLOUDFRONT_KEY_PAIR_ID }}" \
+            CLOUDFRONT_PRIVATE_KEY="${{ secrets.CLOUDFRONT_PRIVATE_KEY }}" \
             KMS_KEY_ID="${{ secrets.KMS_KEY_ID }}" \
             MAIL_ADDRESS="${{ secrets.MAIL_ADDRESS }}" \
             MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" \

@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.test.application;
 
+import com.devkor.ifive.nadab.domain.askchat.application.AskChatWalletGrantService;
 import com.devkor.ifive.nadab.domain.terms.application.TermsCommandService;
 import com.devkor.ifive.nadab.domain.test.api.dto.request.CreateTestUserRequest;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
@@ -33,6 +34,8 @@ class TestUserServiceTest {
     @Mock
     private UserWalletRepository userWalletRepository;
     @Mock
+    private AskChatWalletGrantService askChatWalletGrantService;
+    @Mock
     private UserProfileUpdateService userProfileUpdateService;
     @Mock
     private UserInterestService userInterestService;
@@ -48,6 +51,7 @@ class TestUserServiceTest {
         testUserService = new TestUserService(
                 userRepository,
                 userWalletRepository,
+                askChatWalletGrantService,
                 userProfileUpdateService,
                 userInterestService,
                 termsCommandService,
@@ -77,6 +81,7 @@ class TestUserServiceTest {
 
         ArgumentCaptor<UserWallet> walletCaptor = ArgumentCaptor.forClass(UserWallet.class);
         verify(userWalletRepository).save(walletCaptor.capture());
+        verify(askChatWalletGrantService).grantInitialFreeTurns(userCaptor.getValue());
         assertThat(walletCaptor.getValue().getCrystalBalance()).isEqualTo(1_000L);
         assertThat(userCaptor.getValue().getSignupStatus()).isEqualTo(SignupStatusType.COMPLETED);
         assertThat(response.signupStatus()).isEqualTo(SignupStatusType.COMPLETED.name());

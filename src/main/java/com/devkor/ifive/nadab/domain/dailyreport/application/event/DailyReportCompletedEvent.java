@@ -14,5 +14,7 @@ import lombok.RequiredArgsConstructor;
 public class DailyReportCompletedEvent {
 
     private final Long userId;
+    private final Long answerEntryId;
+    private final Long reportId;
     private final InterestCode interestCode;
 }

@@ -41,6 +41,10 @@ spring:
         options:
           model: gpt-4o-mini
           temperature: 0.0
+      embedding:
+        options:
+          model: text-embedding-3-small
+          dimensions: 1536
     anthropic:
       api-key: ${ANTHROPIC_API_KEY}
       chat:
@@ -90,6 +94,26 @@ admin:
     cookie-name: admin_auth
 
 api_prefix: /api/v1
+
+ask-chat:
+  answer:
+    provider: OPENAI
+    model: gpt-4o-mini
+    temperature: 0.3
+    max-tokens: 900
+    recent-message-limit: 10
+    follow-up-question-count: 2
+    prompt-version: 2
+  rag:
+    embedding-model: text-embedding-3-small
+    embedding-dimensions: 1536
+    embedding-version: 1
+    embedding-batch-size: 20
+    backfill-batch-size: 20
+    retrieval-limit: 5
+    embedding-retry-enabled: true
+    embedding-retry-fixed-delay-ms: 60000
+    embedding-max-retry-count: 3
 
 firebase:
   admin:

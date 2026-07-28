@@ -53,6 +53,8 @@ class MonthlySocialSummaryCalculatorTest {
                 .containsExactly("나", "다");
         assertThat(result.commentRanking()).extracting(MonthlySocialRankingItem::displayOrder)
                 .containsExactly(1, 2);
+        assertThat(result.commentRanking()).extracting(MonthlySocialRankingItem::rank)
+                .containsExactly(1, 2);
         assertThat(result.commentRanking()).extracting(MonthlySocialRankingItem::topRank)
                 .containsExactly(true, false);
     }
@@ -79,12 +81,38 @@ class MonthlySocialSummaryCalculatorTest {
                 .containsExactly("가", "나", "라");
         assertThat(result.likeRanking()).extracting(MonthlySocialRankingItem::displayOrder)
                 .containsExactly(1, 2, 3);
+        assertThat(result.likeRanking()).extracting(MonthlySocialRankingItem::rank)
+                .containsExactly(1, 1, 1);
         assertThat(result.likeRanking()).allMatch(MonthlySocialRankingItem::topRank);
 
         assertThat(result.commentRanking()).extracting(MonthlySocialRankingItem::nickname)
                 .containsExactly("나", "다", "가");
+        assertThat(result.commentRanking()).extracting(MonthlySocialRankingItem::rank)
+                .containsExactly(1, 1, 3);
         assertThat(result.commentRanking()).extracting(MonthlySocialRankingItem::topRank)
                 .containsExactly(true, true, false);
+    }
+
+    @Test
+    void assigns_same_rank_to_second_place_ties() {
+        MonthlySocialSummaryContent result = MonthlySocialSummaryCalculator.calculate(
+                5,
+                List.of(
+                        count(1L, "가", 5),
+                        count(2L, "나", 4),
+                        count(3L, "다", 4)
+                ),
+                List.of(count(4L, "라", 1), count(5L, "마", 1))
+        );
+
+        assertThat(result.likeRanking()).extracting(MonthlySocialRankingItem::nickname)
+                .containsExactly("가", "나", "다");
+        assertThat(result.likeRanking()).extracting(MonthlySocialRankingItem::displayOrder)
+                .containsExactly(1, 2, 3);
+        assertThat(result.likeRanking()).extracting(MonthlySocialRankingItem::rank)
+                .containsExactly(1, 2, 2);
+        assertThat(result.likeRanking()).extracting(MonthlySocialRankingItem::topRank)
+                .containsExactly(true, false, false);
     }
 
     private MonthlySocialInteractionCountDto count(Long userId, String nickname, long count) {

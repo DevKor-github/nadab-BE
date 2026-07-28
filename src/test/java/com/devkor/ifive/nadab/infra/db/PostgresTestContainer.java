@@ -12,7 +12,8 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class PostgresTestContainer {
 
-    private static final DockerImageName IMAGE = DockerImageName.parse("postgres:16-alpine");
+    private static final DockerImageName IMAGE = DockerImageName.parse("pgvector/pgvector:pg16")
+            .asCompatibleSubstituteFor("postgres");
 
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(IMAGE);
 
