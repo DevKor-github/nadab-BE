@@ -92,7 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          mkdir -p .deploy-secrets
+          mkdir -p deploy-secrets
 
           SECRET_NAMES=(
             INSIGHT_PROMPT_B64 INSIGHT_WITH_IMAGE_PROMPT_B64 WEEKLY_PROMPT_B64
@@ -113,7 +113,7 @@ jobs:
           )
 
           for name in "${SECRET_NAMES[@]}"; do
-            printf '%s' "${!name}" | base64 -w 0 > ".deploy-secrets/$name"
+            printf '%s' "${!name}" | base64 -w 0 > "deploy-secrets/$name"
           done
 
       - name: 📤 Upload deployment secrets to EC2
@@ -122,7 +122,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: ./.deploy-secrets/*
+          source: ./deploy-secrets
           target: ~/nadab/
           overwrite: true
 
@@ -149,7 +149,7 @@ jobs:
 
             echo "📌 배포할 JAR 선택됨: $JAR_PATH"
 
-            SECRETS_DIR=".deploy-secrets"
+            SECRETS_DIR="deploy-secrets"
             [ -d "$SECRETS_DIR" ] || { echo "❌ 배포 Secret 디렉토리가 존재하지 않습니다"; exit 1; }
             chmod 700 "$SECRETS_DIR"
             chmod 600 "$SECRETS_DIR"/*
@@ -229,7 +229,7 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          if [ -d .deploy-secrets ]; then
-            rm -f -- .deploy-secrets/*
-            rmdir -- .deploy-secrets
+          if [ -d deploy-secrets ]; then
+            rm -f -- deploy-secrets/*
+            rmdir -- deploy-secrets
           fi
