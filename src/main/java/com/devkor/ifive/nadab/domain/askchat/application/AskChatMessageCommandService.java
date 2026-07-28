@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -75,8 +76,8 @@ public class AskChatMessageCommandService {
             long generationDurationMs = elapsedMillis(generationStartedAt);
             assistantMessage = saveCompletedAssistantMessage(session, generationResult, generationDurationMs);
             saveMessageReferences(assistantMessage, generationResult);
-            session.completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
             askChatTurnReservationService.confirm(turnReservation);
+            session = completeAnsweredTurn(userId, session.getId());
             answerGeneration = AskChatAnswerGenerationResponse.completed();
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
@@ -156,6 +157,18 @@ public class AskChatMessageCommandService {
     private AskChatSession getSession(Long userId, Long sessionId) {
         return askChatSessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ASK_CHAT_SESSION_NOT_FOUND));
+    }
+
+    private AskChatSession completeAnsweredTurn(Long userId, Long sessionId) {
+        int updated = askChatSessionRepository.completeAnsweredTurn(
+                sessionId,
+                AskChatSessionService.MAX_TURN_COUNT,
+                OffsetDateTime.now()
+        );
+        if (updated == 0) {
+            throw new ConflictException(ErrorCode.ASK_CHAT_TURN_LIMIT_EXCEEDED);
+        }
+        return getSession(userId, sessionId);
     }
 
     private void validateTurnLimit(AskChatSession session) {

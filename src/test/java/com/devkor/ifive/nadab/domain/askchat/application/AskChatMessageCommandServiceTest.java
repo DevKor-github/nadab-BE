@@ -41,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -102,7 +104,15 @@ class AskChatMessageCommandServiceTest {
                 OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
                 null
         );
-        when(askChatSessionRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(activeSession));
+        AskChatSession completedSession = session(
+                10L,
+                AskChatSessionStatus.ACTIVE,
+                3,
+                OffsetDateTime.of(2026, 7, 14, 10, 0, 0, 0, ZoneOffset.ofHours(9)),
+                null
+        );
+        when(askChatSessionRepository.findByIdAndUserId(10L, 1L))
+                .thenReturn(Optional.of(activeSession), Optional.of(completedSession));
         when(askChatMessageRepository.save(any(AskChatMessage.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         AskChatAnswerPromptContext context = mock(AskChatAnswerPromptContext.class);
@@ -112,10 +122,16 @@ class AskChatMessageCommandServiceTest {
         when(askChatAnswerLlmClient.generate(context)).thenReturn(successGeneration());
         AskChatRagDocument ragDocument = mock(AskChatRagDocument.class);
         when(askChatRagDocumentRepository.getReferenceById(100L)).thenReturn(ragDocument);
+        when(askChatSessionRepository.completeAnsweredTurn(
+                eq(10L),
+                eq(AskChatSessionService.MAX_TURN_COUNT),
+                any(OffsetDateTime.class)
+        )).thenReturn(1);
 
         var response = service.sendQuestion(1L, 10L, "  나는 어떤 사람이야?  ");
 
         assertThat(response.session().sessionId()).isEqualTo(10L);
+        assertThat(response.session().answeredTurnCount()).isEqualTo(3);
         assertThat(response.userMessage().role()).isEqualTo(AskChatMessageRole.USER);
         assertThat(response.userMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
         assertThat(response.userMessage().content()).isEqualTo("나는 어떤 사람이야?");
@@ -152,8 +168,12 @@ class AskChatMessageCommandServiceTest {
         inOrder.verify(askChatAnswerContextService).build(any(), any(), any());
         inOrder.verify(askChatMessageRepository).save(messageCaptor.getAllValues().get(0));
         inOrder.verify(askChatAnswerLlmClient).generate(context);
-        verify(activeSession).completeAnsweredTurn(AskChatSessionService.MAX_TURN_COUNT);
         verify(askChatTurnReservationService).confirm(reservation);
+        verify(askChatSessionRepository).completeAnsweredTurn(
+                eq(10L),
+                eq(AskChatSessionService.MAX_TURN_COUNT),
+                any(OffsetDateTime.class)
+        );
     }
 
     @Test
@@ -207,7 +227,7 @@ class AskChatMessageCommandServiceTest {
         assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isNotNull();
         assertThat(messageCaptor.getAllValues().get(1).getGenerationDurationMs()).isGreaterThanOrEqualTo(0L);
         verify(askChatMessageReferenceRepository, never()).save(any());
-        verify(activeSession, never()).completeAnsweredTurn(anyInt());
+        verify(askChatSessionRepository, never()).completeAnsweredTurn(anyLong(), anyInt(), any());
         verify(askChatTurnReservationService).refund(1L, activeSession, reservation);
         verify(askChatTurnReservationService, never()).confirm(any());
     }
