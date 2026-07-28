@@ -37,8 +37,7 @@ jobs:
           target: ~/nadab/
           overwrite: true
 
-      - name: 🚀 Restart App on EC2 (Prod)
-        uses: appleboy/ssh-action@v1
+      - name: 🔐 Prepare deployment secrets
         env:
           INSIGHT_PROMPT_B64: ${{ secrets.INSIGHT_PROMPT_B64 }}
           INSIGHT_WITH_IMAGE_PROMPT_B64: ${{ secrets.INSIGHT_WITH_IMAGE_PROMPT_B64 }}
@@ -90,80 +89,147 @@ jobs:
           GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
           FIREBASE_ADMIN_KEY: ${{ secrets.FIREBASE_ADMIN_KEY }}
           ADMIN_PAGE_PASSWORD: ${{ secrets.ADMIN_PAGE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p .deploy-secrets
+
+          SECRET_NAMES=(
+            INSIGHT_PROMPT_B64 INSIGHT_WITH_IMAGE_PROMPT_B64 WEEKLY_PROMPT_B64
+            MONTHLY_V1_PROMPT_B64 MONTHLY_V2_BASELINE_PROMPT_B64 MONTHLY_V2_COMPARISON_PROMPT_B64
+            EVIDENCE_CARD_PROMPT_B64 PATTERN_EXTRACT_PROMPT_B64 TYPE_SELECT_PROMPT_B64
+            TYPE_PROMPT_B64 REPAIR_TYPE_PROMPT_B64 ASK_CHAT_ANSWER_SYSTEM_PROMPT_B64
+            ASK_CHAT_ANSWER_USER_PROMPT_B64 NOTIFICATION_MESSAGES_B64
+            DB_URL DB_USERNAME DB_PASSWORD JWT_SECRET FRONTEND_PROD_URL FRONTEND_PROD_URL_2
+            NAVER_CLIENT_ID NAVER_CLIENT_SECRET NAVER_REDIRECT_URI
+            GOOGLE_CLIENT_ID GOOGLE_ANDROID_CLIENT_ID GOOGLE_IOS_CLIENT_ID
+            GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URI
+            KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET KAKAO_REDIRECT_URI KAKAO_APP_ID
+            APPLE_CLIENT_ID APPLE_TEAM_ID APPLE_KEY_ID APPLE_PRIVATE_KEY
+            IAM_ACCESS_KEY IAM_SECRET_KEY BUCKET_NAME PROFILE_IMAGE_BASE_URL
+            CLOUDFRONT_KEY_PAIR_ID CLOUDFRONT_PRIVATE_KEY KMS_KEY_ID
+            MAIL_ADDRESS MAIL_PASSWORD OPENAI_API_KEY ANTHROPIC_API_KEY
+            GOOGLE_GENAI_API_KEY FIREBASE_ADMIN_KEY ADMIN_PAGE_PASSWORD
+          )
+
+          for name in "${SECRET_NAMES[@]}"; do
+            printf '%s' "${!name}" | base64 -w 0 > ".deploy-secrets/$name"
+          done
+
+      - name: 📤 Upload deployment secrets to EC2
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          envs: INSIGHT_PROMPT_B64,INSIGHT_WITH_IMAGE_PROMPT_B64,WEEKLY_PROMPT_B64,MONTHLY_V1_PROMPT_B64,MONTHLY_V2_BASELINE_PROMPT_B64,MONTHLY_V2_COMPARISON_PROMPT_B64,EVIDENCE_CARD_PROMPT_B64,PATTERN_EXTRACT_PROMPT_B64,TYPE_SELECT_PROMPT_B64,TYPE_PROMPT_B64,REPAIR_TYPE_PROMPT_B64,ASK_CHAT_ANSWER_SYSTEM_PROMPT_B64,ASK_CHAT_ANSWER_USER_PROMPT_B64,NOTIFICATION_MESSAGES_B64,DB_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,FRONTEND_PROD_URL,FRONTEND_PROD_URL_2,NAVER_CLIENT_ID,NAVER_CLIENT_SECRET,NAVER_REDIRECT_URI,GOOGLE_CLIENT_ID,GOOGLE_ANDROID_CLIENT_ID,GOOGLE_IOS_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_REDIRECT_URI,KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_REDIRECT_URI,KAKAO_APP_ID,APPLE_CLIENT_ID,APPLE_TEAM_ID,APPLE_KEY_ID,APPLE_PRIVATE_KEY,IAM_ACCESS_KEY,IAM_SECRET_KEY,BUCKET_NAME,PROFILE_IMAGE_BASE_URL,CLOUDFRONT_KEY_PAIR_ID,CLOUDFRONT_PRIVATE_KEY,KMS_KEY_ID,MAIL_ADDRESS,MAIL_PASSWORD,OPENAI_API_KEY,ANTHROPIC_API_KEY,GOOGLE_GENAI_API_KEY,FIREBASE_ADMIN_KEY,ADMIN_PAGE_PASSWORD
+          source: ./.deploy-secrets/*
+          target: ~/nadab/
+          overwrite: true
+
+      - name: 🚀 Restart App on EC2 (Prod)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
 
             cd ~/nadab
             echo "🔎 현재 서버 디렉토리: $(pwd)"
-            
+
             echo "📄 현재 파일 목록"
             ls -al
-            
+
             # 업로드된 최신 JAR 선택
             JAR_PATH=$(ls -1t build/libs/*.jar | head -n1 || true)
             [ -n "$JAR_PATH" ] || { echo "❌ JAR 파일이 존재하지 않습니다"; exit 1; }
 
             JAR_NAME=$(basename "$JAR_PATH")
-            
+
             echo "📌 배포할 JAR 선택됨: $JAR_PATH"
 
-            # 기존 prod 프로세스 종료
+            SECRETS_DIR=".deploy-secrets"
+            [ -d "$SECRETS_DIR" ] || { echo "❌ 배포 Secret 디렉토리가 존재하지 않습니다"; exit 1; }
+            chmod 700 "$SECRETS_DIR"
+            chmod 600 "$SECRETS_DIR"/*
+
+            cleanup_secrets() {
+              rm -f -- "$SECRETS_DIR"/*
+              rmdir -- "$SECRETS_DIR"
+            }
+            trap cleanup_secrets EXIT
+
+            load_secret() {
+              local name="$1"
+              local path="$SECRETS_DIR/$name"
+              [ -f "$path" ] || { echo "❌ 필수 Secret 파일 누락: $name"; exit 1; }
+
+              local value
+              value="$(base64 -d "$path")"
+              printf -v "$name" '%s' "$value"
+              export "$name"
+            }
+
+            load_prompt() {
+              local name="$1"
+              local path="$SECRETS_DIR/${name}_B64"
+              [ -f "$path" ] || { echo "❌ 필수 프롬프트 파일 누락: ${name}_B64"; exit 1; }
+
+              local value
+              value="$(base64 -d "$path" | base64 -d | tr -d '\r')"
+              printf -v "$name" '%s' "$value"
+              export "$name"
+            }
+
+            PROMPT_NAMES=(
+              INSIGHT_PROMPT INSIGHT_WITH_IMAGE_PROMPT WEEKLY_PROMPT
+              MONTHLY_V1_PROMPT MONTHLY_V2_BASELINE_PROMPT MONTHLY_V2_COMPARISON_PROMPT
+              EVIDENCE_CARD_PROMPT PATTERN_EXTRACT_PROMPT TYPE_SELECT_PROMPT TYPE_PROMPT
+              REPAIR_TYPE_PROMPT ASK_CHAT_ANSWER_SYSTEM_PROMPT ASK_CHAT_ANSWER_USER_PROMPT
+              NOTIFICATION_MESSAGES
+            )
+
+            SECRET_NAMES=(
+              DB_URL DB_USERNAME DB_PASSWORD JWT_SECRET FRONTEND_PROD_URL FRONTEND_PROD_URL_2
+              NAVER_CLIENT_ID NAVER_CLIENT_SECRET NAVER_REDIRECT_URI
+              GOOGLE_CLIENT_ID GOOGLE_ANDROID_CLIENT_ID GOOGLE_IOS_CLIENT_ID
+              GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URI
+              KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET KAKAO_REDIRECT_URI KAKAO_APP_ID
+              APPLE_CLIENT_ID APPLE_TEAM_ID APPLE_KEY_ID APPLE_PRIVATE_KEY
+              IAM_ACCESS_KEY IAM_SECRET_KEY BUCKET_NAME PROFILE_IMAGE_BASE_URL
+              CLOUDFRONT_KEY_PAIR_ID CLOUDFRONT_PRIVATE_KEY KMS_KEY_ID
+              MAIL_ADDRESS MAIL_PASSWORD OPENAI_API_KEY ANTHROPIC_API_KEY
+              GOOGLE_GENAI_API_KEY FIREBASE_ADMIN_KEY ADMIN_PAGE_PASSWORD
+            )
+
+            for name in "${PROMPT_NAMES[@]}"; do
+              load_prompt "$name"
+            done
+
+            for name in "${SECRET_NAMES[@]}"; do
+              load_secret "$name"
+            done
+
+            cleanup_secrets
+            trap - EXIT
+
+            # Secret 복원이 완료된 후에만 기존 프로세스 종료
             echo "🛑 기존 애플리케이션 종료 중..."
             pkill -f "$JAR_NAME" || true
 
             echo "🚀 새 버전 실행..."
-
-            # base64 프롬프트 디코딩
-            INSIGHT_PROMPT="$(printf '%s' "$INSIGHT_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export INSIGHT_PROMPT
-            
-            INSIGHT_WITH_IMAGE_PROMPT="$(printf '%s' "$INSIGHT_WITH_IMAGE_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export INSIGHT_WITH_IMAGE_PROMPT
-
-            WEEKLY_PROMPT="$(printf '%s' "$WEEKLY_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export WEEKLY_PROMPT
-
-            MONTHLY_V1_PROMPT="$(printf '%s' "$MONTHLY_V1_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export MONTHLY_V1_PROMPT
-            
-            MONTHLY_V2_BASELINE_PROMPT="$(printf '%s' "$MONTHLY_V2_BASELINE_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export MONTHLY_V2_BASELINE_PROMPT
-
-            MONTHLY_V2_COMPARISON_PROMPT="$(printf '%s' "$MONTHLY_V2_COMPARISON_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export MONTHLY_V2_COMPARISON_PROMPT
-            
-            EVIDENCE_CARD_PROMPT="$(printf '%s' "$EVIDENCE_CARD_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export EVIDENCE_CARD_PROMPT
-            
-            PATTERN_EXTRACT_PROMPT="$(printf '%s' "$PATTERN_EXTRACT_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export PATTERN_EXTRACT_PROMPT
-            
-            TYPE_SELECT_PROMPT="$(printf '%s' "$TYPE_SELECT_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export TYPE_SELECT_PROMPT
-            
-            TYPE_PROMPT="$(printf '%s' "$TYPE_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export TYPE_PROMPT
-            
-            REPAIR_TYPE_PROMPT="$(printf '%s' "$REPAIR_TYPE_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export REPAIR_TYPE_PROMPT
-
-            ASK_CHAT_ANSWER_SYSTEM_PROMPT="$(printf '%s' "$ASK_CHAT_ANSWER_SYSTEM_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export ASK_CHAT_ANSWER_SYSTEM_PROMPT
-
-            ASK_CHAT_ANSWER_USER_PROMPT="$(printf '%s' "$ASK_CHAT_ANSWER_USER_PROMPT_B64" | base64 -d | tr -d '\r')"
-            export ASK_CHAT_ANSWER_USER_PROMPT
-
-            NOTIFICATION_MESSAGES="$(printf '%s' "$NOTIFICATION_MESSAGES_B64" | base64 -d | tr -d '\r')"
-            export NOTIFICATION_MESSAGES
-
-            # ✅ prod 환경변수 주입 + 실행
             nohup java -jar "$JAR_PATH" \
               --spring.profiles.active=prod > app-prod.log 2>&1 &
 
             echo "✅ 배포 완료!"
             echo "📄 로그: ~/nadab-prod/app-prod.log"
+
+      - name: 🧹 Cleanup deployment secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -d .deploy-secrets ]; then
+            rm -f -- .deploy-secrets/*
+            rmdir -- .deploy-secrets
+          fi
