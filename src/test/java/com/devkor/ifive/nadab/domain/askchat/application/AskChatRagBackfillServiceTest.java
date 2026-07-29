@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.askchat.application;
 
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillResultDto;
+import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillStatusDto;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillTargetDto;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagBackfillQueryRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatEmbeddingClient;
@@ -30,6 +31,22 @@ class AskChatRagBackfillServiceTest {
 
     @Mock
     private AskChatEmbeddingClient embeddingClient;
+
+    @Test
+    void getCompletedDailyAnswerStatus_queries_current_embedding_version() {
+        AskChatRagBackfillService service = new AskChatRagBackfillService(
+                backfillQueryRepository,
+                indexingService,
+                embeddingClient
+        );
+        AskChatRagBackfillStatusDto expectedStatus = new AskChatRagBackfillStatusDto(3, 7, 1);
+        when(embeddingClient.version()).thenReturn(2);
+        when(backfillQueryRepository.findCompletedDailyAnswerStatus(2)).thenReturn(expectedStatus);
+
+        AskChatRagBackfillStatusDto status = service.getCompletedDailyAnswerStatus();
+
+        assertThat(status).isEqualTo(expectedStatus);
+    }
 
     @Test
     void backfillCompletedDailyAnswers_indexes_targets_for_current_embedding_version() {

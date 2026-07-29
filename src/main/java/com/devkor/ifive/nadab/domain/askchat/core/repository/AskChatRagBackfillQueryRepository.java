@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.askchat.core.repository;
 
+import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillStatusDto;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillTargetDto;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,33 @@ public class AskChatRagBackfillQueryRepository {
         return jdbcTemplate.query(sql, new MapSqlParameterSource()
                 .addValue("embeddingVersion", embeddingVersion)
                 .addValue("limit", limit), this::mapTarget);
+    }
+
+    public AskChatRagBackfillStatusDto findCompletedDailyAnswerStatus(int embeddingVersion) {
+        String sql = """
+                SELECT COUNT(*) FILTER (WHERE d.id IS NULL) AS target_count,
+                       COUNT(*) FILTER (WHERE d.embedding_status = 'COMPLETED') AS indexed_count,
+                       COUNT(*) FILTER (
+                           WHERE d.embedding_status IN ('FAILED', 'DEAD_LETTER')
+                       ) AS failed_count
+                  FROM daily_reports dr
+                  JOIN answer_entries ae ON ae.id = dr.answer_entry_id
+                  LEFT JOIN ask_chat_rag_documents d
+                    ON d.source_type = 'ANSWER_ENTRY'
+                   AND d.source_id = ae.id
+                   AND d.embedding_version = :embeddingVersion
+                 WHERE dr.status = 'COMPLETED'
+                """;
+
+        return jdbcTemplate.queryForObject(
+                sql,
+                new MapSqlParameterSource("embeddingVersion", embeddingVersion),
+                (rs, rowNum) -> new AskChatRagBackfillStatusDto(
+                        rs.getLong("target_count"),
+                        rs.getLong("indexed_count"),
+                        rs.getLong("failed_count")
+                )
+        );
     }
 
     private AskChatRagBackfillTargetDto mapTarget(ResultSet rs, int rowNum) throws SQLException {

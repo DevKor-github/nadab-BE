@@ -210,6 +210,7 @@
         <p class="description">
             Completed daily answers that do not have a RAG document for the current embedding version are indexed one batch at a time.
             Run repeatedly until Target becomes 0. Failed embeddings are saved and handled by the retry scheduler.
+            Status counts can be refreshed without running a batch.
         </p>
 
         <div class="stats">
@@ -229,9 +230,10 @@
 
         <div class="btn-row">
             <button id="runBackfillBtn" class="btn btn-primary" type="button">Run Next Batch</button>
+            <button id="refreshStatusBtn" class="btn btn-ghost" type="button">Refresh Status</button>
         </div>
 
-        <div id="resultText" class="result">No run yet.</div>
+        <div id="resultText" class="result">Loading status...</div>
     </div>
 </div>
 
@@ -248,6 +250,7 @@
 
 <script>
     const runBackfillBtn = document.getElementById('runBackfillBtn');
+    const refreshStatusBtn = document.getElementById('refreshStatusBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const targetCountEl = document.getElementById('targetCount');
     const indexedCountEl = document.getElementById('indexedCount');
@@ -331,19 +334,37 @@
         return response.json();
     }
 
-    function renderResult(result) {
-        targetCountEl.textContent = result.targetCount;
-        indexedCountEl.textContent = result.indexedCount;
-        failedCountEl.textContent = result.failedCount;
+    function renderStatus(status) {
+        targetCountEl.textContent = status.targetCount;
+        indexedCountEl.textContent = status.indexedCount;
+        failedCountEl.textContent = status.failedCount;
 
-        if (result.targetCount === 0) {
+        if (status.targetCount === 0) {
             resultTextEl.textContent = 'No remaining completed daily answers for this embedding version.';
             return;
         }
 
-        resultTextEl.textContent =
-            `Processed one batch.\nTarget: ${result.targetCount}, Indexed: ${result.indexedCount}, Failed: ${result.failedCount}`;
+        resultTextEl.textContent = 'Status is up to date.';
     }
+
+    async function loadStatus() {
+        refreshStatusBtn.disabled = true;
+        refreshStatusBtn.textContent = 'Refreshing...';
+
+        try {
+            const body = await request('GET', '/admin/api/ask-chat/rag/backfill/daily-answers/status');
+            if (body) {
+                renderStatus(body.data);
+            }
+        } catch (e) {
+            resultTextEl.textContent = e.message;
+        } finally {
+            refreshStatusBtn.disabled = false;
+            refreshStatusBtn.textContent = 'Refresh Status';
+        }
+    }
+
+    refreshStatusBtn.addEventListener('click', loadStatus);
 
     runBackfillBtn.addEventListener('click', async () => {
         const confirmed = await showConfirmPopup(
@@ -362,8 +383,11 @@
             if (!body) {
                 return;
             }
-            renderResult(body.data);
-            await showResultPopup('Backfill batch completed.');
+            const result = body.data;
+            await loadStatus();
+            await showResultPopup(
+                `Backfill batch completed.\nTarget: ${result.targetCount}, Indexed: ${result.indexedCount}, Failed: ${result.failedCount}`
+            );
         } catch (e) {
             resultTextEl.textContent = e.message;
             await showResultPopup(e.message, true);
@@ -390,6 +414,8 @@
             location.replace('/admin/login');
         }
     });
+
+    loadStatus();
 </script>
 </body>
 </html>
