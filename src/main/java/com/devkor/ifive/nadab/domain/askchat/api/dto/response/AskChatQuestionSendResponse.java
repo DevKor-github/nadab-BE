@@ -18,6 +18,9 @@ public record AskChatQuestionSendResponse(
         @Schema(description = "답변 생성 성공/실패 상태. 실패 시 프론트에서는 이 값을 기준으로 모달/토스트를 표시합니다.")
         AskChatAnswerGenerationResponse answerGeneration,
 
+        @Schema(description = "답변 생성 처리 이후 사용 가능한 남은 메시지 횟수. 성공 시에는 차감 이후 값, 실패 시에는 환불 이후 값입니다.", example = "8")
+        int remainingMessageCount,
+
         @Schema(description = "AI가 제안한 후속 추천 질문. 생성 실패 시 빈 배열")
         List<String> followUpQuestions
 ) {

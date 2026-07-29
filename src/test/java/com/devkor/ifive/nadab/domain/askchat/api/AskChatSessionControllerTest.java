@@ -98,6 +98,7 @@ class AskChatSessionControllerTest {
                         ErrorCode.AI_RESPONSE_PARSE_FAILED,
                         "generation failed"
                 ),
+                9,
                 List.of()
         );
         when(askChatSessionService.startSession(1L, "나는 어떤 사람이야?")).thenReturn(sendResponse);
@@ -138,6 +139,7 @@ class AskChatSessionControllerTest {
                         ErrorCode.AI_RESPONSE_PARSE_FAILED,
                         "generation failed"
                 ),
+                9,
                 List.of()
         );
         when(askChatMessageCommandService.sendQuestion(1L, 10L, "question")).thenReturn(sendResponse);
