@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.askchat.application;
 
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillResultDto;
+import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillStatusDto;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillTargetDto;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagBackfillQueryRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatEmbeddingClient;
@@ -18,6 +19,10 @@ public class AskChatRagBackfillService {
     private final AskChatRagBackfillQueryRepository backfillQueryRepository;
     private final AskChatRagIndexingService indexingService;
     private final AskChatEmbeddingClient embeddingClient;
+
+    public AskChatRagBackfillStatusDto getCompletedDailyAnswerStatus() {
+        return backfillQueryRepository.findCompletedDailyAnswerStatus(embeddingClient.version());
+    }
 
     public AskChatRagBackfillResultDto backfillCompletedDailyAnswers() {
         List<AskChatRagBackfillTargetDto> targets = backfillQueryRepository.findCompletedDailyAnswerTargets(

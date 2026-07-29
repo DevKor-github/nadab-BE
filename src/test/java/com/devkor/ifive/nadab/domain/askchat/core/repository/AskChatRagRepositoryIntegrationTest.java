@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.askchat.core.repository;
 
+import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillStatusDto;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagBackfillTargetDto;
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatRagSearchResultDto;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
@@ -66,6 +67,33 @@ class AskChatRagRepositoryIntegrationTest extends PostgresIntegrationTestSupport
         assertThat(allTargets)
                 .extracting(AskChatRagBackfillTargetDto::reportId)
                 .containsExactly(secondReportId, thirdReportId);
+    }
+
+    @Test
+    void findCompletedDailyAnswerStatus_counts_targets_indexed_and_failed_for_current_version() {
+        Long userId = insertUser("backfill-status");
+        Long questionId = insertDailyQuestion(InterestCode.RELATIONSHIP, "status question");
+        Long targetAnswerId = insertAnswerEntry(userId, questionId, "target", LocalDate.of(2026, 7, 10));
+        Long indexedAnswerId = insertAnswerEntry(userId, questionId, "indexed", LocalDate.of(2026, 7, 11));
+        Long failedAnswerId = insertAnswerEntry(userId, questionId, "failed", LocalDate.of(2026, 7, 12));
+        Long deadLetterAnswerId = insertAnswerEntry(userId, questionId, "dead letter", LocalDate.of(2026, 7, 13));
+        Long oldVersionAnswerId = insertAnswerEntry(userId, questionId, "old version", LocalDate.of(2026, 7, 14));
+        insertDailyReport(targetAnswerId, "target report", "COMPLETED", LocalDate.of(2026, 7, 10));
+        insertDailyReport(indexedAnswerId, "indexed report", "COMPLETED", LocalDate.of(2026, 7, 11));
+        insertDailyReport(failedAnswerId, "failed report", "COMPLETED", LocalDate.of(2026, 7, 12));
+        insertDailyReport(deadLetterAnswerId, "dead letter report", "COMPLETED", LocalDate.of(2026, 7, 13));
+        insertDailyReport(oldVersionAnswerId, "old version report", "COMPLETED", LocalDate.of(2026, 7, 14));
+        insertRagDocument(userId, "ANSWER_ENTRY", indexedAnswerId, InterestCode.RELATIONSHIP, 2, "COMPLETED");
+        insertRagDocument(userId, "ANSWER_ENTRY", failedAnswerId, InterestCode.RELATIONSHIP, 2, "FAILED");
+        insertRagDocument(userId, "ANSWER_ENTRY", deadLetterAnswerId, InterestCode.RELATIONSHIP, 2, "DEAD_LETTER");
+        insertRagDocument(userId, "ANSWER_ENTRY", oldVersionAnswerId, InterestCode.RELATIONSHIP, 1, "COMPLETED");
+
+        AskChatRagBackfillStatusDto status =
+                backfillQueryRepository.findCompletedDailyAnswerStatus(2);
+
+        assertThat(status.targetCount()).isEqualTo(2);
+        assertThat(status.indexedCount()).isEqualTo(1);
+        assertThat(status.failedCount()).isEqualTo(2);
     }
 
     @Test

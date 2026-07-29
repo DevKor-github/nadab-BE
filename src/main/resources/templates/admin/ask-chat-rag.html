@@ -117,8 +117,29 @@
 
         .btn-row {
             display: flex;
+            align-items: end;
             gap: 8px;
             flex-wrap: wrap;
+        }
+
+        .batch-run-control {
+            display: grid;
+            gap: 5px;
+        }
+
+        .batch-run-control label {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .batch-run-control input {
+            width: 110px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface-2);
+            color: var(--text);
+            padding: 8px 10px;
+            font-size: 13px;
         }
 
         .btn {
@@ -209,7 +230,9 @@
         <h2 class="panel-title">Daily Answer Backfill</h2>
         <p class="description">
             Completed daily answers that do not have a RAG document for the current embedding version are indexed one batch at a time.
-            Run repeatedly until Target becomes 0. Failed embeddings are saved and handled by the retry scheduler.
+            Set how many batches to run. Processing stops immediately when a batch fails or Target becomes 0.
+            Failed embeddings are saved and handled by the retry scheduler.
+            Status counts can be refreshed without running a batch.
         </p>
 
         <div class="stats">
@@ -228,10 +251,15 @@
         </div>
 
         <div class="btn-row">
-            <button id="runBackfillBtn" class="btn btn-primary" type="button">Run Next Batch</button>
+            <div class="batch-run-control">
+                <label for="batchRunCount">Batch runs</label>
+                <input id="batchRunCount" type="number" min="1" step="1" value="1"/>
+            </div>
+            <button id="runBackfillBtn" class="btn btn-primary" type="button">Run Batches</button>
+            <button id="refreshStatusBtn" class="btn btn-ghost" type="button">Refresh Status</button>
         </div>
 
-        <div id="resultText" class="result">No run yet.</div>
+        <div id="resultText" class="result">Loading status...</div>
     </div>
 </div>
 
@@ -248,6 +276,8 @@
 
 <script>
     const runBackfillBtn = document.getElementById('runBackfillBtn');
+    const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+    const batchRunCountEl = document.getElementById('batchRunCount');
     const logoutBtn = document.getElementById('logoutBtn');
     const targetCountEl = document.getElementById('targetCount');
     const indexedCountEl = document.getElementById('indexedCount');
@@ -331,45 +361,132 @@
         return response.json();
     }
 
-    function renderResult(result) {
-        targetCountEl.textContent = result.targetCount;
-        indexedCountEl.textContent = result.indexedCount;
-        failedCountEl.textContent = result.failedCount;
+    function renderStatus(status) {
+        targetCountEl.textContent = status.targetCount;
+        indexedCountEl.textContent = status.indexedCount;
+        failedCountEl.textContent = status.failedCount;
 
-        if (result.targetCount === 0) {
+        if (status.targetCount === 0) {
             resultTextEl.textContent = 'No remaining completed daily answers for this embedding version.';
             return;
         }
 
-        resultTextEl.textContent =
-            `Processed one batch.\nTarget: ${result.targetCount}, Indexed: ${result.indexedCount}, Failed: ${result.failedCount}`;
+        resultTextEl.textContent = 'Status is up to date.';
     }
 
+    async function loadStatus() {
+        refreshStatusBtn.disabled = true;
+        refreshStatusBtn.textContent = 'Refreshing...';
+
+        try {
+            const body = await request('GET', '/admin/api/ask-chat/rag/backfill/daily-answers/status');
+            if (body) {
+                renderStatus(body.data);
+            }
+        } catch (e) {
+            resultTextEl.textContent = e.message;
+        } finally {
+            refreshStatusBtn.disabled = false;
+            refreshStatusBtn.textContent = 'Refresh Status';
+        }
+    }
+
+    refreshStatusBtn.addEventListener('click', loadStatus);
+
     runBackfillBtn.addEventListener('click', async () => {
+        const requestedRunCount = Number(batchRunCountEl.value);
+        if (!Number.isSafeInteger(requestedRunCount) || requestedRunCount < 1) {
+            await showResultPopup('Batch runs must be a positive integer.', true);
+            return;
+        }
+
         const confirmed = await showConfirmPopup(
-            'Run one Ask Chat RAG backfill batch?\nThis calls the embedding API for completed daily answers that are not indexed yet.'
+            `Run up to ${requestedRunCount} Ask Chat RAG backfill batches?\n` +
+            'Processing stops immediately if a batch fails or no targets remain. This calls the embedding API.'
         );
         if (!confirmed) {
             return;
         }
 
         runBackfillBtn.disabled = true;
+        refreshStatusBtn.disabled = true;
+        batchRunCountEl.disabled = true;
         runBackfillBtn.textContent = 'Running...';
-        resultTextEl.textContent = 'Running backfill batch...';
 
+        let attemptedRunCount = 0;
+        let totalIndexedCount = 0;
+        let totalFailedCount = 0;
         try {
-            const body = await request('POST', '/admin/api/ask-chat/rag/backfill/daily-answers');
-            if (!body) {
+            const initialStatusBody =
+                await request('GET', '/admin/api/ask-chat/rag/backfill/daily-answers/status');
+            if (!initialStatusBody) {
                 return;
             }
-            renderResult(body.data);
-            await showResultPopup('Backfill batch completed.');
+
+            renderStatus(initialStatusBody.data);
+            if (initialStatusBody.data.targetCount === 0) {
+                await showResultPopup('No remaining completed daily answers for this embedding version.');
+                return;
+            }
+
+            let stoppedBecauseTargetsCompleted = false;
+            for (let runNumber = 1; runNumber <= requestedRunCount; runNumber++) {
+                resultTextEl.textContent = `Running batch ${runNumber} of ${requestedRunCount}...`;
+
+                const body = await request('POST', '/admin/api/ask-chat/rag/backfill/daily-answers');
+                if (!body) {
+                    return;
+                }
+
+                const result = body.data;
+                attemptedRunCount++;
+                totalIndexedCount += result.indexedCount;
+                totalFailedCount += result.failedCount;
+
+                const statusBody =
+                    await request('GET', '/admin/api/ask-chat/rag/backfill/daily-answers/status');
+                if (!statusBody) {
+                    return;
+                }
+                renderStatus(statusBody.data);
+
+                if (result.failedCount > 0) {
+                    resultTextEl.textContent =
+                        `Stopped at batch ${runNumber} of ${requestedRunCount} because ${result.failedCount} item(s) failed.`;
+                    await showResultPopup(
+                        `Backfill stopped at batch ${runNumber} of ${requestedRunCount}.\n` +
+                        `Indexed: ${totalIndexedCount}, Failed: ${totalFailedCount}`,
+                        true
+                    );
+                    return;
+                }
+
+                if (statusBody.data.targetCount === 0) {
+                    stoppedBecauseTargetsCompleted = true;
+                    break;
+                }
+            }
+
+            resultTextEl.textContent =
+                `Completed ${attemptedRunCount} batch(es). Indexed: ${totalIndexedCount}, Failed: ${totalFailedCount}.`;
+            await showResultPopup(
+                `Backfill completed.\n` +
+                `Batches: ${attemptedRunCount} of ${requestedRunCount}, ` +
+                `Indexed: ${totalIndexedCount}, Failed: ${totalFailedCount}` +
+                (stoppedBecauseTargetsCompleted ? '\nNo targets remain.' : '')
+            );
         } catch (e) {
-            resultTextEl.textContent = e.message;
-            await showResultPopup(e.message, true);
+            resultTextEl.textContent =
+                `Stopped after ${attemptedRunCount} batch(es): ${e.message}`;
+            await showResultPopup(
+                `Backfill stopped after ${attemptedRunCount} batch(es).\n${e.message}`,
+                true
+            );
         } finally {
             runBackfillBtn.disabled = false;
-            runBackfillBtn.textContent = 'Run Next Batch';
+            refreshStatusBtn.disabled = false;
+            batchRunCountEl.disabled = false;
+            runBackfillBtn.textContent = 'Run Batches';
         }
     });
 
@@ -390,6 +507,8 @@
             location.replace('/admin/login');
         }
     });
+
+    loadStatus();
 </script>
 </body>
 </html>
