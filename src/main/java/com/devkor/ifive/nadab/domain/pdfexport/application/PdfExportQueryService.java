@@ -44,12 +44,15 @@ public class PdfExportQueryService {
     private static final List<PdfExportStatus> ACTIVE_STATUSES =
             List.of(PdfExportStatus.PENDING, PdfExportStatus.IN_PROGRESS);
 
-    /** 폴링용 상태 조회. 다운로드 발급은 별도 엔드포인트. */
+    /** 폴링용 상태 조회(상태·유형·기간). 다운로드 발급은 별도 엔드포인트. */
     public PdfExportStatusResponse getStatus(Long userId, Long jobId) {
         PdfExportJob job = findOwnedJob(userId, jobId);
         return new PdfExportStatusResponse(
                 job.getId(),
                 job.getStatus().name(),
+                job.getType().name(),
+                job.getStartDate(),
+                job.getEndDate(),
                 job.getExpiresAt(),
                 job.isDownloadExpired(),
                 job.getErrorCode());

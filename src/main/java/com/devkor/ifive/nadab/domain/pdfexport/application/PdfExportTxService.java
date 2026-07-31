@@ -127,12 +127,17 @@ public class PdfExportTxService {
         });
     }
 
-    public void failAndRefund(Long userId, Long jobId, Long logId, String errorCode) {
+    /**
+     * 실패 확정 + 환불. 반환값은 이 호출이 실제로 환불했는지다.
+     * 호출자(렌더 리스너·복구 스케줄러)는 이 값이 true 일 때만 실패 알림을 발행한다.
+     * false 는 CAS 경합에서 져 아무것도 안 한 경우로, 그때 알리면 이미 완료된 작업에 "생성에 실패했어요" 푸시가 나간다.
+     */
+    public boolean failAndRefund(Long userId, Long jobId, Long logId, String errorCode) {
         // 진행 중일 때만 성공(1)한 호출만 환불을 책임진다. 0이면 이미 완료·환불된 job → 공짜 PDF·이중 환불 방지.
         if (pdfExportJobRepository.markFailed(jobId, errorCode) == 0) {
             log.warn("[PDF_EXPORT][REFUND_SKIPPED] jobId={}, errorCode={} — 이미 완료·환불된 작업이라 환불하지 않는다",
                     jobId, errorCode);
-            return;
+            return false;
         }
 
         // 실제 차감된 값(CrystalLog.delta, 음수)을 그대로 되돌린다 — 로그에서 읽어 가격이 바뀌어도 차감액=환불액 보장.
@@ -148,5 +153,6 @@ public class PdfExportTxService {
         crystalLogRepository.markRefunded(logId);
         log.warn("[PDF_EXPORT][REFUNDED] jobId={}, userId={}, refund={}, errorCode={}",
                 jobId, userId, refundAmount, errorCode);
+        return true;
     }
 }

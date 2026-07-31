@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.monthlyreport.application.event.MonthlyRepo
 import com.devkor.ifive.nadab.domain.notification.application.NotificationCommandService;
 import com.devkor.ifive.nadab.domain.notification.core.entity.NotificationType;
 import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportCompletedEvent;
+import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportFailedEvent;
 import com.devkor.ifive.nadab.domain.question.core.repository.DailyQuestionRepository;
 import com.devkor.ifive.nadab.domain.typereport.application.event.TypeReportCompletedEvent;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
@@ -33,6 +34,7 @@ import java.util.Map;
  * - 리포트 제작 가능 → 사용자에게 제작 가능 알림
  * - 일일 리포트 완성 → 유형 리포트 제작 가능 여부 체크 및 알림
  * - PDF 내보내기 완성 → 사용자에게 완성 알림
+ * - PDF 내보내기 실패 → 사용자에게 실패·환불 알림
  * - @Async로 비동기 처리 (리포트 생성 스레드와 분리)
  */
 @Component
@@ -185,6 +187,42 @@ public class ReportNotificationEventListener {
 
         } catch (Exception e) {
             log.error("Failed to handle PDF export completed event: jobId={}, error={}",
+                event.getJobId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * PDF 내보내기 실패 알림
+     * - 실패 확정·환불이 커밋된 뒤 호출자(렌더 리스너·복구 스케줄러)가 발행하는 PdfExportFailedEvent 를 받아 알림 생성
+     * - 이벤트는 트랜잭션 밖(failAndRefund 이후)에서 발행되므로 @EventListener(완성 알림과 동일), AFTER_COMMIT 아님
+     * - 클릭 시 실패 화면 이동 = FCM data(type=PDF_EXPORT_FAILED, targetId=jobId)로 FE 라우팅
+     * - 실패 화면이 쓰는 기간·유형은 GET /pdf-exports/{jobId} 가 내려준다
+     */
+    @Async("notificationTaskExecutor")
+    @EventListener
+    public void handlePdfExportFailed(PdfExportFailedEvent event) {
+        try {
+            NotificationContent content = messageFactory.createMessage(
+                NotificationType.PDF_EXPORT_FAILED,
+                Map.of()
+            );
+
+            String idempotencyKey = String.format("PDF_EXPORT_FAILED_%d", event.getJobId());
+            notificationCommandService.sendNotification(
+                event.getUserId(),
+                NotificationType.PDF_EXPORT_FAILED,
+                content.title(),
+                content.body(),
+                content.inboxMessage(),
+                event.getJobId().toString(),
+                idempotencyKey
+            );
+
+            log.debug("PDF export failed notification created: jobId={}, userId={}",
+                event.getJobId(), event.getUserId());
+
+        } catch (Exception e) {
+            log.error("Failed to handle PDF export failed event: jobId={}, error={}",
                 event.getJobId(), e.getMessage(), e);
         }
     }
