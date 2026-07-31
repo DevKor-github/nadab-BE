@@ -86,14 +86,20 @@ public class PdfExportTxService {
         return new PdfExportReserveResultDto(jobId, balanceAfter);
     }
 
-    public void confirm(Long jobId, Long logId) {
+    /**
+     * 완료 확정. 반환값은 이 호출이 실제로 확정했는지다.
+     * 호출자(렌더 리스너)는 이 값이 true 일 때만 완료 알림을 발행한다.
+     * false 는 CAS 경합에서 져 아무것도 안 한 경우로, 그때 알리면 이미 실패·환불된 작업에 "PDF가 완성됐어요" 푸시가 나간다.
+     */
+    public boolean confirm(Long jobId, Long logId) {
         // 진행 중일 때만 성공(1). 0이면 그 사이 다른 곳(복구 스윕)에서 이미 실패·환불된 job이라 확정하지 않는다.
         if (pdfExportJobRepository.markCompleted(jobId) == 0) {
             log.warn("[PDF_EXPORT][CONFIRM_SKIPPED] jobId={} — 이미 실패·환불 처리된 작업이라 확정하지 않는다", jobId);
-            return;
+            return false;
         }
         crystalLogRepository.markConfirmed(logId);
         dedupPreviousCompleted(jobId);
+        return true;
     }
 
     /**

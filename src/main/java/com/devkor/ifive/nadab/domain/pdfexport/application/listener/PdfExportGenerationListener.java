@@ -131,10 +131,12 @@ public class PdfExportGenerationListener {
             storage.upload(resultKey, pdfFile,
                     PdfExportFileNames.downloadFileName(job),
                     PdfExportFileNames.asciiFallbackFileName(job));
-            txService.confirm(jobId, crystalLogId);
 
-            // ── 4) 완료 이벤트(FCM 알림용). 확정 이후라 여기서 실패해도 실패로 되돌리지 않는다 ──
-            notifyCompleted(jobId, userId);
+            // ── 4) 완료 이벤트(FCM 알림용). 실제로 확정한 경우에만 알린다.
+            //       false 면 복구 스윕이 먼저 실패·환불한 것이라, 여기서 알리면 이미 실패 처리된 작업에 완성 푸시가 나간다.
+            if (txService.confirm(jobId, crystalLogId)) {
+                notifyCompleted(jobId, userId);
+            }
 
         } catch (Exception e) {
             // 렌더·업로드·confirm 어디서 실패해도: 실패 확정 + 환불(별도 Tx). CAS 가드로 이중 환불·공짜 PDF 방지.

@@ -97,6 +97,7 @@ class PdfExportGenerationListenerTest {
         when(assembler.assemble(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PdfHtmlAssembler.AssembledDocument(XHTML, Map.of()));
         when(renderer.render(any(), any())).thenReturn(pdfFile);
+        when(txService.confirm(anyLong(), anyLong())).thenReturn(true);
 
         listener = new PdfExportGenerationListener(
                 jobRepository, queryRepository, assembler, renderer, storage, txService, renderQueue, eventPublisher);
@@ -184,6 +185,20 @@ class PdfExportGenerationListenerTest {
         verify(storage).upload(eq(RESULT_KEY), eq(pdfFile), any(), any());
         verify(txService).confirm(JOB_ID, CRYSTAL_LOG_ID);
         verify(txService, never()).failAndRefund(anyLong(), anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void 복구_스윕이_먼저_실패처리했으면_완료를_알리지_않는다() {
+        givenJob(PdfExportType.ANSWER_ONLY);
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
+        // confirm 이 markCompleted 경합에서 짐 = 복구 스윕이 먼저 FAILED·환불 처리했다.
+        when(txService.confirm(anyLong(), anyLong())).thenReturn(false);
+
+        listener.handle(EVENT);
+
+        // 업로드는 됐지만 확정에 실패했으므로 완성 푸시를 보내면 안 된다(눌러도 아카이브에 없고 크리스탈은 환불됨).
+        verify(storage).upload(any(), any(), any(), any());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
