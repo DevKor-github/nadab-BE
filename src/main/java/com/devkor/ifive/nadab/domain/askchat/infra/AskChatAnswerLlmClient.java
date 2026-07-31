@@ -76,7 +76,7 @@ public class AskChatAnswerLlmClient {
         return OpenAiChatOptions.builder()
                 .model(properties.getModel())
                 .temperature(properties.getTemperature())
-                .maxTokens(properties.getMaxTokens())
+                .maxCompletionTokens(properties.getMaxTokens())
                 .build();
     }
 

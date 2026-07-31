@@ -98,8 +98,8 @@ api_prefix: /api/v1
 ask-chat:
   answer:
     provider: OPENAI
-    model: gpt-4o-mini
-    temperature: 0.3
+    model: gpt-5.6-luna
+    temperature: 1.0
     max-tokens: 900
     recent-message-limit: 10
     follow-up-question-count: 2
