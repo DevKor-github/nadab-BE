@@ -1,11 +1,13 @@
 package com.devkor.ifive.nadab.domain.pdfexport.application.scheduler;
 
 import com.devkor.ifive.nadab.domain.pdfexport.application.PdfExportTxService;
+import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportFailedEvent;
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportJob;
 import com.devkor.ifive.nadab.domain.pdfexport.core.repository.PdfExportJobRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +32,7 @@ public class PdfExportRecoveryScheduler {
 
     private final PdfExportJobRepository pdfExportJobRepository;
     private final PdfExportTxService txService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Scheduled(fixedDelay = 5 * 60 * 1000)
     public void recoverStuckJobs() {
@@ -64,15 +67,32 @@ public class PdfExportRecoveryScheduler {
         Long jobId = job.getId();
         try {
             Long userId = job.getUser().getId();   // LAZY 프록시 id 접근 — 쿼리 없음
-            txService.failAndRefund(userId, jobId, job.getCrystalLogId(),
+            boolean refunded = txService.failAndRefund(userId, jobId, job.getCrystalLogId(),
                     ErrorCode.PDF_EXPORT_GENERATION_TIMEOUT.name());
-            return true;
+            if (refunded) {
+                // 이 경로는 정의상 사용자가 생성 화면을 떠난 뒤다(최소 60분 경과) — 알림이 유일한 통보 수단이다.
+                notifyFailed(jobId, userId);
+            }
+            // false 면 그 사이 렌더 리스너가 먼저 정리한 것이라 우리가 회수한 건이 아니다.
+            return refunded;
         } catch (Exception e) {
             if (failed.isEmpty()) {
                 log.error("[PDF_EXPORT][RECOVERY] 개별 환불 실패: jobId={}", jobId, e);
             }
             failed.add(jobId);
             return false;
+        }
+    }
+
+    /**
+     * 실패 알림 발행. 환불은 이미 커밋된 뒤다.
+     * 예외가 새면 위 catch 가 환불 성공을 실패로 집계하므로 여기서 삼킨다.
+     */
+    private void notifyFailed(Long jobId, Long userId) {
+        try {
+            eventPublisher.publishEvent(new PdfExportFailedEvent(jobId, userId));
+        } catch (Exception e) {
+            log.warn("[PDF_EXPORT][RECOVERY] 알림 발행 실패: jobId={} — 환불은 정상 처리됐다", jobId, e);
         }
     }
 }

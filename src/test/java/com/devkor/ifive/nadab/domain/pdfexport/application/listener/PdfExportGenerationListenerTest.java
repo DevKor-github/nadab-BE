@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.pdfexport.application.listener;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
 import com.devkor.ifive.nadab.domain.pdfexport.application.PdfExportTxService;
 import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportCompletedEvent;
+import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportFailedEvent;
 import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportRenderQueue;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfHtmlAssembler;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfRenderer;
@@ -96,6 +97,7 @@ class PdfExportGenerationListenerTest {
         when(assembler.assemble(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PdfHtmlAssembler.AssembledDocument(XHTML, Map.of()));
         when(renderer.render(any(), any())).thenReturn(pdfFile);
+        when(txService.confirm(anyLong(), anyLong())).thenReturn(true);
 
         listener = new PdfExportGenerationListener(
                 jobRepository, queryRepository, assembler, renderer, storage, txService, renderQueue, eventPublisher);
@@ -186,6 +188,20 @@ class PdfExportGenerationListenerTest {
     }
 
     @Test
+    void 복구_스윕이_먼저_실패처리했으면_완료를_알리지_않는다() {
+        givenJob(PdfExportType.ANSWER_ONLY);
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
+        // confirm 이 markCompleted 경합에서 짐 = 복구 스윕이 먼저 FAILED·환불 처리했다.
+        when(txService.confirm(anyLong(), anyLong())).thenReturn(false);
+
+        listener.handle(EVENT);
+
+        // 업로드는 됐지만 확정에 실패했으므로 완성 푸시를 보내면 안 된다(눌러도 아카이브에 없고 크리스탈은 환불됨).
+        verify(storage).upload(any(), any(), any(), any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
     void 리포트답변_유형은_답변과_리포트를_모두_조회한다() {
         givenJob(PdfExportType.REPORT_AND_ANSWER);
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END)).thenReturn(List.of());
@@ -208,6 +224,7 @@ class PdfExportGenerationListenerTest {
         when(queryRepository.findAnswersInPeriod(USER_ID, START, END))
                 .thenReturn(List.of(answer("2026-01-05", "질문", null)));
         when(renderer.render(any(), any())).thenThrow(new RuntimeException("openhtmltopdf boom"));
+        when(txService.failAndRefund(anyLong(), anyLong(), anyLong(), any())).thenReturn(true);
 
         listener.handle(EVENT);
 
@@ -216,6 +233,26 @@ class PdfExportGenerationListenerTest {
         verify(txService).failAndRefund(USER_ID, JOB_ID, CRYSTAL_LOG_ID, "PDF_EXPORT_GENERATION_FAILED");
         verify(txService, never()).confirm(anyLong(), anyLong());
         verify(storage, never()).upload(any(), any(), any(), any());
+
+        // 생성 화면을 벗어난 사용자는 이 알림이 없으면 실패를 알 방법이 없다(아카이브·/current 모두 FAILED 미노출).
+        ArgumentCaptor<PdfExportFailedEvent> failed = ArgumentCaptor.forClass(PdfExportFailedEvent.class);
+        verify(eventPublisher).publishEvent(failed.capture());
+        assertThat(failed.getValue().getJobId()).isEqualTo(JOB_ID);
+        assertThat(failed.getValue().getUserId()).isEqualTo(USER_ID);
+    }
+
+    @Test
+    void 복구_스윕이_먼저_환불했으면_실패_알림을_보내지_않는다() {
+        givenJob(PdfExportType.ANSWER_ONLY);
+        when(queryRepository.findAnswersInPeriod(USER_ID, START, END))
+                .thenReturn(List.of(answer("2026-01-05", "질문", null)));
+        when(renderer.render(any(), any())).thenThrow(new RuntimeException("openhtmltopdf boom"));
+        // false = markFailed 경합에서 짐. 스윕이 이미 실패 확정·환불했고 알림도 그쪽이 보냈다.
+        when(txService.failAndRefund(anyLong(), anyLong(), anyLong(), any())).thenReturn(false);
+
+        listener.handle(EVENT);
+
+        // 여기서 또 발행하면 같은 작업에 실패 푸시가 두 번 간다.
         verifyNoInteractions(eventPublisher);
     }
 
