@@ -106,13 +106,14 @@ class DailyReportServiceTest {
                 .thenReturn(Optional.of(UserDailyQuestion.create(user, today, question)));
         when(dailyReportTxService.prepareDaily(user, question, "answer", false, null))
                 .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId));
+        when(dailyReportLlmClient.model()).thenReturn("gpt-5.6-luna");
         when(reportGenerationLogRecorder.start(
                 userId,
                 ReportGenerationType.DAILY,
                 reportId,
                 ReportGenerationStep.DAILY_GENERATE,
                 LlmProvider.OPENAI,
-                "GPT_4_O_MINI"
+                "gpt-5.6-luna"
         )).thenReturn(generationLogId);
         when(dailyReportLlmClient.generate("question", answerEntry))
                 .thenReturn(new LlmGenerationResult<>(aiResult, new LlmTokenUsage(100L, 50L, 150L)));

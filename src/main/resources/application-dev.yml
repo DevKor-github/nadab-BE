@@ -15,6 +15,14 @@ spring:
         ddl-auto: validate
     show-sql: false
 
+daily-report:
+  llm:
+    model: gpt-5.6-luna
+    temperature: 1.0
+    max-output-tokens: 512
+    token-limit-parameter: MAX_COMPLETION_TOKENS
+    reasoning-effort: none
+
 springdoc:
   api-docs:
     enabled: true

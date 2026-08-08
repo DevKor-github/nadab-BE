@@ -95,6 +95,13 @@ admin:
 
 api_prefix: /api/v1
 
+daily-report:
+  llm:
+    model: gpt-4o-mini
+    temperature: 0.3
+    max-output-tokens: 512
+    token-limit-parameter: MAX_TOKENS
+
 ask-chat:
   answer:
     provider: OPENAI
