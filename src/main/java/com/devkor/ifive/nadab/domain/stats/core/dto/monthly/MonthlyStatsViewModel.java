@@ -7,8 +7,12 @@ public record MonthlyStatsViewModel(
         List<Long> signupCounts,
         List<Long> assignedQuestionCounts,
         List<Long> completedDailyReportCounts,
-        List<Long> completedMonthlyReportCounts,
+        List<Long> completedMonthlyReportV1Counts,
+        List<Long> completedMonthlyReportV2Counts,
+        List<Long> completedMonthlyReportTotalCounts,
         List<Long> mauCounts,
-        long inProgressMonthlyReportCount,
+        long inProgressMonthlyReportV1Count,
+        long inProgressMonthlyReportV2Count,
+        long inProgressMonthlyReportTotalCount,
         String refreshedAt
 ) {}

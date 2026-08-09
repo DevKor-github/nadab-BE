@@ -53,8 +53,11 @@ public class MonthlyStatsService {
         Map<YearMonth, Long> assignedMap = aggregateByMonth(
                 repo.findAssignedQuestionCountsByDateBetween(startDate, endDateInclusive)
         );
-        Map<YearMonth, Long> completedMap = aggregateByMonth(
-                repo.findCompletedMonthlyReportCountsByDateBetween(startDate, endDateInclusive)
+        Map<YearMonth, Long> completedV1Map = aggregateByMonth(
+                repo.findCompletedMonthlyReportV1CountsByDateBetween(startDate, endDateInclusive)
+        );
+        Map<YearMonth, Long> completedV2Map = aggregateByMonth(
+                repo.findCompletedMonthlyReportV2CountsByDateBetween(startDate, endDateInclusive)
         );
         Map<YearMonth, Long> completedDailyMap = aggregateByMonth(
                 repo.findCompletedDailyReportCountsByDateBetween(startDate, endDateInclusive)
@@ -66,19 +69,27 @@ public class MonthlyStatsService {
         List<Long> signupCounts = months.stream().map(m -> signupMap.getOrDefault(m, 0L)).toList();
         List<Long> assignedCounts = months.stream().map(m -> assignedMap.getOrDefault(m, 0L)).toList();
         List<Long> completedDailyCounts = months.stream().map(m -> completedDailyMap.getOrDefault(m, 0L)).toList();
-        List<Long> completedCounts = months.stream().map(m -> completedMap.getOrDefault(m, 0L)).toList();
+        List<Long> completedV1Counts = months.stream().map(m -> completedV1Map.getOrDefault(m, 0L)).toList();
+        List<Long> completedV2Counts = months.stream().map(m -> completedV2Map.getOrDefault(m, 0L)).toList();
+        List<Long> completedTotalCounts = sumCounts(completedV1Counts, completedV2Counts);
         List<Long> mauCounts = months.stream().map(m -> mauMap.getOrDefault(m, 0L)).toList();
 
-        long inProgressNow = repo.countInProgressMonthlyReportsNow();
+        long inProgressV1Now = repo.countInProgressMonthlyReportV1Now();
+        long inProgressV2Now = repo.countInProgressMonthlyReportV2Now();
+        long inProgressTotalNow = inProgressV1Now + inProgressV2Now;
 
         return new MonthlyStatsViewModel(
                 labels,
                 signupCounts,
                 assignedCounts,
                 completedDailyCounts,
-                completedCounts,
+                completedV1Counts,
+                completedV2Counts,
+                completedTotalCounts,
                 mauCounts,
-                inProgressNow,
+                inProgressV1Now,
+                inProgressV2Now,
+                inProgressTotalNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );
     }
@@ -90,5 +101,13 @@ public class MonthlyStatsService {
             map.merge(month, dto.count(), Long::sum);
         }
         return map;
+    }
+
+    private List<Long> sumCounts(List<Long> first, List<Long> second) {
+        List<Long> totals = new ArrayList<>(first.size());
+        for (int i = 0; i < first.size(); i++) {
+            totals.add(first.get(i) + second.get(i));
+        }
+        return totals;
     }
 }

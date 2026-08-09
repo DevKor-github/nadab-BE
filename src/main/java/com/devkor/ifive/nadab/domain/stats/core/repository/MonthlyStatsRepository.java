@@ -55,10 +55,24 @@ public class MonthlyStatsRepository {
                 .getResultList();
     }
 
-    public List<DateCountDto> findCompletedMonthlyReportCountsByDateBetween(LocalDate startDate, LocalDate endDateInclusive) {
+    public List<DateCountDto> findCompletedMonthlyReportV1CountsByDateBetween(LocalDate startDate, LocalDate endDateInclusive) {
         return em.createQuery("""
                 select new com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto(mr.date, count(mr.id))
                 from MonthlyReport mr
+                where mr.date between :startDate and :endDate
+                  and mr.status = com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus.COMPLETED
+                group by mr.date
+                order by mr.date
+                """, DateCountDto.class)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDateInclusive)
+                .getResultList();
+    }
+
+    public List<DateCountDto> findCompletedMonthlyReportV2CountsByDateBetween(LocalDate startDate, LocalDate endDateInclusive) {
+        return em.createQuery("""
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto(mr.date, count(mr.id))
+                from MonthlyReportV2 mr
                 where mr.date between :startDate and :endDate
                   and mr.status = com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus.COMPLETED
                 group by mr.date
@@ -83,10 +97,19 @@ public class MonthlyStatsRepository {
                 .getResultList();
     }
 
-    public long countInProgressMonthlyReportsNow() {
+    public long countInProgressMonthlyReportV1Now() {
         return em.createQuery("""
             select count(mr.id)
             from MonthlyReport mr
+            where mr.status = com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus.IN_PROGRESS
+            """, Long.class)
+                .getSingleResult();
+    }
+
+    public long countInProgressMonthlyReportV2Now() {
+        return em.createQuery("""
+            select count(mr.id)
+            from MonthlyReportV2 mr
             where mr.status = com.devkor.ifive.nadab.domain.monthlyreport.core.entity.MonthlyReportStatus.IN_PROGRESS
             """, Long.class)
                 .getSingleResult();
