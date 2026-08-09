@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
@@ -25,12 +26,14 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,8 +62,8 @@ class AskChatAnswerLlmClientTest {
     void setUp() {
         properties = new AskChatAnswerProperties();
         properties.setProvider(LlmProvider.OPENAI);
-        properties.setModel("gpt-4o-mini");
-        properties.setTemperature(0.3);
+        properties.setModel("gpt-5.6-luna");
+        properties.setTemperature(1.0);
         properties.setMaxTokens(900);
         properties.setFollowUpQuestionCount(2);
         objectMapper = new ObjectMapper();
@@ -87,14 +90,20 @@ class AskChatAnswerLlmClientTest {
 
         var result = client.generate(context);
 
+        ArgumentCaptor<OpenAiChatOptions> optionsCaptor = ArgumentCaptor.forClass(OpenAiChatOptions.class);
+        verify(requestSpec).options(optionsCaptor.capture());
+
         assertThat(result.answer().answer()).isEqualTo("꾸준함이 강점으로 보여요.");
         assertThat(result.answer().followUpQuestions()).hasSize(2);
         assertThat(result.provider()).isEqualTo(LlmProvider.OPENAI);
-        assertThat(result.model()).isEqualTo("gpt-4o-mini");
+        assertThat(result.model()).isEqualTo("gpt-5.6-luna");
         assertThat(result.tokenUsage().inputTokens()).isEqualTo(100L);
         assertThat(result.tokenUsage().outputTokens()).isEqualTo(50L);
         assertThat(result.tokenUsage().totalTokens()).isEqualTo(150L);
         assertThat(result.referenceDocumentIds()).containsExactly(100L);
+        assertThat(optionsCaptor.getValue().getTemperature()).isEqualTo(1.0);
+        assertThat(optionsCaptor.getValue().getMaxTokens()).isNull();
+        assertThat(optionsCaptor.getValue().getMaxCompletionTokens()).isEqualTo(900);
     }
 
     @Test
