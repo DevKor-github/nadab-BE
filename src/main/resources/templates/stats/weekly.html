@@ -221,6 +221,7 @@
     .dot-teal { background: var(--accent-3); }
     .dot-orange { background: #f5a524; }
   </style>
+  <link rel="stylesheet" th:href="@{/css/stats-peak.css}"/>
 </head>
 <body>
 
@@ -275,8 +276,11 @@
 <div class="charts-grid">
   <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-blue"></span>주간 가입자 수</div>
-      <div class="chart-card-subtitle">최근 5주</div>
+      <div class="chart-card-heading">
+        <div class="chart-card-title"><span class="dot dot-blue"></span>주간 가입자 수</div>
+        <div class="chart-card-subtitle">최근 5주</div>
+      </div>
+      <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.signupPeak})}"></div>
     </div>
     <div class="chart-card-body">
       <canvas id="signupChart" height="140"></canvas>
@@ -285,8 +289,11 @@
 
   <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-pink"></span>주간 할당 질문 수</div>
-      <div class="chart-card-subtitle">최근 5주</div>
+      <div class="chart-card-heading">
+        <div class="chart-card-title"><span class="dot dot-pink"></span>주간 할당 질문 수</div>
+        <div class="chart-card-subtitle">최근 5주</div>
+      </div>
+      <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.assignedQuestionPeak})}"></div>
     </div>
     <div class="chart-card-body">
       <canvas id="assignedChart" height="140"></canvas>
@@ -295,8 +302,11 @@
 
   <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-teal"></span>생성된 일간 리포트 수</div>
-      <div class="chart-card-subtitle">최근 5주</div>
+      <div class="chart-card-heading">
+        <div class="chart-card-title"><span class="dot dot-teal"></span>생성된 일간 리포트 수</div>
+        <div class="chart-card-subtitle">최근 5주</div>
+      </div>
+      <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.completedDailyReportPeak})}"></div>
     </div>
     <div class="chart-card-body">
       <canvas id="completedDailyChart" height="140"></canvas>
@@ -305,8 +315,11 @@
 
   <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-orange"></span>생성된 주간 리포트 수</div>
-      <div class="chart-card-subtitle">최근 5주</div>
+      <div class="chart-card-heading">
+        <div class="chart-card-title"><span class="dot dot-orange"></span>생성된 주간 리포트 수</div>
+        <div class="chart-card-subtitle">최근 5주</div>
+      </div>
+      <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.completedWeeklyReportPeak})}"></div>
     </div>
     <div class="chart-card-body">
       <canvas id="completedWeeklyChart" height="140"></canvas>
@@ -314,8 +327,11 @@
   </div>
 <div class="chart-card">
   <div class="chart-card-header">
-    <div class="chart-card-title"><span class="dot dot-blue"></span>WAU</div>
-    <div class="chart-card-subtitle">활성 사용자 기준 : 일간 리포트를 작성한 고유 사용자 수</div>
+    <div class="chart-card-heading">
+      <div class="chart-card-title"><span class="dot dot-blue"></span>WAU</div>
+      <div class="chart-card-subtitle">활성 사용자 기준 : 일간 리포트를 작성한 고유 사용자 수</div>
+    </div>
+    <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.wauPeak})}"></div>
   </div>
   <div class="chart-card-body">
     <canvas id="wauChart" height="140"></canvas>
