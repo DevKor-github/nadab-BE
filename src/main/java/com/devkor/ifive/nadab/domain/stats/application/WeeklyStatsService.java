@@ -1,6 +1,9 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
+import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakMetric;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.WeeklyStatsRepository;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
@@ -23,6 +26,7 @@ import java.util.Map;
 public class WeeklyStatsService {
 
     private final WeeklyStatsRepository repo;
+    private final PeakStatsTracker peakStatsTracker;
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter FMT =
@@ -68,6 +72,22 @@ public class WeeklyStatsService {
         List<Long> completedCounts = weekStarts.stream().map(d -> completedMap.getOrDefault(d, 0L)).toList();
         List<Long> wauCounts = weekStarts.stream().map(d -> wauMap.getOrDefault(d, 0L)).toList();
 
+        PeakStatViewModel signupPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.WEEKLY_SIGNUP, weekStarts, signupCounts, currentWeekStart
+        );
+        PeakStatViewModel assignedQuestionPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.WEEKLY_ASSIGNED_QUESTION, weekStarts, assignedCounts, currentWeekStart
+        );
+        PeakStatViewModel completedDailyReportPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.WEEKLY_DAILY_REPORT, weekStarts, completedDailyCounts, currentWeekStart
+        );
+        PeakStatViewModel completedWeeklyReportPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.WEEKLY_REPORT, weekStarts, completedCounts, currentWeekStart
+        );
+        PeakStatViewModel wauPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.WAU, weekStarts, wauCounts, currentWeekStart
+        );
+
         long inProgressNow = repo.countInProgressWeeklyReportsNow();
 
         return new WeeklyStatsViewModel(
@@ -77,6 +97,11 @@ public class WeeklyStatsService {
                 completedDailyCounts,
                 completedCounts,
                 wauCounts,
+                signupPeak,
+                assignedQuestionPeak,
+                completedDailyReportPeak,
+                completedWeeklyReportPeak,
+                wauPeak,
                 inProgressNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );
