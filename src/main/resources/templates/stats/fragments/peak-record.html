@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="peakRecord(peak)"
+     class="peak-record"
+     th:classappend="${!peak.available} ? ' peak-record-empty' : ''">
+  <div class="peak-record-label-row">
+    <span class="peak-record-label">역대 최고</span>
+    <span class="peak-record-current"
+          th:if="${peak.currentPeriod}">현재 기간</span>
+  </div>
+  <div class="peak-record-detail" th:if="${peak.available}">
+    <strong class="peak-record-value"
+            th:text="${#numbers.formatInteger(peak.value, 1, 'COMMA')}">0</strong>
+    <span class="peak-record-period"
+          th:text="${peak.periodLabel}">2026-08-13</span>
+  </div>
+  <div class="peak-record-no-data"
+       th:unless="${peak.available}">기록 없음</div>
+</div>
+</body>
+</html>

@@ -1,7 +1,10 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
+import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakMetric;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.MonthlyStatsRepository;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ import java.util.Map;
 public class MonthlyStatsService {
 
     private final MonthlyStatsRepository repo;
+    private final PeakStatsTracker peakStatsTracker;
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter FMT =
@@ -74,6 +78,24 @@ public class MonthlyStatsService {
         List<Long> completedTotalCounts = sumCounts(completedV1Counts, completedV2Counts);
         List<Long> mauCounts = months.stream().map(m -> mauMap.getOrDefault(m, 0L)).toList();
 
+        List<LocalDate> monthStarts = months.stream().map(month -> month.atDay(1)).toList();
+        LocalDate currentMonthStart = currentMonth.atDay(1);
+        PeakStatViewModel signupPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_SIGNUP, monthStarts, signupCounts, currentMonthStart
+        );
+        PeakStatViewModel assignedQuestionPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_ASSIGNED_QUESTION, monthStarts, assignedCounts, currentMonthStart
+        );
+        PeakStatViewModel completedDailyReportPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_DAILY_REPORT, monthStarts, completedDailyCounts, currentMonthStart
+        );
+        PeakStatViewModel completedMonthlyReportPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_REPORT, monthStarts, completedTotalCounts, currentMonthStart
+        );
+        PeakStatViewModel mauPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MAU, monthStarts, mauCounts, currentMonthStart
+        );
+
         long inProgressV1Now = repo.countInProgressMonthlyReportV1Now();
         long inProgressV2Now = repo.countInProgressMonthlyReportV2Now();
         long inProgressTotalNow = inProgressV1Now + inProgressV2Now;
@@ -87,6 +109,11 @@ public class MonthlyStatsService {
                 completedV2Counts,
                 completedTotalCounts,
                 mauCounts,
+                signupPeak,
+                assignedQuestionPeak,
+                completedDailyReportPeak,
+                completedMonthlyReportPeak,
+                mauPeak,
                 inProgressV1Now,
                 inProgressV2Now,
                 inProgressTotalNow,

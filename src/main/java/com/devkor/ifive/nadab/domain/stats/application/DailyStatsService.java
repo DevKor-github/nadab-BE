@@ -1,7 +1,10 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
+import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakMetric;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.DailyStatsRepository;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import java.time.LocalDate;
 public class DailyStatsService {
 
     private final DailyStatsRepository repo;
+    private final PeakStatsTracker peakStatsTracker;
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter FMT =
@@ -57,6 +61,16 @@ public class DailyStatsService {
         List<Long> assignedCounts = days.stream().map(d -> assignedMap.getOrDefault(d, 0L)).toList();
         List<Long> completedCounts = days.stream().map(d -> completedMap.getOrDefault(d, 0L)).toList();
 
+        PeakStatViewModel signupPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.DAILY_SIGNUP, days, signupCounts, today
+        );
+        PeakStatViewModel assignedQuestionPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.DAILY_ASSIGNED_QUESTION, days, assignedCounts, today
+        );
+        PeakStatViewModel dauPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.DAU, days, completedCounts, today
+        );
+
         long sharedNow = repo.countSharedDailyReportsNow();
 
         return new DailyStatsViewModel(
@@ -64,6 +78,9 @@ public class DailyStatsService {
                 signupCounts,
                 assignedCounts,
                 completedCounts,
+                signupPeak,
+                assignedQuestionPeak,
+                dauPeak,
                 sharedNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );

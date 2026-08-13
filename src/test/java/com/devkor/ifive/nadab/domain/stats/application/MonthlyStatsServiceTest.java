@@ -1,8 +1,10 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
+import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.MonthlyStatsRepository;
+import com.devkor.ifive.nadab.domain.stats.infra.InMemoryPeakStatsStore;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +23,10 @@ class MonthlyStatsServiceTest {
     void getMonthlyStats_combines_v1_and_v2_monthly_report_counts() {
         // given
         MonthlyStatsRepository repo = mock(MonthlyStatsRepository.class);
-        MonthlyStatsService service = new MonthlyStatsService(repo);
+        MonthlyStatsService service = new MonthlyStatsService(
+                repo,
+                new PeakStatsTracker(new InMemoryPeakStatsStore())
+        );
 
         YearMonth currentMonth = YearMonth.from(TodayDateTimeProvider.getTodayDate());
         YearMonth previousMonth = currentMonth.minusMonths(1);
@@ -54,6 +59,10 @@ class MonthlyStatsServiceTest {
         assertThat(vm.completedMonthlyReportV1Counts()).containsExactly(0L, 0L, 0L, 2L, 3L);
         assertThat(vm.completedMonthlyReportV2Counts()).containsExactly(0L, 0L, 0L, 5L, 7L);
         assertThat(vm.completedMonthlyReportTotalCounts()).containsExactly(0L, 0L, 0L, 7L, 10L);
+        assertThat(vm.completedMonthlyReportPeak().value()).isEqualTo(10L);
+        assertThat(vm.completedMonthlyReportPeak().periodLabel()).isEqualTo(currentMonth.toString());
+        assertThat(vm.completedMonthlyReportPeak().currentPeriod()).isTrue();
+        assertThat(vm.signupPeak().available()).isFalse();
         assertThat(vm.inProgressMonthlyReportV1Count()).isEqualTo(1L);
         assertThat(vm.inProgressMonthlyReportV2Count()).isEqualTo(4L);
         assertThat(vm.inProgressMonthlyReportTotalCount()).isEqualTo(5L);
