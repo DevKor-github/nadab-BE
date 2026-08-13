@@ -41,8 +41,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DailyReportService {
 
-    private static final String DAILY_REPORT_LLM_MODEL = "GPT_4_O_MINI";
-
     private final UserRepository userRepository;
     private final DailyQuestionRepository dailyQuestionRepository;
     private final UserDailyQuestionRepository userDailyQuestionRepository;
@@ -96,7 +94,7 @@ public class DailyReportService {
                 prep.reportId(),
                 ReportGenerationStep.DAILY_GENERATE,
                 LlmProvider.OPENAI,
-                DAILY_REPORT_LLM_MODEL
+                dailyReportLlmClient.model()
         );
 
         AiDailyReportResultDto dto;

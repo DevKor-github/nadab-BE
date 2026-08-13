@@ -201,6 +201,33 @@ class PdfExportRollbackBoundaryTest extends PostgresIntegrationTestSupport {
         verify(storage, never()).delete(anyString());
     }
 
+    /* ── 실패 알림 발행 여부를 가르는 반환값 ──────────────────────────── */
+
+    @Test
+    void 실제로_환불하면_참을_돌려주고_지갑과_상태를_되돌린다() {
+        Reserved reserved = inProgressJob(fundedUser);
+
+        boolean refunded = txService.failAndRefund(fundedUser.getId(), reserved.jobId(), reserved.logId(),
+                ErrorCode.PDF_EXPORT_GENERATION_FAILED.name());
+
+        assertThat(refunded).isTrue();
+        assertThat(statusOf(reserved.jobId())).isEqualTo(PdfExportStatus.FAILED);
+        assertThat(logStatusOf(reserved.logId())).isEqualTo(CrystalLogStatus.REFUNDED);
+        assertThat(balanceOf(fundedUser)).isEqualTo(FUNDED_BALANCE);   // 차감분 원복
+    }
+
+    @Test
+    void 이미_완료된_작업엔_거짓을_돌려준다() {
+        Reserved reserved = inProgressJob(fundedUser);
+        txService.confirm(reserved.jobId(), reserved.logId());
+
+        // markFailed 경합에서 진 호출(복구 스윕이 뒤늦게 도는 경우)이라 false.
+        // true 면 이미 완성된 PDF 에 "생성에 실패했어요" 푸시가 나가므로, 호출자는 이 값으로 알림을 막는다.
+        assertThat(txService.failAndRefund(fundedUser.getId(), reserved.jobId(), reserved.logId(),
+                ErrorCode.PDF_EXPORT_GENERATION_TIMEOUT.name()))
+                .isFalse();
+    }
+
     /* ── 픽스처·조회 ─────────────────────────────────────────────────── */
 
     private static final Long UNKNOWN_USER_ID = -1L;

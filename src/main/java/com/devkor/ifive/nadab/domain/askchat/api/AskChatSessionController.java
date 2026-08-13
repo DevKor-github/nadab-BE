@@ -4,6 +4,7 @@ import com.devkor.ifive.nadab.domain.askchat.api.dto.request.AskChatQuestionRequ
 import com.devkor.ifive.nadab.domain.askchat.api.dto.request.AskChatSessionStartRequest;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatRemainingMessageCountResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatTurnChargeResponse;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatMessageCommandService;
 import com.devkor.ifive.nadab.domain.askchat.application.AskChatSessionService;
@@ -155,6 +156,37 @@ public class AskChatSessionController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         AskChatTurnChargeResponse response = askChatWalletChargeService.chargeTurns(principal.getId());
+        return ApiResponseEntity.ok(response);
+    }
+
+    @GetMapping("/turns/remaining")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "물어보기 남은 메시지 횟수 조회",
+            description = """
+                    현재 사용자가 사용할 수 있는 물어보기 남은 메시지 횟수만 조회합니다. </br>
+                    홈 전체 정보를 다시 조회하지 않고 질문 전송/충전 이후 카운터만 갱신할 때 사용할 수 있습니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "남은 메시지 횟수 조회 성공",
+                            content = @Content(schema = @Schema(implementation = AskChatRemainingMessageCountResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "- ErrorCode: ASK_CHAT_WALLET_NOT_FOUND - Ask Chat 대화권 지갑을 찾을 수 없음",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<ApiResponseDto<AskChatRemainingMessageCountResponse>> getRemainingTurns(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        AskChatRemainingMessageCountResponse response =
+                askChatSessionService.getRemainingMessageCount(principal.getId());
         return ApiResponseEntity.ok(response);
     }
 

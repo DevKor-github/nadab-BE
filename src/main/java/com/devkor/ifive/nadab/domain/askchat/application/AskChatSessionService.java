@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.askchat.application;
 
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatRemainingMessageCountResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSampleQuestionResponse;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSampleQuestion;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
@@ -68,6 +69,14 @@ public class AskChatSessionService {
     public AskChatQuestionSendResponse startSession(Long userId, String content) {
         AskChatSession session = createSession(userId);
         return askChatMessageCommandService.sendQuestion(userId, session.getId(), content);
+    }
+
+    @Transactional(readOnly = true)
+    public AskChatRemainingMessageCountResponse getRemainingMessageCount(Long userId) {
+        AskChatWallet askChatWallet = askChatWalletRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ASK_CHAT_WALLET_NOT_FOUND));
+
+        return new AskChatRemainingMessageCountResponse(askChatWallet.getTotalTurnBalance());
     }
 
     private void validateMinimumAnswerCount(Long userId) {

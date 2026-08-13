@@ -147,6 +147,22 @@ class AskChatSessionServiceTest {
     }
 
     @Test
+    void getRemainingMessageCount_returns_total_turn_balance() {
+        User user = mock(User.class);
+        when(askChatWalletRepository.findByUserId(1L))
+                .thenReturn(Optional.of(AskChatWallet.create(user, 2, 7)));
+
+        var response = service.getRemainingMessageCount(1L);
+
+        assertThat(response.remainingMessageCount()).isEqualTo(9);
+        verifyNoInteractions(answerEntryRepository);
+        verifyNoInteractions(userRepository);
+        verifyNoInteractions(userWalletRepository);
+        verifyNoInteractions(askChatSampleQuestionRepository);
+        verify(askChatSessionRepository, never()).save(any());
+    }
+
+    @Test
     void startSession_rejects_missing_user_when_creating_session() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 

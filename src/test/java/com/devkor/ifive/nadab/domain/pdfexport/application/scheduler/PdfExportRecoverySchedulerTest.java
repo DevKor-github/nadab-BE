@@ -1,14 +1,18 @@
 package com.devkor.ifive.nadab.domain.pdfexport.application.scheduler;
 
 import com.devkor.ifive.nadab.domain.pdfexport.application.PdfExportTxService;
+import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportFailedEvent;
 import com.devkor.ifive.nadab.domain.pdfexport.core.entity.PdfExportJob;
 import com.devkor.ifive.nadab.domain.pdfexport.core.repository.PdfExportJobRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -28,13 +32,15 @@ class PdfExportRecoverySchedulerTest {
 
     private PdfExportJobRepository jobRepository;
     private PdfExportTxService txService;
+    private ApplicationEventPublisher eventPublisher;
     private PdfExportRecoveryScheduler scheduler;
 
     @BeforeEach
     void setUp() {
         jobRepository = mock(PdfExportJobRepository.class);
         txService = mock(PdfExportTxService.class);
-        scheduler = new PdfExportRecoveryScheduler(jobRepository, txService);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        scheduler = new PdfExportRecoveryScheduler(jobRepository, txService, eventPublisher);
     }
 
     @Test
@@ -43,6 +49,7 @@ class PdfExportRecoverySchedulerTest {
         List<PdfExportJob> stuck =
                 List.of(stuckJob(11L, 7L, 101L), stuckJob(12L, 8L, 102L), stuckJob(13L, 9L, 103L));
         when(jobRepository.findStuckInProgress(any(), anyInt())).thenReturn(stuck);
+        when(txService.failAndRefund(anyLong(), anyLong(), anyLong(), anyString())).thenReturn(true);
         doThrow(new IllegalStateException("wallet down"))
                 .when(txService).failAndRefund(eq(8L), anyLong(), anyLong(), anyString());
 
@@ -51,6 +58,23 @@ class PdfExportRecoverySchedulerTest {
         // 실패한 건에서 멈추지 않고 세 건 모두 시도한다. 삼킨 건은 IN_PROGRESS로 남아 다음 주기가 다시 줍는다.
         verify(txService, times(3)).failAndRefund(anyLong(), anyLong(), anyLong(), anyString());
         verify(txService).failAndRefund(9L, 13L, 103L, "PDF_EXPORT_GENERATION_TIMEOUT");
+    }
+
+    @Test
+    void 환불한_건만_실패_알림을_발행한다() {
+        List<PdfExportJob> stuck = List.of(stuckJob(11L, 7L, 101L), stuckJob(12L, 8L, 102L));
+        when(jobRepository.findStuckInProgress(any(), anyInt())).thenReturn(stuck);
+        when(txService.failAndRefund(anyLong(), anyLong(), anyLong(), anyString())).thenReturn(true);
+        // 8번 유저 건은 그 사이 렌더 리스너가 먼저 정리해 CAS 경합에서 졌다.
+        when(txService.failAndRefund(eq(8L), anyLong(), anyLong(), anyString())).thenReturn(false);
+
+        scheduler.recoverStuckJobs();
+
+        // 환불에 성공한 11번만 발행되고, CAS 경합에서 진 8번은 발행되지 않는다.
+        ArgumentCaptor<PdfExportFailedEvent> failed = ArgumentCaptor.forClass(PdfExportFailedEvent.class);
+        verify(eventPublisher).publishEvent(failed.capture());
+        assertThat(failed.getValue().getJobId()).isEqualTo(11L);
+        assertThat(failed.getValue().getUserId()).isEqualTo(7L);
     }
 
     /** 조회 결과 대역 — 스윕이 읽는 건 id·userId·crystalLogId 뿐이다. */

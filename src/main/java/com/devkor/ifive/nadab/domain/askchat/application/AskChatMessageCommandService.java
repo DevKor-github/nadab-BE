@@ -17,6 +17,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRefer
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatWalletRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatAnswerLlmClient;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
@@ -48,6 +49,7 @@ public class AskChatMessageCommandService {
     private final AskChatAnswerLlmClient askChatAnswerLlmClient;
     private final AskChatAnswerProperties askChatAnswerProperties;
     private final AskChatTurnReservationService askChatTurnReservationService;
+    private final AskChatWalletRepository askChatWalletRepository;
 
     @Transactional
     public AskChatQuestionSendResponse sendQuestion(Long userId, Long sessionId, String content) {
@@ -70,6 +72,7 @@ public class AskChatMessageCommandService {
 
         AskChatMessage assistantMessage;
         AskChatAnswerGenerationResponse answerGeneration;
+        int remainingMessageCount;
         List<String> followUpQuestions;
         try {
             AskChatAnswerGenerationResult generationResult = askChatAnswerLlmClient.generate(context);
@@ -78,12 +81,14 @@ public class AskChatMessageCommandService {
             saveMessageReferences(assistantMessage, generationResult);
             askChatTurnReservationService.confirm(turnReservation);
             session = completeAnsweredTurn(userId, session.getId());
+            remainingMessageCount = getRemainingMessageCount(userId);
             answerGeneration = AskChatAnswerGenerationResponse.completed();
             followUpQuestions = generationResult.answer().followUpQuestions();
         } catch (AiServiceException e) {
             long generationDurationMs = elapsedMillis(generationStartedAt);
             saveFailedAssistantMessage(session, e, generationDurationMs);
             askChatTurnReservationService.refund(userId, session, turnReservation);
+            remainingMessageCount = getRemainingMessageCount(userId);
             assistantMessage = null;
             answerGeneration = AskChatAnswerGenerationResponse.failed(
                     e.getErrorCode(),
@@ -97,6 +102,7 @@ public class AskChatMessageCommandService {
                 AskChatMessageResponse.from(userMessage),
                 assistantMessage == null ? null : AskChatMessageResponse.from(assistantMessage),
                 answerGeneration,
+                remainingMessageCount,
                 followUpQuestions
         );
     }
@@ -157,6 +163,12 @@ public class AskChatMessageCommandService {
     private AskChatSession getSession(Long userId, Long sessionId) {
         return askChatSessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ASK_CHAT_SESSION_NOT_FOUND));
+    }
+
+    private int getRemainingMessageCount(Long userId) {
+        return askChatWalletRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ASK_CHAT_WALLET_NOT_FOUND))
+                .getTotalTurnBalance();
     }
 
     private AskChatSession completeAnsweredTurn(Long userId, Long sessionId) {

@@ -20,7 +20,7 @@ ask-chat:
   answer:
     provider: OPENAI
     model: gpt-4o-mini
-    temperature: 0.3
+    temperature: 1.0
     max-tokens: 700
     recent-message-limit: 10
     follow-up-question-count: 2

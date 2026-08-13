@@ -1,0 +1,110 @@
+.chart-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+}
+
+.chart-card-heading {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.peak-record {
+  flex: 0 0 auto;
+  min-width: 220px;
+  min-height: 69px;
+  padding: 9px 11px 10px;
+  border: 1px solid rgba(245, 165, 36, .32);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(245, 165, 36, .11), rgba(245, 165, 36, .035));
+  font-family: 'DM Mono', monospace;
+}
+
+.peak-record-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.peak-record-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f5a524;
+  font-family: 'Syne', sans-serif;
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+.peak-record-label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: #f5a524;
+  transform: rotate(45deg);
+  box-shadow: 0 0 7px rgba(245, 165, 36, .45);
+}
+
+.peak-record-current {
+  padding: 2px 6px;
+  border: 1px solid rgba(77, 232, 194, .28);
+  border-radius: 999px;
+  background: rgba(77, 232, 194, .08);
+  color: var(--accent-3);
+  font-family: 'Syne', sans-serif;
+  font-size: .58rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.peak-record-detail {
+  display: block;
+}
+
+.peak-record-value {
+  color: var(--text-1);
+  font-size: 1.16rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.peak-record-period {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-2);
+  font-size: .66rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.peak-record-no-data {
+  color: var(--text-3);
+  font-size: .72rem;
+}
+
+.peak-record-empty {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, .015);
+}
+
+.peak-record-empty .peak-record-label {
+  color: var(--text-3);
+}
+
+.peak-record-empty .peak-record-label::before {
+  background: var(--text-3);
+  box-shadow: none;
+}
+
+@media (max-width: 560px) {
+  .peak-record {
+    width: 100%;
+    min-width: 0;
+  }
+}

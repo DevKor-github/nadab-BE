@@ -1,7 +1,10 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
+import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakMetric;
+import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.MonthlyStatsRepository;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ import java.util.Map;
 public class MonthlyStatsService {
 
     private final MonthlyStatsRepository repo;
+    private final PeakStatsTracker peakStatsTracker;
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter FMT =
@@ -53,8 +57,11 @@ public class MonthlyStatsService {
         Map<YearMonth, Long> assignedMap = aggregateByMonth(
                 repo.findAssignedQuestionCountsByDateBetween(startDate, endDateInclusive)
         );
-        Map<YearMonth, Long> completedMap = aggregateByMonth(
-                repo.findCompletedMonthlyReportCountsByDateBetween(startDate, endDateInclusive)
+        Map<YearMonth, Long> completedV1Map = aggregateByMonth(
+                repo.findCompletedMonthlyReportV1CountsByDateBetween(startDate, endDateInclusive)
+        );
+        Map<YearMonth, Long> completedV2Map = aggregateByMonth(
+                repo.findCompletedMonthlyReportV2CountsByDateBetween(startDate, endDateInclusive)
         );
         Map<YearMonth, Long> completedDailyMap = aggregateByMonth(
                 repo.findCompletedDailyReportCountsByDateBetween(startDate, endDateInclusive)
@@ -66,19 +73,50 @@ public class MonthlyStatsService {
         List<Long> signupCounts = months.stream().map(m -> signupMap.getOrDefault(m, 0L)).toList();
         List<Long> assignedCounts = months.stream().map(m -> assignedMap.getOrDefault(m, 0L)).toList();
         List<Long> completedDailyCounts = months.stream().map(m -> completedDailyMap.getOrDefault(m, 0L)).toList();
-        List<Long> completedCounts = months.stream().map(m -> completedMap.getOrDefault(m, 0L)).toList();
+        List<Long> completedV1Counts = months.stream().map(m -> completedV1Map.getOrDefault(m, 0L)).toList();
+        List<Long> completedV2Counts = months.stream().map(m -> completedV2Map.getOrDefault(m, 0L)).toList();
+        List<Long> completedTotalCounts = sumCounts(completedV1Counts, completedV2Counts);
         List<Long> mauCounts = months.stream().map(m -> mauMap.getOrDefault(m, 0L)).toList();
 
-        long inProgressNow = repo.countInProgressMonthlyReportsNow();
+        List<LocalDate> monthStarts = months.stream().map(month -> month.atDay(1)).toList();
+        LocalDate currentMonthStart = currentMonth.atDay(1);
+        PeakStatViewModel signupPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_SIGNUP, monthStarts, signupCounts, currentMonthStart
+        );
+        PeakStatViewModel assignedQuestionPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_ASSIGNED_QUESTION, monthStarts, assignedCounts, currentMonthStart
+        );
+        PeakStatViewModel completedDailyReportPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_DAILY_REPORT, monthStarts, completedDailyCounts, currentMonthStart
+        );
+        PeakStatViewModel completedMonthlyReportPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MONTHLY_REPORT, monthStarts, completedTotalCounts, currentMonthStart
+        );
+        PeakStatViewModel mauPeak = peakStatsTracker.updateAndGet(
+                PeakMetric.MAU, monthStarts, mauCounts, currentMonthStart
+        );
+
+        long inProgressV1Now = repo.countInProgressMonthlyReportV1Now();
+        long inProgressV2Now = repo.countInProgressMonthlyReportV2Now();
+        long inProgressTotalNow = inProgressV1Now + inProgressV2Now;
 
         return new MonthlyStatsViewModel(
                 labels,
                 signupCounts,
                 assignedCounts,
                 completedDailyCounts,
-                completedCounts,
+                completedV1Counts,
+                completedV2Counts,
+                completedTotalCounts,
                 mauCounts,
-                inProgressNow,
+                signupPeak,
+                assignedQuestionPeak,
+                completedDailyReportPeak,
+                completedMonthlyReportPeak,
+                mauPeak,
+                inProgressV1Now,
+                inProgressV2Now,
+                inProgressTotalNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );
     }
@@ -90,5 +128,13 @@ public class MonthlyStatsService {
             map.merge(month, dto.count(), Long::sum);
         }
         return map;
+    }
+
+    private List<Long> sumCounts(List<Long> first, List<Long> second) {
+        List<Long> totals = new ArrayList<>(first.size());
+        for (int i = 0; i < first.size(); i++) {
+            totals.add(first.get(i) + second.get(i));
+        }
+        return totals;
     }
 }

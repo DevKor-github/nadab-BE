@@ -243,6 +243,7 @@
     .chart-card:nth-child(2) { animation-delay: .1s; }
     .chart-card:nth-child(3) { animation-delay: .15s; }
   </style>
+  <link rel="stylesheet" th:href="@{/css/stats-peak.css}"/>
 </head>
 <body>
 
@@ -301,10 +302,13 @@
   <!-- Chart 1 -->
   <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title">
-        <span class="dot dot-blue"></span>일간 가입자 수
+      <div class="chart-card-heading">
+        <div class="chart-card-title">
+          <span class="dot dot-blue"></span>일간 가입자 수
+        </div>
+        <div class="chart-card-subtitle">최근 7일</div>
       </div>
-      <div class="chart-card-subtitle">최근 7일</div>
+      <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.signupPeak})}"></div>
     </div>
     <div class="chart-card-body">
       <canvas id="signupChart" height="140"></canvas>
@@ -314,10 +318,13 @@
   <!-- Chart 2 -->
   <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title">
-        <span class="dot dot-pink"></span>할당된 질문 개수
+      <div class="chart-card-heading">
+        <div class="chart-card-title">
+          <span class="dot dot-pink"></span>할당된 질문 개수
+        </div>
+        <div class="chart-card-subtitle">최근 7일 · 홈 화면 진입 시 할당</div>
       </div>
-      <div class="chart-card-subtitle">최근 7일 · 홈 화면 진입 시 할당</div>
+      <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.assignedQuestionPeak})}"></div>
     </div>
     <div class="chart-card-body">
       <canvas id="assignedChart" height="140"></canvas>
@@ -327,10 +334,13 @@
   <!-- Chart 3 (wide) -->
   <div class="chart-card chart-card-wide">
     <div class="chart-card-header">
-      <div class="chart-card-title">
-        <span class="dot dot-teal"></span>생성된 일간 리포트 개수 (DAU)
+      <div class="chart-card-heading">
+        <div class="chart-card-title">
+          <span class="dot dot-teal"></span>생성된 일간 리포트 개수 (DAU)
+        </div>
+        <div class="chart-card-subtitle">최근 7일</div>
       </div>
-      <div class="chart-card-subtitle">최근 7일</div>
+      <div th:replace="~{stats/fragments/peak-record :: peakRecord(${vm.dauPeak})}"></div>
     </div>
     <div class="chart-card-body">
       <canvas id="completedChart" height="90"></canvas>

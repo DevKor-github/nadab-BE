@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.infra;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.LlmDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
+import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -22,7 +23,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
@@ -37,6 +37,7 @@ public class DailyReportLlmClient {
     private final ObjectMapper objectMapper;
     private final LlmRouter llmRouter;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
+    private final DailyReportLlmProperties properties;
 
     private final LlmProvider provider = LlmProvider.OPENAI;
 
@@ -54,11 +55,7 @@ public class DailyReportLlmClient {
 
         ChatClient chatClient = llmRouter.route(provider);
 
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(OpenAiApi.ChatModel.GPT_4_O_MINI)
-                .temperature(0.3)
-                .maxTokens(512)
-                .build();
+        OpenAiChatOptions options = buildOptions();
 
         UserMessage userMessage = buildUserMessage(prompt, withImagePrompt,answerEntry);
 
@@ -104,6 +101,27 @@ public class DailyReportLlmClient {
             // GPT가 JSON 형식을 지키지 못했을 경우 대비
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
+    }
+
+    public String model() {
+        return properties.getModel();
+    }
+
+    private OpenAiChatOptions buildOptions() {
+        var builder = OpenAiChatOptions.builder()
+                .model(properties.getModel())
+                .temperature(properties.getTemperature());
+
+        switch (properties.getTokenLimitParameter()) {
+            case MAX_TOKENS -> builder.maxTokens(properties.getMaxOutputTokens());
+            case MAX_COMPLETION_TOKENS -> builder.maxCompletionTokens(properties.getMaxOutputTokens());
+        }
+
+        if (!isBlank(properties.getReasoningEffort())) {
+            builder.reasoningEffort(properties.getReasoningEffort());
+        }
+
+        return builder.build();
     }
 
     private String extractContent(ChatResponse response) {

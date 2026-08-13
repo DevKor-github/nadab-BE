@@ -28,7 +28,8 @@ public class LocalAuthController {
     @Operation(
             summary = "더미 유저 로그인",
             description = """
-                    로컬 환경에서 더미 유저로 로그인하여 액세스 토큰을 발급받습니다.
+                    로컬 환경에서 더미 유저로 로그인하여 액세스 토큰을 발급받습니다. <br/>
+                    더미 유저가 없을 시에는 자동 생성합니다.
                     """
     )
     public ResponseEntity<ApiResponseDto<LocalTokenResponse>> dummyLogin() {

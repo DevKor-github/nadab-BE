@@ -11,12 +11,15 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatMessageStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatRagDocument;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
+import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatWallet;
 import com.devkor.ifive.nadab.domain.askchat.core.properties.AskChatAnswerProperties;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageReferenceRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatMessageRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatRagDocumentRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
+import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatWalletRepository;
 import com.devkor.ifive.nadab.domain.askchat.infra.AskChatAnswerLlmClient;
+import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import com.devkor.ifive.nadab.global.exception.ConflictException;
@@ -75,6 +78,9 @@ class AskChatMessageCommandServiceTest {
     @Mock
     private AskChatTurnReservationService askChatTurnReservationService;
 
+    @Mock
+    private AskChatWalletRepository askChatWalletRepository;
+
     private AskChatMessageCommandService service;
     private AskChatAnswerProperties askChatAnswerProperties;
 
@@ -91,7 +97,8 @@ class AskChatMessageCommandServiceTest {
                 askChatAnswerContextService,
                 askChatAnswerLlmClient,
                 askChatAnswerProperties,
-                askChatTurnReservationService
+                askChatTurnReservationService,
+                askChatWalletRepository
         );
     }
 
@@ -127,11 +134,13 @@ class AskChatMessageCommandServiceTest {
                 eq(AskChatSessionService.MAX_TURN_COUNT),
                 any(OffsetDateTime.class)
         )).thenReturn(1);
+        when(askChatWalletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet(3, 5)));
 
         var response = service.sendQuestion(1L, 10L, "  나는 어떤 사람이야?  ");
 
         assertThat(response.session().sessionId()).isEqualTo(10L);
         assertThat(response.session().answeredTurnCount()).isEqualTo(3);
+        assertThat(response.remainingMessageCount()).isEqualTo(8);
         assertThat(response.userMessage().role()).isEqualTo(AskChatMessageRole.USER);
         assertThat(response.userMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
         assertThat(response.userMessage().content()).isEqualTo("나는 어떤 사람이야?");
@@ -205,11 +214,13 @@ class AskChatMessageCommandServiceTest {
         when(askChatTurnReservationService.reserveTurn(1L, activeSession)).thenReturn(reservation);
         when(askChatAnswerLlmClient.generate(context))
                 .thenThrow(new AiResponseParseException(ErrorCode.AI_RESPONSE_PARSE_FAILED));
+        when(askChatWalletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet(2, 7)));
 
         var response = service.sendQuestion(1L, 11L, "나는 어떤 사람이야?");
 
         assertThat(response.userMessage().status()).isEqualTo(AskChatMessageStatus.COMPLETED);
         assertThat(response.assistantMessage()).isNull();
+        assertThat(response.remainingMessageCount()).isEqualTo(9);
         assertThat(response.answerGeneration().success()).isFalse();
         assertThat(response.answerGeneration().errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_PARSE_FAILED.getCode());
         assertThat(response.answerGeneration().message()).isEqualTo("답변 생성에 오류가 발생했어요. 다시 시도해주세요.");
@@ -329,6 +340,10 @@ class AskChatMessageCommandServiceTest {
 
     private AskChatTurnReservation reservation() {
         return new AskChatTurnReservation(1000L, -1, 0);
+    }
+
+    private AskChatWallet wallet(int freeTurnBalance, int paidTurnBalance) {
+        return AskChatWallet.create(mock(User.class), freeTurnBalance, paidTurnBalance);
     }
 
     private AskChatSession session(

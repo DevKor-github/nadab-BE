@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatAnswerGener
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatHomeResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatMessageResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
+import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatRemainingMessageCountResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSampleQuestionResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatSessionResponse;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatTurnChargeResponse;
@@ -98,6 +99,7 @@ class AskChatSessionControllerTest {
                         ErrorCode.AI_RESPONSE_PARSE_FAILED,
                         "generation failed"
                 ),
+                9,
                 List.of()
         );
         when(askChatSessionService.startSession(1L, "나는 어떤 사람이야?")).thenReturn(sendResponse);
@@ -138,6 +140,7 @@ class AskChatSessionControllerTest {
                         ErrorCode.AI_RESPONSE_PARSE_FAILED,
                         "generation failed"
                 ),
+                9,
                 List.of()
         );
         when(askChatMessageCommandService.sendQuestion(1L, 10L, "question")).thenReturn(sendResponse);
@@ -172,6 +175,23 @@ class AskChatSessionControllerTest {
         assertThat(response.getBody().getData().crystalBalance()).isEqualTo(70L);
         assertThat(response.getBody().getData().remainingMessageCount()).isEqualTo(12);
         verify(askChatWalletChargeService).chargeTurns(1L);
+    }
+
+    @Test
+    void getRemainingTurns_returns_remaining_message_count_only() {
+        AskChatSessionController controller = controller();
+        UserPrincipal principal = new UserPrincipal(1L);
+        AskChatRemainingMessageCountResponse remainingResponse =
+                new AskChatRemainingMessageCountResponse(9);
+        when(askChatSessionService.getRemainingMessageCount(1L)).thenReturn(remainingResponse);
+
+        ResponseEntity<ApiResponseDto<AskChatRemainingMessageCountResponse>> response =
+                controller.getRemainingTurns(principal);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getData().remainingMessageCount()).isEqualTo(9);
+        verify(askChatSessionService).getRemainingMessageCount(1L);
     }
 
     private AskChatSessionController controller() {

@@ -7,6 +7,7 @@ import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfExportRende
 import com.devkor.ifive.nadab.domain.pdfexport.application.helper.PdfPhotoPrefetcher;
 import com.devkor.ifive.nadab.domain.pdfexport.application.PdfExportTxService;
 import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportCompletedEvent;
+import com.devkor.ifive.nadab.domain.pdfexport.application.event.PdfExportFailedEvent;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfHtmlAssembler;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfImage;
 import com.devkor.ifive.nadab.domain.pdfexport.application.render.PdfRenderer;
@@ -130,16 +131,23 @@ public class PdfExportGenerationListener {
             storage.upload(resultKey, pdfFile,
                     PdfExportFileNames.downloadFileName(job),
                     PdfExportFileNames.asciiFallbackFileName(job));
-            txService.confirm(jobId, crystalLogId);
 
-            // ── 4) 완료 이벤트(FCM 알림용). 확정 이후라 여기서 실패해도 실패로 되돌리지 않는다 ──
-            notifyCompleted(jobId, userId);
+            // ── 4) 완료 이벤트(FCM 알림용). 실제로 확정한 경우에만 알린다.
+            //       false 면 복구 스윕이 먼저 실패·환불한 것이라, 여기서 알리면 이미 실패 처리된 작업에 완성 푸시가 나간다.
+            if (txService.confirm(jobId, crystalLogId)) {
+                notifyCompleted(jobId, userId);
+            }
 
         } catch (Exception e) {
             // 렌더·업로드·confirm 어디서 실패해도: 실패 확정 + 환불(별도 Tx). CAS 가드로 이중 환불·공짜 PDF 방지.
             // error_code엔 안전한 ErrorCode enum 이름만 저장 — 예외 메시지·스택은 클라(getStatus)에 노출 금지.
             log.error("[PDF_EXPORT][GENERATION_FAILED] jobId={}, userId={}", jobId, userId, e);
-            txService.failAndRefund(userId, jobId, crystalLogId, ErrorCode.PDF_EXPORT_GENERATION_FAILED.name());
+            if (txService.failAndRefund(userId, jobId, crystalLogId,
+                    ErrorCode.PDF_EXPORT_GENERATION_FAILED.name())) {
+                // 실제로 환불한 경우에만 알린다.
+                // false 면 복구 스윕이 먼저 처리한 것이라, 여기서 또 알리면 실패 푸시가 중복된다.
+                notifyFailed(jobId, userId);
+            }
         } finally {
             // 업로드 성공·실패 무관 로컬 임시파일 정리(S3에 올라간 뒤엔 불필요, 실패 시엔 잔여 제거).
             if (pdfFile != null) {
@@ -162,6 +170,19 @@ public class PdfExportGenerationListener {
             eventPublisher.publishEvent(new PdfExportCompletedEvent(jobId, userId));
         } catch (Exception e) {
             log.warn("[PDF_EXPORT][NOTIFY_FAILED] jobId={}, userId={} — PDF 는 정상 완료됐고 알림만 실패했다",
+                    jobId, userId, e);
+        }
+    }
+
+    /**
+     * 실패 알림 발행. 이 시점엔 실패 확정·환불이 이미 커밋된 뒤다.
+     * 예외가 새면 위 catch 밖으로 나가 원인 예외를 덮으므로 여기서 삼킨다.
+     */
+    private void notifyFailed(Long jobId, Long userId) {
+        try {
+            eventPublisher.publishEvent(new PdfExportFailedEvent(jobId, userId));
+        } catch (Exception e) {
+            log.warn("[PDF_EXPORT][NOTIFY_FAILED] jobId={}, userId={} — 환불은 정상 처리됐고 알림만 실패했다",
                     jobId, userId, e);
         }
     }

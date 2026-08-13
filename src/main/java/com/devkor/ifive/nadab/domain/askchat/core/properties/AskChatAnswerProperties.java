@@ -23,11 +23,11 @@ public class AskChatAnswerProperties {
     private LlmProvider provider = LlmProvider.OPENAI;
 
     @NotBlank
-    private String model = "gpt-4o-mini";
+    private String model = "gpt-5.6-luna";
 
     @DecimalMin("0.0")
     @DecimalMax("2.0")
-    private double temperature = 0.3;
+    private double temperature = 1.0;
 
     @Min(1)
     private int maxTokens = 900;

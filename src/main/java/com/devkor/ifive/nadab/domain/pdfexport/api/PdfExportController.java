@@ -55,7 +55,7 @@ public class PdfExportController {
                     생성 로딩 화면의 "포함 내용" 개수(답변/주간/월간)는 이 API가 반환하지 않습니다 — 방금 생성 직전 호출한 미리보기(GET /pdf-exports/preview) 응답값을 그대로 표시하면 됩니다(생성 직후엔 그 값이 곧 생성 대상 개수). 화면을 벗어났다 다시 들어오는 재진입 흐름에서는 GET /pdf-exports/current가 같은 개수를 함께 내려줍니다. </br>
                     동시 생성 1개: 한 사용자는 생성 중(PENDING/IN_PROGRESS) 작업을 동시에 1개만 가질 수 있습니다. 생성 중인데 다른 유형·기간으로 다시 호출하면 409(PDF_EXPORT_ALREADY_IN_PROGRESS)로 거부되며, 응답 data에 이미 생성 중인 작업의 jobId가 담겨 옵니다 — 그 작업의 생성 화면으로 유도하고 상세·포함 개수는 GET /pdf-exports/current로 받으세요. </br>
                     멱등 재사용: 같은 유형·기간의 작업이 아직 생성 중일 때 다시 호출하면(응답을 못 받아 재시도하거나 버튼 더블탭 등) 재과금 없이 그 작업을 그대로 돌려주며 balanceAfter=null 입니다(이중 과금 없음, 지갑 추가 차감 표시 금지). 완료(COMPLETED)된 작업은 재사용하지 않으므로 같은 기간 재요청은 새 작업으로 재과금됩니다(= 재생성). </br>
-                    생성 실패는 아카이브에도 안 뜨고 완료 푸시도 없어, 오직 폴링(GET /pdf-exports/{jobId})의 status=FAILED(errorCode 포함)로만 드러납니다. 그래서 로딩 화면에서 폴링 중이라면 FAILED를 COMPLETED와 같은 '종료 상태'로 처리해야 합니다(안 그러면 "생성 중"이 무한히 돕니다). 화면을 벗어난 뒤라면 따로 확인할 필요가 없습니다 — 차감 크리스탈은 자동 환불되고(지갑 이력에 남음) 산출물이 없어 사용자가 할 액션이 없습니다. 잔액을 표시 중이면 다시 조회해 갱신하세요. </br>
+                    생성 실패는 아카이브에 뜨지 않습니다. 로딩 화면에서 폴링 중이라면 FAILED가 나오면 COMPLETED와 마찬가지로 폴링을 멈춥니다(FAILED를 종료로 처리하지 않으면 "생성 중"이 무한히 돕니다). 화면을 벗어난 뒤에 실패한 경우에는 실패 푸시(data type=PDF_EXPORT_FAILED, targetId=jobId)가 갑니다. 그걸 누르면 그 jobId로 GET /pdf-exports/{jobId}를 호출해 기간·유형을 받고, 그 기간으로 GET /pdf-exports/preview를 한 번 더 호출해 포함 내용 개수까지 채워 실패 화면을 구성합니다(상세는 GET /pdf-exports/{jobId} 설명 참조). 어느 쪽이든 차감 크리스탈은 자동 환불되며(지갑 이력에 남음), 잔액을 표시 중이면 다시 조회해 갱신하세요. </br>
                     내보낼 답변/리포트가 하나도 없으면 PDF_EXPORT_NO_DATA로 거부됩니다 — 미리보기(GET /pdf-exports/preview)로 사전 확인을 권장합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
@@ -162,6 +162,7 @@ public class PdfExportController {
             summary = "PDF 내보내기 미리보기(포함 개수)",
             description = """
                     해당 기간에 포함될 답변·주간 리포트·월간 리포트 개수를 돌려줍니다. 생성/차감 전 확인 팝업에서 "무엇이 몇 개 포함되는지" 보여주는 용도의 순수 조회입니다. </br>
+                    실패 화면에서도 재사용합니다: 실패 알림을 눌러 진입하면 로컬 카운트가 없으므로, GET /pdf-exports/{jobId} 로 받은 기간(startDate·endDate)을 그대로 넣어 이 API를 호출해 "포함 내용" 개수를 채웁니다. </br>
                     유형과 무관하게 3종 개수를 모두 내려주므로, 선택한 유형에 맞는 값만 표시하면 됩니다(예: 답변만 선택 시 answerCount). </br>
                     세 개수가 모두 0이면 생성해도 빈 PDF라 생성 API가 PDF_EXPORT_NO_DATA로 거부합니다. 이 경우 생성 버튼을 비활성화하거나 기획에 맞게 팝업을 띄우면 됩니다. </br>
                     기간 규칙은 생성 API와 동일합니다(시작일 ≤ 종료일, 종료일 ≤ 오늘, 최대 1년) — 잘못된 기간이면 PDF_EXPORT_INVALID_PERIOD.
@@ -204,6 +205,9 @@ public class PdfExportController {
                     FAILED일 때 errorCode 값(둘 다 자동 환불됨): </br>
                     - PDF_EXPORT_GENERATION_FAILED: 생성 도중 오류로 실패 </br>
                     - PDF_EXPORT_GENERATION_TIMEOUT: 생성이 60분 안에 끝나지 않아 자동 취소(배포·서버 재시작 등으로 작업이 유실된 경우) </br>
+                    응답에는 유형(type)·기간(startDate~endDate)도 함께 담깁니다. 로딩/실패 화면의 기간 표시, 차감 크리스탈(유형에서 유도: 리포트만/답변만 50, 둘 다 100), "다시 PDF 생성하기" 버튼의 조건 프리필에 쓰세요. 화면에 머물러 폴링 중이라면 이미 알고 있는 값이지만, 실패 알림을 눌러 들어온 경우(앱이 종료돼 있었다면 로컬 상태가 없음)에는 이 API가 유일한 출처입니다. </br>
+                    실패 알림(FCM): 생성이 실패해 환불되면 푸시가 발송됩니다(data type=PDF_EXPORT_FAILED, targetId=jobId). 이걸 눌러 들어오면 그 jobId로 이 API를 호출해 실패 화면을 구성합니다. FAILED는 아카이브(COMPLETED만)와 GET /pdf-exports/current(진행 중만) 어디에도 나오지 않으므로, jobId 없이 실패 작업을 찾을 방법은 없습니다. </br>
+                    "포함 내용" 개수(답변/주간/월간)는 이 응답에 없습니다 — 정적값이라 폴링마다 싣지 않습니다. 얻는 방법: 생성 직후에는 미리보기(GET /pdf-exports/preview)에서 받은 값을, 진행 중 재진입은 GET /pdf-exports/current가 함께 내려주는 값을 그대로 쓰세요. 실패 알림을 눌러 실패 화면으로 콜드 스타트 진입한 경우(앱이 종료돼 있어 로컬 값이 없음)에는, 이 응답의 기간(startDate·endDate)으로 GET /pdf-exports/preview?startDate=..&endDate=.. 를 한 번 더 호출해 개수를 받으세요. </br>
                     다운로드 URL은 이 응답에 포함되지 않습니다. COMPLETED가 된 뒤 POST /pdf-exports/{jobId}/download-url 로 발급받으세요(발급 빈도 제한이 폴링에 영향을 주지 않도록 분리되어 있습니다).
                     """,
             security = @SecurityRequirement(name = "bearerAuth"),
