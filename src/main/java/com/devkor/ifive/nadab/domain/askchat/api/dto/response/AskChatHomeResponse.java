@@ -15,7 +15,7 @@ public record AskChatHomeResponse(
         @Schema(description = "사용자가 보유한 크리스탈 개수", example = "100")
         long crystalBalance,
 
-        @Schema(description = "홈 화면에 표시할 예시 질문 목록. 여러 주제 중 일부를 랜덤으로 제공합니다.")
+        @Schema(description = "홈 화면에 표시할 예시 질문 목록. 사용자별로 10분 단위로 갱신됩니다.")
         List<AskChatSampleQuestionResponse> sampleQuestions
 ) {
 }
