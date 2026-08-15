@@ -5,6 +5,7 @@ import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSession;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatSessionStatus;
 import com.devkor.ifive.nadab.domain.askchat.core.entity.AskChatWallet;
 import com.devkor.ifive.nadab.domain.askchat.api.dto.response.AskChatQuestionSendResponse;
+import com.devkor.ifive.nadab.domain.askchat.application.helper.AskChatSampleQuestionSelector;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSampleQuestionRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatSessionRepository;
 import com.devkor.ifive.nadab.domain.askchat.core.repository.AskChatWalletRepository;
@@ -24,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -32,6 +34,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -50,6 +54,9 @@ class AskChatSessionServiceTest {
 
     @Mock
     private AskChatSampleQuestionRepository askChatSampleQuestionRepository;
+
+    @Mock
+    private AskChatSampleQuestionSelector askChatSampleQuestionSelector;
 
     @Mock
     private UserWalletRepository userWalletRepository;
@@ -71,6 +78,7 @@ class AskChatSessionServiceTest {
                 askChatSessionRepository,
                 askChatWalletRepository,
                 askChatSampleQuestionRepository,
+                askChatSampleQuestionSelector,
                 userWalletRepository,
                 userRepository,
                 answerEntryRepository,
@@ -86,11 +94,23 @@ class AskChatSessionServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(askChatWalletRepository.findByUserId(1L)).thenReturn(Optional.of(AskChatWallet.create(user, 2, 7)));
         when(userWalletRepository.findByUserId(1L)).thenReturn(Optional.of(UserWallet.create(user, 100L)));
-        when(askChatSampleQuestionRepository.findByActiveTrueOrderByDisplayOrderAsc()).thenReturn(List.of(
+        List<AskChatSampleQuestion> sampleQuestions = List.of(
                 AskChatSampleQuestion.create(InterestCode.VALUES, "나는 어떤 사람이야?", 1),
                 AskChatSampleQuestion.create(InterestCode.PREFERENCE, "내가 좋아하는 것들의 공통점은 뭐야?", 2),
                 AskChatSampleQuestion.create(InterestCode.RELATIONSHIP, "어떤 사람과 잘 맞을까?", 3)
-        ));
+        );
+        List<AskChatSampleQuestion> selectedQuestions = List.of(
+                sampleQuestions.get(2),
+                sampleQuestions.get(0),
+                sampleQuestions.get(1)
+        );
+        when(askChatSampleQuestionRepository.findByActiveTrueOrderByDisplayOrderAsc())
+                .thenReturn(sampleQuestions);
+        when(askChatSampleQuestionSelector.select(
+                eq(1L),
+                any(Instant.class),
+                same(sampleQuestions)
+        )).thenReturn(selectedQuestions);
 
         var response = service.getHome(1L);
 
@@ -100,7 +120,12 @@ class AskChatSessionServiceTest {
         assertThat(response.sampleQuestions()).hasSize(3);
         assertThat(response.sampleQuestions())
                 .extracting("category")
-                .containsExactlyInAnyOrder("VALUES", "PREFERENCE", "RELATIONSHIP");
+                .containsExactly("RELATIONSHIP", "VALUES", "PREFERENCE");
+        verify(askChatSampleQuestionSelector).select(
+                eq(1L),
+                any(Instant.class),
+                same(sampleQuestions)
+        );
         verify(askChatSessionRepository, never()).save(any());
     }
 
@@ -115,6 +140,7 @@ class AskChatSessionServiceTest {
         verifyNoInteractions(askChatWalletRepository);
         verifyNoInteractions(userWalletRepository);
         verifyNoInteractions(askChatSampleQuestionRepository);
+        verifyNoInteractions(askChatSampleQuestionSelector);
         verify(askChatSessionRepository, never()).save(any());
         verifyNoInteractions(askChatMessageCommandService);
     }
