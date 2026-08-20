@@ -1,10 +1,12 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
 import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
+import com.devkor.ifive.nadab.domain.stats.application.helper.StatsPeriodResolver;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakMetric;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.WeeklyStatsRepository;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -33,15 +35,17 @@ public class WeeklyStatsService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter WEEK_LABEL_FMT =
             DateTimeFormatter.ofPattern("MM-dd");
+    private static final int WEEKLY_CHART_SIZE = 5;
 
-    public WeeklyStatsViewModel getWeeklyStatsLast7Weeks() {
+    public WeeklyStatsViewModel getWeeklyStats(LocalDate selectedWeek) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
         LocalDate currentWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate startWeekStart = currentWeekStart.minusWeeks(6);
-        LocalDate endDateInclusive = currentWeekStart.plusDays(6);
+        LocalDate selectedWeekStart = selectedWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate startWeekStart = selectedWeekStart.minusWeeks(WEEKLY_CHART_SIZE - 1L);
+        LocalDate endDateInclusive = selectedWeekStart.plusDays(6);
 
         List<LocalDate> weekStarts = new ArrayList<>();
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < WEEKLY_CHART_SIZE; i++) {
             weekStarts.add(startWeekStart.plusWeeks(i));
         }
 
@@ -89,6 +93,16 @@ public class WeeklyStatsService {
         );
 
         long inProgressNow = repo.countInProgressWeeklyReportsNow();
+        int selectedIndex = weekStarts.size() - 1;
+        WeeklyPeriodStatsViewModel selectedPeriod = new WeeklyPeriodStatsViewModel(
+                StatsPeriodResolver.formatIsoWeek(selectedWeekStart),
+                selectedWeekStart + " ~ " + selectedWeekStart.plusDays(6),
+                signupCounts.get(selectedIndex),
+                assignedCounts.get(selectedIndex),
+                completedDailyCounts.get(selectedIndex),
+                completedCounts.get(selectedIndex),
+                wauCounts.get(selectedIndex)
+        );
 
         return new WeeklyStatsViewModel(
                 labels,
@@ -97,6 +111,7 @@ public class WeeklyStatsService {
                 completedDailyCounts,
                 completedCounts,
                 wauCounts,
+                selectedPeriod,
                 signupPeak,
                 assignedQuestionPeak,
                 completedDailyReportPeak,

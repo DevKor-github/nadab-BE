@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.stats.application;
 import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakMetric;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.MonthlyStatsRepository;
@@ -34,13 +35,13 @@ public class MonthlyStatsService {
             DateTimeFormatter.ofPattern("yyyy-MM");
     private static final int MONTHLY_CHART_SIZE = 5;
 
-    public MonthlyStatsViewModel getMonthlyStatsLast5Months() {
+    public MonthlyStatsViewModel getMonthlyStats(YearMonth selectedMonth) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
         YearMonth currentMonth = YearMonth.from(today);
-        YearMonth startMonth = currentMonth.minusMonths(MONTHLY_CHART_SIZE - 1L);
+        YearMonth startMonth = selectedMonth.minusMonths(MONTHLY_CHART_SIZE - 1L);
 
         LocalDate startDate = startMonth.atDay(1);
-        LocalDate endDateInclusive = currentMonth.atEndOfMonth();
+        LocalDate endDateInclusive = selectedMonth.atEndOfMonth();
 
         List<YearMonth> months = new ArrayList<>();
         for (int i = 0; i < MONTHLY_CHART_SIZE; i++) {
@@ -99,6 +100,18 @@ public class MonthlyStatsService {
         long inProgressV1Now = repo.countInProgressMonthlyReportV1Now();
         long inProgressV2Now = repo.countInProgressMonthlyReportV2Now();
         long inProgressTotalNow = inProgressV1Now + inProgressV2Now;
+        int selectedIndex = months.size() - 1;
+        MonthlyPeriodStatsViewModel selectedPeriod = new MonthlyPeriodStatsViewModel(
+                selectedMonth.toString(),
+                selectedMonth.toString(),
+                signupCounts.get(selectedIndex),
+                assignedCounts.get(selectedIndex),
+                completedDailyCounts.get(selectedIndex),
+                completedV1Counts.get(selectedIndex),
+                completedV2Counts.get(selectedIndex),
+                completedTotalCounts.get(selectedIndex),
+                mauCounts.get(selectedIndex)
+        );
 
         return new MonthlyStatsViewModel(
                 labels,
@@ -109,6 +122,7 @@ public class MonthlyStatsService {
                 completedV2Counts,
                 completedTotalCounts,
                 mauCounts,
+                selectedPeriod,
                 signupPeak,
                 assignedQuestionPeak,
                 completedDailyReportPeak,

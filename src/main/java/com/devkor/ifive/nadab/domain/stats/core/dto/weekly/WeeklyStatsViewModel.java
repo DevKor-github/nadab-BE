@@ -11,6 +11,7 @@ public record WeeklyStatsViewModel(
         List<Long> completedDailyReportCounts,
         List<Long> completedWeeklyReportCounts,
         List<Long> wauCounts,
+        WeeklyPeriodStatsViewModel selectedPeriod,
         PeakStatViewModel signupPeak,
         PeakStatViewModel assignedQuestionPeak,
         PeakStatViewModel completedDailyReportPeak,

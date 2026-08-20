@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.stats.application.TotalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
+import com.devkor.ifive.nadab.domain.stats.application.helper.StatsPeriodResolver;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.total.TotalStatsViewModel;
@@ -16,6 +17,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
 
 @Controller
 @RequiredArgsConstructor
@@ -29,25 +34,37 @@ public class StatsController {
     private final WithdrawalStatsService withdrawalStatsService;
 
 
-    @GetMapping("stats/daily")
-    public String dailyStats(Model model) {
-        DailyStatsViewModel vm = dailyStatsService.getDailyStatsLast7Days();
+    @GetMapping("/stats/daily")
+    public String dailyStats(
+            @RequestParam(required = false) String date,
+            Model model
+    ) {
+        LocalDate selectedDate = StatsPeriodResolver.resolveDaily(date);
+        DailyStatsViewModel vm = dailyStatsService.getDailyStats(selectedDate);
         model.addAttribute("vm", vm);
         model.addAttribute("activeTab", "daily");
         return "stats/daily";
     }
 
     @GetMapping("/stats/weekly")
-    public String weeklyStats(Model model) {
-        WeeklyStatsViewModel vm = weeklyStatsService.getWeeklyStatsLast7Weeks();
+    public String weeklyStats(
+            @RequestParam(required = false) String week,
+            Model model
+    ) {
+        LocalDate selectedWeekStart = StatsPeriodResolver.resolveWeekly(week);
+        WeeklyStatsViewModel vm = weeklyStatsService.getWeeklyStats(selectedWeekStart);
         model.addAttribute("vm", vm);
         model.addAttribute("activeTab", "weekly");
         return "stats/weekly";
     }
 
     @GetMapping("/stats/monthly")
-    public String monthlyStats(Model model) {
-        MonthlyStatsViewModel vm = monthlyStatsService.getMonthlyStatsLast5Months();
+    public String monthlyStats(
+            @RequestParam(required = false) String month,
+            Model model
+    ) {
+        YearMonth selectedMonth = StatsPeriodResolver.resolveMonthly(month);
+        MonthlyStatsViewModel vm = monthlyStatsService.getMonthlyStats(selectedMonth);
         model.addAttribute("vm", vm);
         model.addAttribute("activeTab", "monthly");
         return "stats/monthly";
