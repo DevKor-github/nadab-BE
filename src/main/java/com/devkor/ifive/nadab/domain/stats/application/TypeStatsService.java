@@ -36,21 +36,32 @@ public class TypeStatsService {
         LocalDate startDate = today.minusDays(RECENT_DAYS - 1L);
 
         long inProgressTypeReportCount = repo.countInProgressTypeReportsNow();
-        List<TypeReportInterestCountDto> completedByInterest = repo.countCompletedTypeReportsByInterest();
+        List<TypeReportInterestCountDto> activeCompletedByInterest =
+                repo.countActiveCompletedTypeReportsByInterest();
+        List<TypeReportInterestCountDto> completedHistoryByInterest =
+                repo.countCompletedTypeReportHistoryByInterest();
         List<TypeReportDateInterestCountDto> completedByDateAndInterest =
                 repo.countCompletedTypeReportsByDateAndInterest(startDate, today);
 
-        Map<InterestCode, Long> completedCountMap = new EnumMap<>(InterestCode.class);
-        for (TypeReportInterestCountDto dto : completedByInterest) {
-            completedCountMap.put(dto.interestCode(), dto.count());
+        Map<InterestCode, Long> activeCompletedCountMap = new EnumMap<>(InterestCode.class);
+        for (TypeReportInterestCountDto dto : activeCompletedByInterest) {
+            activeCompletedCountMap.put(dto.interestCode(), dto.count());
+        }
+
+        Map<InterestCode, Long> completedHistoryCountMap = new EnumMap<>(InterestCode.class);
+        for (TypeReportInterestCountDto dto : completedHistoryByInterest) {
+            completedHistoryCountMap.put(dto.interestCode(), dto.count());
         }
 
         List<InterestCode> interests = List.of(InterestCode.values());
         List<String> interestLabels = interests.stream()
                 .map(InterestCode::displayNameKo)
                 .toList();
-        List<Long> completedTypeReportCounts = interests.stream()
-                .map(interest -> completedCountMap.getOrDefault(interest, 0L))
+        List<Long> activeCompletedTypeReportCounts = interests.stream()
+                .map(interest -> activeCompletedCountMap.getOrDefault(interest, 0L))
+                .toList();
+        List<Long> cumulativeCompletedTypeReportCounts = interests.stream()
+                .map(interest -> completedHistoryCountMap.getOrDefault(interest, 0L))
                 .toList();
 
         List<LocalDate> recentDates = new ArrayList<>(RECENT_DAYS);
@@ -78,7 +89,8 @@ public class TypeStatsService {
         return new TypeStatsViewModel(
                 inProgressTypeReportCount,
                 interestLabels,
-                completedTypeReportCounts,
+                activeCompletedTypeReportCounts,
+                cumulativeCompletedTypeReportCounts,
                 recentDates.stream().map(LocalDate::toString).toList(),
                 completedTypeReportSeries,
                 OffsetDateTime.now(SEOUL).format(FMT)

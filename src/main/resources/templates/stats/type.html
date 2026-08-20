@@ -213,6 +213,7 @@
     }
     .dot-blue { background: var(--accent); }
     .dot-pink { background: var(--accent-2); }
+    .dot-mint { background: #4de8c2; }
   </style>
 </head>
 <body>
@@ -279,18 +280,29 @@
 
   <div class="chart-card">
     <div class="chart-card-header">
-      <div class="chart-card-title"><span class="dot dot-pink"></span>관심 주제별 생성된 총 유형 리포트 수</div>
+      <div class="chart-card-title"><span class="dot dot-pink"></span>관심 주제별 활성 유형 리포트 수</div>
+      <div class="chart-card-subtitle">현재 활성 · COMPLETED · 삭제되지 않은 리포트</div>
+    </div>
+    <div class="chart-card-body">
+      <canvas id="activeTypeByInterestChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-card-title"><span class="dot dot-mint"></span>관심 주제별 누적 유형 리포트 생성 수</div>
       <div class="chart-card-subtitle">전체 누적 · COMPLETED 생성 이력 (재생성 이력 포함)</div>
     </div>
     <div class="chart-card-body">
-      <canvas id="typeByInterestChart" height="140"></canvas>
+      <canvas id="cumulativeTypeByInterestChart" height="140"></canvas>
     </div>
   </div>
 </div>
 
 <script th:inline="javascript">
   const interestLabels = [[${vm.interestLabels}]];
-  const completedTypeReportCounts = [[${vm.completedTypeReportCounts}]].map(v => parseInt(v, 10));
+  const activeCompletedTypeReportCounts = [[${vm.activeCompletedTypeReportCounts}]].map(v => parseInt(v, 10));
+  const cumulativeCompletedTypeReportCounts = [[${vm.cumulativeCompletedTypeReportCounts}]].map(v => parseInt(v, 10));
   const recentDateLabels = [[${vm.recentDateLabels}]];
   const completedTypeReportSeries = [[${vm.completedTypeReportSeries}]];
 
@@ -372,34 +384,47 @@
     }
   });
 
-  new Chart(document.getElementById('typeByInterestChart'), {
-    type: 'bar',
-    data: {
-      labels: interestLabels,
-      datasets: [{
-        label: '유형 리포트 수',
-        data: completedTypeReportCounts,
-        backgroundColor: interestLabels.map((_, index) => barColors[index % barColors.length]),
-        borderRadius: 6,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: tooltipOptions,
+  function createTypeReportBarChart(elementId, datasetLabel, counts) {
+    new Chart(document.getElementById(elementId), {
+      type: 'bar',
+      data: {
+        labels: interestLabels,
+        datasets: [{
+          label: datasetLabel,
+          data: counts,
+          backgroundColor: interestLabels.map((_, index) => barColors[index % barColors.length]),
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
       },
-      scales: {
-        x: { grid: { color: gridColor, borderColor } },
-        y: {
-          beginAtZero: true,
-          grid: { color: gridColor, borderColor },
-          ticks: { precision: 0, stepSize: 1 },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: tooltipOptions,
         },
+        scales: {
+          x: { grid: { color: gridColor, borderColor } },
+          y: {
+            beginAtZero: true,
+            grid: { color: gridColor, borderColor },
+            ticks: { precision: 0, stepSize: 1 },
+          },
+        }
       }
-    }
-  });
+    });
+  }
+
+  createTypeReportBarChart(
+    'activeTypeByInterestChart',
+    '활성 유형 리포트 수',
+    activeCompletedTypeReportCounts
+  );
+  createTypeReportBarChart(
+    'cumulativeTypeByInterestChart',
+    '누적 유형 리포트 생성 수',
+    cumulativeCompletedTypeReportCounts
+  );
 
   async function checkHealth() {
     const bar = document.getElementById('healthBar');

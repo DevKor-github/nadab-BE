@@ -5,7 +5,8 @@ import java.util.List;
 public record TypeStatsViewModel(
         long inProgressTypeReportCount,
         List<String> interestLabels,
-        List<Long> completedTypeReportCounts,
+        List<Long> activeCompletedTypeReportCounts,
+        List<Long> cumulativeCompletedTypeReportCounts,
         List<String> recentDateLabels,
         List<TypeReportInterestSeriesViewModel> completedTypeReportSeries,
         String refreshedAt

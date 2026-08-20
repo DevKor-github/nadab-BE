@@ -32,7 +32,7 @@ class TypeStatsRepositoryTest extends PostgresIntegrationTestSupport {
     TestEntityManager em;
 
     @Test
-    void counts_completed_type_report_history_by_date_and_interest() {
+    void counts_active_and_historical_completed_type_reports_separately() {
         LocalDate startDate = LocalDate.of(2026, 8, 14);
         LocalDate endDate = LocalDate.of(2026, 8, 20);
 
@@ -47,11 +47,19 @@ class TypeStatsRepositoryTest extends PostgresIntegrationTestSupport {
         em.flush();
         em.clear();
 
-        List<TypeReportInterestCountDto> totals = repository.countCompletedTypeReportsByInterest();
+        List<TypeReportInterestCountDto> activeTotals =
+                repository.countActiveCompletedTypeReportsByInterest();
+        List<TypeReportInterestCountDto> cumulativeTotals =
+                repository.countCompletedTypeReportHistoryByInterest();
         List<TypeReportDateInterestCountDto> dailyCounts =
                 repository.countCompletedTypeReportsByDateAndInterest(startDate, endDate);
 
-        assertThat(totals).containsExactlyInAnyOrder(
+        assertThat(activeTotals).containsExactlyInAnyOrder(
+                new TypeReportInterestCountDto(InterestCode.PREFERENCE, 1L),
+                new TypeReportInterestCountDto(InterestCode.EMOTION, 1L),
+                new TypeReportInterestCountDto(InterestCode.VALUES, 1L)
+        );
+        assertThat(cumulativeTotals).containsExactlyInAnyOrder(
                 new TypeReportInterestCountDto(InterestCode.PREFERENCE, 2L),
                 new TypeReportInterestCountDto(InterestCode.EMOTION, 1L),
                 new TypeReportInterestCountDto(InterestCode.VALUES, 1L)

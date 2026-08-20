@@ -25,7 +25,22 @@ public class TypeStatsRepository {
                 .getSingleResult();
     }
 
-    public List<TypeReportInterestCountDto> countCompletedTypeReportsByInterest() {
+    public List<TypeReportInterestCountDto> countActiveCompletedTypeReportsByInterest() {
+        return em.createQuery("""
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestCountDto(
+                    tr.interestCode,
+                    count(tr.id)
+                )
+                from TypeReport tr
+                where tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
+                  and tr.deletedAt is null
+                group by tr.interestCode
+                order by tr.interestCode
+                """, TypeReportInterestCountDto.class)
+                .getResultList();
+    }
+
+    public List<TypeReportInterestCountDto> countCompletedTypeReportHistoryByInterest() {
         return em.createQuery("""
                 select new com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestCountDto(
                     tr.interestCode,

@@ -28,7 +28,11 @@ class TypeStatsServiceTest {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
 
         when(repo.countInProgressTypeReportsNow()).thenReturn(2L);
-        when(repo.countCompletedTypeReportsByInterest()).thenReturn(List.of(
+        when(repo.countActiveCompletedTypeReportsByInterest()).thenReturn(List.of(
+                new TypeReportInterestCountDto(InterestCode.PREFERENCE, 2L),
+                new TypeReportInterestCountDto(InterestCode.EMOTION, 1L)
+        ));
+        when(repo.countCompletedTypeReportHistoryByInterest()).thenReturn(List.of(
                 new TypeReportInterestCountDto(InterestCode.PREFERENCE, 5L),
                 new TypeReportInterestCountDto(InterestCode.EMOTION, 3L)
         ));
@@ -40,8 +44,9 @@ class TypeStatsServiceTest {
         TypeStatsViewModel vm = service.getTypeStats();
 
         assertThat(vm.inProgressTypeReportCount()).isEqualTo(2L);
-        assertThat(vm.interestLabels()).containsExactly("취향", "감정", "루틴", "인간관계", "사랑", "가치관");
-        assertThat(vm.completedTypeReportCounts()).containsExactly(5L, 3L, 0L, 0L, 0L, 0L);
+        assertThat(vm.interestLabels()).containsExactly("취향", "감정", "루틴", "관계", "사랑", "가치관");
+        assertThat(vm.activeCompletedTypeReportCounts()).containsExactly(2L, 1L, 0L, 0L, 0L, 0L);
+        assertThat(vm.cumulativeCompletedTypeReportCounts()).containsExactly(5L, 3L, 0L, 0L, 0L, 0L);
         assertThat(vm.recentDateLabels()).containsExactly(
                 today.minusDays(6).toString(),
                 today.minusDays(5).toString(),

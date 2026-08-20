@@ -189,10 +189,11 @@ class StatsControllerTemplateTest {
     }
 
     @Test
-    void typeStats_renders_recent_interest_series_and_cumulative_history() throws Exception {
+    void typeStats_renders_recent_active_and_cumulative_charts_separately() throws Exception {
         when(typeStatsService.getTypeStats()).thenReturn(new TypeStatsViewModel(
                 2L,
                 List.of("취향", "감정"),
+                List.of(2L, 1L),
                 List.of(5L, 3L),
                 List.of("2026-08-19", "2026-08-20"),
                 List.of(
@@ -205,7 +206,10 @@ class StatsControllerTemplateTest {
         mockMvc.perform(get("/stats/type"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("typeTrendChart")))
+                .andExpect(content().string(containsString("activeTypeByInterestChart")))
+                .andExpect(content().string(containsString("cumulativeTypeByInterestChart")))
                 .andExpect(content().string(containsString("최근 7일 · 관심사별 COMPLETED 생성 이력")))
+                .andExpect(content().string(containsString("현재 활성 · COMPLETED · 삭제되지 않은 리포트")))
                 .andExpect(content().string(containsString("재생성 이력 포함")))
                 .andExpect(content().string(containsString("2026-08-19")))
                 .andExpect(content().string(containsString("PREFERENCE")));
