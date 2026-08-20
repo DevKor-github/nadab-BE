@@ -30,4 +30,9 @@ public class AdminPageController {
     public String adminAskChatRagPage() {
         return "admin/ask-chat-rag";
     }
+
+    @GetMapping("/admin/tabs/logs")
+    public String adminLogsPage() {
+        return "admin/logs";
+    }
 }
