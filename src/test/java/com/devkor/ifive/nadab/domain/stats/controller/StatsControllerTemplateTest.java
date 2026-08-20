@@ -7,11 +7,14 @@ import com.devkor.ifive.nadab.domain.stats.application.TotalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
+import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestSeriesViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
 import com.devkor.ifive.nadab.global.security.filter.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
@@ -21,6 +24,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -55,21 +60,22 @@ class StatsControllerTemplateTest {
 
     @Test
     void dailyStats_renders_peak_value_period_current_badge_and_empty_state() throws Exception {
+        LocalDate selectedDate = LocalDate.of(2026, 8, 13);
         PeakStatViewModel currentPeak = peak(1_234L, "2026-08-13", true);
         PeakStatViewModel pastPeak = peak(900L, "2026-08-12", false);
-        when(dailyStatsService.getDailyStatsLast7Days()).thenReturn(new DailyStatsViewModel(
+        when(dailyStatsService.getDailyStats(selectedDate)).thenReturn(new DailyStatsViewModel(
                 List.of("2026-08-13"),
                 List.of(1L),
                 List.of(2L),
                 List.of(3L),
+                new DailyPeriodStatsViewModel("2026-08-13", "2026-08-13", 1L, 2L, 3L, 0L),
                 currentPeak,
                 pastPeak,
                 PeakStatViewModel.empty(),
-                0L,
                 "2026-08-13 12:00:00"
         ));
 
-        mockMvc.perform(get("/stats/daily"))
+        mockMvc.perform(get("/stats/daily").param("date", "2026-08-13"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("/css/stats-peak.css")))
                 .andExpect(content().string(containsString("역대 최고")))
@@ -81,14 +87,18 @@ class StatsControllerTemplateTest {
 
     @Test
     void weeklyStats_renders_weekly_peak_period() throws Exception {
+        LocalDate selectedWeekStart = LocalDate.of(2026, 8, 10);
         PeakStatViewModel weeklyPeak = peak(80L, "2026-08-10 ~ 2026-08-16", false);
-        when(weeklyStatsService.getWeeklyStatsLast7Weeks()).thenReturn(new WeeklyStatsViewModel(
+        when(weeklyStatsService.getWeeklyStats(selectedWeekStart)).thenReturn(new WeeklyStatsViewModel(
                 List.of("08-10 ~ 08-16"),
                 List.of(1L),
                 List.of(2L),
                 List.of(3L),
                 List.of(4L),
                 List.of(5L),
+                new WeeklyPeriodStatsViewModel(
+                        "2026-W33", "2026-08-10 ~ 2026-08-16", 1L, 2L, 3L, 4L, 5L
+                ),
                 weeklyPeak,
                 weeklyPeak,
                 weeklyPeak,
@@ -98,7 +108,7 @@ class StatsControllerTemplateTest {
                 "2026-08-13 12:00:00"
         ));
 
-        mockMvc.perform(get("/stats/weekly"))
+        mockMvc.perform(get("/stats/weekly").param("week", "2026-W33"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("2026-08-10 ~ 2026-08-16")))
                 .andExpect(content().string(containsString("WAU")));
@@ -106,8 +116,9 @@ class StatsControllerTemplateTest {
 
     @Test
     void monthlyStats_renders_monthly_peak_period() throws Exception {
+        YearMonth selectedMonth = YearMonth.of(2026, 8);
         PeakStatViewModel monthlyPeak = peak(120L, "2026-08", false);
-        when(monthlyStatsService.getMonthlyStatsLast5Months()).thenReturn(new MonthlyStatsViewModel(
+        when(monthlyStatsService.getMonthlyStats(selectedMonth)).thenReturn(new MonthlyStatsViewModel(
                 List.of("2026-08"),
                 List.of(1L),
                 List.of(2L),
@@ -116,6 +127,9 @@ class StatsControllerTemplateTest {
                 List.of(5L),
                 List.of(9L),
                 List.of(6L),
+                new MonthlyPeriodStatsViewModel(
+                        "2026-08", "2026-08", 1L, 2L, 3L, 4L, 5L, 9L, 6L
+                ),
                 monthlyPeak,
                 monthlyPeak,
                 monthlyPeak,
@@ -127,10 +141,20 @@ class StatsControllerTemplateTest {
                 "2026-08-13 12:00:00"
         ));
 
-        mockMvc.perform(get("/stats/monthly"))
+        mockMvc.perform(get("/stats/monthly").param("month", "2026-08"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("2026-08")))
                 .andExpect(content().string(containsString("MAU")));
+    }
+
+    @Test
+    void statsPages_reject_invalid_or_future_period_parameters() throws Exception {
+        mockMvc.perform(get("/stats/daily").param("date", "2999-01-01"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/weekly").param("week", "invalid"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/monthly").param("month", "2026-13"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

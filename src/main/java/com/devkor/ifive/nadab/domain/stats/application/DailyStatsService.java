@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
 import com.devkor.ifive.nadab.domain.stats.application.helper.PeakStatsTracker;
+import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DateCountDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakMetric;
@@ -26,33 +27,34 @@ public class DailyStatsService {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int DAILY_CHART_SIZE = 7;
 
-    public DailyStatsViewModel getDailyStatsLast7Days() {
+    public DailyStatsViewModel getDailyStats(LocalDate selectedDate) {
         LocalDate today = TodayDateTimeProvider.getTodayDate();
-        LocalDate startDate = today.minusDays(6);
+        LocalDate startDate = selectedDate.minusDays(DAILY_CHART_SIZE - 1L);
 
         // 라벨 7개 고정 생성
         List<LocalDate> days = new ArrayList<>();
-        for (int i = 0; i < 7; i++) days.add(startDate.plusDays(i));
+        for (int i = 0; i < DAILY_CHART_SIZE; i++) days.add(startDate.plusDays(i));
 
         List<String> labels = days.stream().map(LocalDate::toString).toList();
 
         // 1) 가입자 수
         Map<LocalDate, Long> signupMap = new HashMap<>();
-        for (Object[] row : repo.findSignupCountsLast7Days(startDate, today)) {
+        for (Object[] row : repo.findSignupCountsLast7Days(startDate, selectedDate)) {
             DateCountDto dto = DailyStatsRepository.toDateCountDto(row);
             signupMap.put(dto.date(), dto.count());
         }
 
         // 2) 할당 질문 수
         Map<LocalDate, Long> assignedMap = new HashMap<>();
-        for (DateCountDto dto : repo.findAssignedQuestionCountsLast7Days(startDate, today)) {
+        for (DateCountDto dto : repo.findAssignedQuestionCountsLast7Days(startDate, selectedDate)) {
             assignedMap.put(dto.date(), dto.count());
         }
 
         // 3) COMPLETED 리포트 수
         Map<LocalDate, Long> completedMap = new HashMap<>();
-        for (DateCountDto dto : repo.findCompletedDailyReportCountsLast7Days(startDate, today)) {
+        for (DateCountDto dto : repo.findCompletedDailyReportCountsLast7Days(startDate, selectedDate)) {
             completedMap.put(dto.date(), dto.count());
         }
 
@@ -71,17 +73,26 @@ public class DailyStatsService {
                 PeakMetric.DAU, days, completedCounts, today
         );
 
-        long sharedNow = repo.countSharedDailyReportsNow();
+        int selectedIndex = days.size() - 1;
+        long sharedDailyReportCount = repo.countSharedDailyReports(selectedDate);
+        DailyPeriodStatsViewModel selectedPeriod = new DailyPeriodStatsViewModel(
+                selectedDate.toString(),
+                selectedDate.toString(),
+                signupCounts.get(selectedIndex),
+                assignedCounts.get(selectedIndex),
+                completedCounts.get(selectedIndex),
+                sharedDailyReportCount
+        );
 
         return new DailyStatsViewModel(
                 labels,
                 signupCounts,
                 assignedCounts,
                 completedCounts,
+                selectedPeriod,
                 signupPeak,
                 assignedQuestionPeak,
                 dauPeak,
-                sharedNow,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );
     }

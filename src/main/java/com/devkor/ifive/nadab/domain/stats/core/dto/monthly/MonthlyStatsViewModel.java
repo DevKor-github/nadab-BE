@@ -13,6 +13,7 @@ public record MonthlyStatsViewModel(
         List<Long> completedMonthlyReportV2Counts,
         List<Long> completedMonthlyReportTotalCounts,
         List<Long> mauCounts,
+        MonthlyPeriodStatsViewModel selectedPeriod,
         PeakStatViewModel signupPeak,
         PeakStatViewModel assignedQuestionPeak,
         PeakStatViewModel completedDailyReportPeak,
