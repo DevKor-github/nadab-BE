@@ -6,5 +6,7 @@ public record TypeStatsViewModel(
         long inProgressTypeReportCount,
         List<String> interestLabels,
         List<Long> completedTypeReportCounts,
+        List<String> recentDateLabels,
+        List<TypeReportInterestSeriesViewModel> completedTypeReportSeries,
         String refreshedAt
 ) {}
