@@ -244,6 +244,7 @@
     .chart-card:nth-child(3) { animation-delay: .15s; }
   </style>
   <link rel="stylesheet" th:href="@{/css/stats-peak.css}"/>
+  <link rel="stylesheet" th:href="@{/css/stats-period.css}"/>
 </head>
 <body>
 
@@ -287,14 +288,6 @@
   <a class="tab-link"
      th:classappend="${activeTab} == 'total' ? ' active' : ''"
      th:href="@{/stats/total}">전체</a>
-</div>
-
-<!-- KPI -->
-<div class="kpi-card">
-  <div>
-    <div class="kpi-label">기준일 공유 중인 일간 리포트</div>
-    <div class="kpi-value" th:text="${vm.selectedPeriod.sharedDailyReportCount}">0</div>
-  </div>
 </div>
 
 <!-- Charts -->
@@ -347,6 +340,8 @@
     </div>
   </div>
 </div>
+
+<div th:replace="~{stats/fragments/period-summary :: daily(${vm.selectedPeriod})}"></div>
 
 <script th:inline="javascript">
   const labels         = [[${vm.labels}]];

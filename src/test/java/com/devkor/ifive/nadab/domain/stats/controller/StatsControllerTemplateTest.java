@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -75,14 +76,26 @@ class StatsControllerTemplateTest {
                 "2026-08-13 12:00:00"
         ));
 
-        mockMvc.perform(get("/stats/daily").param("date", "2026-08-13"))
+        String html = mockMvc.perform(get("/stats/daily").param("date", "2026-08-13"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("/css/stats-peak.css")))
+                .andExpect(content().string(containsString("/css/stats-period.css")))
+                .andExpect(content().string(containsString("선택한 일간 통계")))
+                .andExpect(content().string(containsString("name=\"date\"")))
+                .andExpect(content().string(containsString("type=\"date\"")))
+                .andExpect(content().string(containsString("value=\"2026-08-13\"")))
+                .andExpect(content().string(containsString("할당된 질문 수")))
+                .andExpect(content().string(containsString("DAU · 일간 리포트 작성자")))
+                .andExpect(content().string(containsString("공유 중인 일간 리포트")))
                 .andExpect(content().string(containsString("역대 최고")))
                 .andExpect(content().string(containsString("1,234")))
                 .andExpect(content().string(containsString("2026-08-12")))
                 .andExpect(content().string(containsString("현재 기간")))
-                .andExpect(content().string(containsString("기록 없음")));
+                .andExpect(content().string(containsString("기록 없음")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html.indexOf("<canvas id=\"completedChart\""))
+                .isLessThan(html.indexOf("선택한 일간 통계"));
     }
 
     @Test
@@ -108,10 +121,19 @@ class StatsControllerTemplateTest {
                 "2026-08-13 12:00:00"
         ));
 
-        mockMvc.perform(get("/stats/weekly").param("week", "2026-W33"))
+        String html = mockMvc.perform(get("/stats/weekly").param("week", "2026-W33"))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("선택한 주간 통계")))
+                .andExpect(content().string(containsString("name=\"week\"")))
+                .andExpect(content().string(containsString("type=\"week\"")))
+                .andExpect(content().string(containsString("value=\"2026-W33\"")))
                 .andExpect(content().string(containsString("2026-08-10 ~ 2026-08-16")))
-                .andExpect(content().string(containsString("WAU")));
+                .andExpect(content().string(containsString("생성된 주간 리포트")))
+                .andExpect(content().string(containsString("WAU")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html.indexOf("<canvas id=\"wauChart\""))
+                .isLessThan(html.indexOf("선택한 주간 통계"));
     }
 
     @Test
@@ -141,10 +163,19 @@ class StatsControllerTemplateTest {
                 "2026-08-13 12:00:00"
         ));
 
-        mockMvc.perform(get("/stats/monthly").param("month", "2026-08"))
+        String html = mockMvc.perform(get("/stats/monthly").param("month", "2026-08"))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("선택한 월간 통계")))
+                .andExpect(content().string(containsString("name=\"month\"")))
+                .andExpect(content().string(containsString("type=\"month\"")))
+                .andExpect(content().string(containsString("value=\"2026-08\"")))
                 .andExpect(content().string(containsString("2026-08")))
-                .andExpect(content().string(containsString("MAU")));
+                .andExpect(content().string(containsString("생성된 월간 리포트 · Total")))
+                .andExpect(content().string(containsString("MAU")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html.indexOf("<canvas id=\"mauChart\""))
+                .isLessThan(html.indexOf("선택한 월간 통계"));
     }
 
     @Test
@@ -185,6 +216,14 @@ class StatsControllerTemplateTest {
         mockMvc.perform(get("/css/stats-peak.css"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(".peak-record-current")));
+    }
+
+    @Test
+    void periodStylesheet_is_served_as_static_resource() throws Exception {
+        mockMvc.perform(get("/css/stats-period.css"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(".period-picker-input")))
+                .andExpect(content().string(containsString(".period-summary-grid")));
     }
 
     private PeakStatViewModel peak(long value, String periodLabel, boolean currentPeriod) {
