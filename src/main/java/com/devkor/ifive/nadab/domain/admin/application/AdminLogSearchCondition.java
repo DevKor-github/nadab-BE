@@ -6,6 +6,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.util.Locale;
+
 public record AdminLogSearchCondition(
         int page,
         int size,
@@ -49,6 +51,6 @@ public record AdminLogSearchCondition(
         }
 
         String normalized = value.trim();
-        return normalized.isEmpty() ? null : normalized;
+        return normalized.isEmpty() ? null : normalized.toLowerCase(Locale.ROOT);
     }
 }

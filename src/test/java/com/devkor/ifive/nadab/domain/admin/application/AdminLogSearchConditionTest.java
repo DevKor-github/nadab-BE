@@ -16,7 +16,7 @@ class AdminLogSearchConditionTest {
         AdminLogSearchCondition condition = AdminLogSearchCondition.of(
                 2,
                 30,
-                "  nadab  ",
+                "  NaDaB  ",
                 "   "
         );
 
