@@ -10,6 +10,8 @@ import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestSeriesViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
 import com.devkor.ifive.nadab.global.security.filter.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
@@ -129,6 +131,29 @@ class StatsControllerTemplateTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("2026-08")))
                 .andExpect(content().string(containsString("MAU")));
+    }
+
+    @Test
+    void typeStats_renders_recent_interest_series_and_cumulative_history() throws Exception {
+        when(typeStatsService.getTypeStats()).thenReturn(new TypeStatsViewModel(
+                2L,
+                List.of("취향", "감정"),
+                List.of(5L, 3L),
+                List.of("2026-08-19", "2026-08-20"),
+                List.of(
+                        new TypeReportInterestSeriesViewModel("PREFERENCE", "취향", List.of(1L, 4L)),
+                        new TypeReportInterestSeriesViewModel("EMOTION", "감정", List.of(2L, 1L))
+                ),
+                "2026-08-20 12:00:00"
+        ));
+
+        mockMvc.perform(get("/stats/type"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("typeTrendChart")))
+                .andExpect(content().string(containsString("최근 7일 · 관심사별 COMPLETED 생성 이력")))
+                .andExpect(content().string(containsString("재생성 이력 포함")))
+                .andExpect(content().string(containsString("2026-08-19")))
+                .andExpect(content().string(containsString("PREFERENCE")));
     }
 
     @Test
