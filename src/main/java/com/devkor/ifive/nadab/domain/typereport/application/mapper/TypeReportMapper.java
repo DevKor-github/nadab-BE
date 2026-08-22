@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.typereport.application.mapper;
 
 import com.devkor.ifive.nadab.domain.typereport.api.dto.response.TypeReportResponse;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeReportContentFormat;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.AnalysisType;
 import com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReport;
 
@@ -19,10 +20,10 @@ public final class TypeReportMapper {
                 report.getTypeAnalysisContent(),
                 report.getEmotionSummaryContent(),
                 report.getEmotionStats(),
-                report.getPersona1Title(),
-                report.getPersona1Content(),
-                report.getPersona2Title(),
-                report.getPersona2Content(),
+                TypeReportContentFormat.sanitizeLegacyMarkup(report.getPersona1Title()),
+                TypeReportContentFormat.sanitizeLegacyMarkup(report.getPersona1Content()),
+                TypeReportContentFormat.sanitizeLegacyMarkup(report.getPersona2Title()),
+                TypeReportContentFormat.sanitizeLegacyMarkup(report.getPersona2Content()),
                 typeImageUrl // 위에서 처리했으므로 그대로 전달 (nullable)
         );
     }
