@@ -13,6 +13,7 @@ import com.devkor.ifive.nadab.global.infra.llm.LlmTokenUsageExtractor;
 import com.devkor.ifive.nadab.global.shared.reportcontent.Mark;
 import com.devkor.ifive.nadab.global.shared.reportcontent.Segment;
 import com.devkor.ifive.nadab.global.shared.reportcontent.StyledText;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeReportContentFormat;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -140,10 +141,14 @@ public class TypeReportLlmClient {
 
         boolean badP1 = false, badP2 = false;
         if (personasArr.size() >= 1) {
-            badP1 = isOutOfRange(getPersonaContent(personasArr.get(0)).length(), MIN_PERSONA_CONTENT, MAX_PERSONA_CONTENT);
+            String personaContent = getPersonaContent(personasArr.get(0));
+            badP1 = isOutOfRange(personaContent.length(), MIN_PERSONA_CONTENT, MAX_PERSONA_CONTENT)
+                    || TypeReportContentFormat.containsUnsupportedMarkup(personaContent);
         }
         if (personasArr.size() >= 2) {
-            badP2 = isOutOfRange(getPersonaContent(personasArr.get(1)).length(), MIN_PERSONA_CONTENT, MAX_PERSONA_CONTENT);
+            String personaContent = getPersonaContent(personasArr.get(1));
+            badP2 = isOutOfRange(personaContent.length(), MIN_PERSONA_CONTENT, MAX_PERSONA_CONTENT)
+                    || TypeReportContentFormat.containsUnsupportedMarkup(personaContent);
         }
 
         if (!badTA && !badP1 && !badP2) return new LlmGenerationResult<>(root, LlmTokenUsage.empty());
@@ -207,6 +212,9 @@ public class TypeReportLlmClient {
                         : ErrorCode.TYPE_REPORT_REWRITE_PERSONA_2_LENGTH_INVALID
                 );
             }
+            if (TypeReportContentFormat.containsUnsupportedMarkup(c)) {
+                throw new AiResponseParseException(ErrorCode.TYPE_REPORT_PERSONAS_INVALID);
+            }
         }
 
         return new LlmGenerationResult<>(root, tokenUsage);
@@ -256,6 +264,10 @@ public class TypeReportLlmClient {
             }
 
             String text = segment.text();
+
+            if (TypeReportContentFormat.containsUnsupportedMarkup(text)) {
+                throw new AiResponseParseException(ErrorCode.TYPE_REPORT_AI_SEGMENT_INVALID);
+            }
 
             if (!isTypeAnalysis && text.contains("\n") || text.contains("\r")) {
                 throw new AiResponseParseException(ErrorCode.TYPE_REPORT_AI_SEGMENT_INVALID);
