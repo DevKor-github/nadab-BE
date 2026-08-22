@@ -1,10 +1,12 @@
 package com.devkor.ifive.nadab.domain.stats.core.repository;
 
-import com.devkor.ifive.nadab.domain.stats.core.dto.total.LabelCountDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportDateInterestCountDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestCountDto;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -23,19 +25,53 @@ public class TypeStatsRepository {
                 .getSingleResult();
     }
 
-    public List<LabelCountDto> countCompletedTypeReportsByInterest() {
+    public List<TypeReportInterestCountDto> countActiveCompletedTypeReportsByInterest() {
         return em.createQuery("""
-                select new com.devkor.ifive.nadab.domain.stats.core.dto.total.LabelCountDto(
-                    cast(i.code as string),
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestCountDto(
+                    tr.interestCode,
                     count(tr.id)
                 )
-                from Interest i
-                left join TypeReport tr on tr.interestCode = i.code
-                                       and tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
-                                       and tr.deletedAt is null
-                group by i.code
-                order by i.code
-                """, LabelCountDto.class)
+                from TypeReport tr
+                where tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
+                  and tr.deletedAt is null
+                group by tr.interestCode
+                order by tr.interestCode
+                """, TypeReportInterestCountDto.class)
+                .getResultList();
+    }
+
+    public List<TypeReportInterestCountDto> countCompletedTypeReportHistoryByInterest() {
+        return em.createQuery("""
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestCountDto(
+                    tr.interestCode,
+                    count(tr.id)
+                )
+                from TypeReport tr
+                where tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
+                group by tr.interestCode
+                order by tr.interestCode
+                """, TypeReportInterestCountDto.class)
+                .getResultList();
+    }
+
+    public List<TypeReportDateInterestCountDto> countCompletedTypeReportsByDateAndInterest(
+            LocalDate startDate,
+            LocalDate endDateInclusive
+    ) {
+        return em.createQuery("""
+                select new com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportDateInterestCountDto(
+                    tr.date,
+                    tr.interestCode,
+                    count(tr.id)
+                )
+                from TypeReport tr
+                where tr.status = com.devkor.ifive.nadab.domain.typereport.core.entity.TypeReportStatus.COMPLETED
+                  and tr.date between :startDate and :endDate
+                group by tr.date, tr.interestCode
+                order by tr.date, tr.interestCode
+                """, TypeReportDateInterestCountDto.class)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDateInclusive)
                 .getResultList();
     }
 }

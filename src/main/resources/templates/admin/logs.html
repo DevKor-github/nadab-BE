@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>NADAB Admin Logs</title>
+    <style>
+        :root {
+            --bg: #10141b;
+            --surface: #181e28;
+            --surface-2: #202837;
+            --border: #2e3748;
+            --text: #e8edf8;
+            --muted: #9ca5bc;
+            --primary: #4b8bff;
+            --danger: #d35a5a;
+            --success: #4caf7d;
+            --warning: #d9a441;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .page {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .tabs,
+        .log-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-link,
+        .log-tab {
+            text-decoration: none;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            background: var(--surface-2);
+        }
+
+        .log-tab {
+            cursor: pointer;
+        }
+
+        .tab-link.active,
+        .log-tab.active {
+            border-color: var(--primary);
+            background: rgba(75, 139, 255, 0.2);
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 16px;
+            color: var(--muted);
+        }
+
+        .description,
+        .status {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            background: #121823;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: 0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-ghost { background: var(--surface-2); color: var(--text); }
+        .btn:disabled,
+        .log-tab:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .log-table {
+            width: 100%;
+            min-width: 1120px;
+            border-collapse: collapse;
+        }
+
+        .log-table th,
+        .log-table td {
+            border-bottom: 1px solid var(--border);
+            padding: 10px;
+            vertical-align: top;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .log-table th {
+            color: var(--muted);
+            font-weight: 700;
+            background: #121823;
+            white-space: nowrap;
+        }
+
+        .log-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .muted,
+        .secondary {
+            color: var(--muted);
+        }
+
+        .secondary {
+            display: inline-block;
+            margin-top: 3px;
+            line-height: 1.45;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 3px 8px;
+            color: var(--muted);
+            background: var(--surface-2);
+            white-space: nowrap;
+        }
+
+        .badge-succeeded,
+        .badge-confirmed {
+            border-color: var(--success);
+            color: #dff6ea;
+            background: rgba(76, 175, 125, 0.18);
+        }
+
+        .badge-failed,
+        .badge-refunded {
+            border-color: var(--danger);
+            color: #ffdede;
+            background: rgba(211, 90, 90, 0.18);
+        }
+
+        .badge-pending,
+        .badge-started {
+            border-color: var(--warning);
+            color: #fff0c2;
+            background: rgba(217, 164, 65, 0.16);
+        }
+
+        .empty {
+            color: var(--muted);
+            font-size: 13px;
+            padding: 18px 8px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-info {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 760px) {
+            body { padding: 12px; }
+
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <h1 class="title">Admin Console</h1>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+    </div>
+
+    <nav class="tabs" aria-label="Admin sections">
+        <a href="/admin/tabs/app-versions" class="tab-link">App Versions</a>
+        <a href="/admin/tabs/ask-chat-rag" class="tab-link">Ask Chat RAG</a>
+        <a href="/admin/tabs/logs" class="tab-link active">Logs</a>
+    </nav>
+
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <h2 class="panel-title">Main Logs</h2>
+                <p class="description">Browse the latest records and filter them by nickname or email.</p>
+            </div>
+        </div>
+
+        <div class="log-tabs" role="tablist" aria-label="Log types">
+            <button class="log-tab active" type="button" role="tab" aria-selected="true" data-log-type="report">
+                Report Generation
+            </button>
+            <button class="log-tab" type="button" role="tab" aria-selected="false" data-log-type="crystal">
+                Crystal
+            </button>
+            <button class="log-tab" type="button" role="tab" aria-selected="false" data-log-type="ask-chat-wallet">
+                Ask Chat Wallet
+            </button>
+        </div>
+
+        <form id="filterForm" class="toolbar">
+            <div>
+                <label class="field-label" for="nicknameFilter">Nickname</label>
+                <input id="nicknameFilter" type="search" autocomplete="off" placeholder="Search nickname"/>
+            </div>
+            <div>
+                <label class="field-label" for="emailFilter">Email</label>
+                <input id="emailFilter" type="search" autocomplete="off" placeholder="Search email"/>
+            </div>
+            <div>
+                <label class="field-label" for="pageSize">Rows</label>
+                <select id="pageSize">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div class="btn-row">
+                <button id="searchBtn" class="btn btn-primary" type="submit">Search</button>
+                <button id="resetBtn" class="btn btn-ghost" type="button">Reset</button>
+            </div>
+        </form>
+
+        <p id="statusText" class="status">Loading...</p>
+        <div id="tableContainer"></div>
+
+        <div class="pagination">
+            <span id="paginationInfo" class="pagination-info">-</span>
+            <div class="btn-row">
+                <button id="previousBtn" class="btn btn-ghost" type="button">Previous</button>
+                <button id="nextBtn" class="btn btn-ghost" type="button">Next</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    const logTypes = {
+        report: {
+            endpoint: '/admin/api/logs/report-generation',
+            columns: [
+                {label: 'ID', render: log => escapeHtml(log.id)},
+                {label: 'Created', render: log => formatDateTime(log.createdAt)},
+                {label: 'User', render: log => renderUser(log.user)},
+                {label: 'Report', render: log => renderPair(log.reportType, formatId(log.reportId))},
+                {label: 'Step', render: log => escapeHtml(log.step)},
+                {label: 'Status', render: log => renderBadge(log.status)},
+                {label: 'LLM', render: log => renderPair(log.llmProvider, log.llmModel)},
+                {label: 'Tokens', render: log => renderTokens(log)},
+                {label: 'Elapsed', render: log => formatMilliseconds(log.elapsedMs)},
+                {label: 'Error', render: log => renderError(log)}
+            ]
+        },
+        crystal: {
+            endpoint: '/admin/api/logs/crystal',
+            columns: [
+                {label: 'ID', render: log => escapeHtml(log.id)},
+                {label: 'Created', render: log => formatDateTime(log.createdAt)},
+                {label: 'User', render: log => renderUser(log.user)},
+                {label: 'Delta', render: log => formatSigned(log.delta)},
+                {label: 'Balance After', render: log => escapeHtml(log.balanceAfter)},
+                {label: 'Reason', render: log => escapeHtml(log.reason)},
+                {label: 'Status', render: log => renderBadge(log.status)},
+                {label: 'Reference', render: log => renderReference(log)}
+            ]
+        },
+        'ask-chat-wallet': {
+            endpoint: '/admin/api/logs/ask-chat-wallet',
+            columns: [
+                {label: 'ID', render: log => escapeHtml(log.id)},
+                {label: 'Created', render: log => formatDateTime(log.createdAt)},
+                {label: 'User', render: log => renderUser(log.user)},
+                {label: 'Turn Delta', render: log => renderBalancePair(log.freeTurnDelta, log.paidTurnDelta)},
+                {label: 'Balance After', render: log => renderBalancePair(log.freeTurnBalanceAfter, log.paidTurnBalanceAfter)},
+                {label: 'Reason', render: log => escapeHtml(log.reason)},
+                {label: 'Status', render: log => renderBadge(log.status)},
+                {label: 'Session', render: log => displayValue(log.sessionId)},
+                {label: 'Reference', render: log => renderReference(log)},
+                {label: 'Idempotency', render: log => escapeHtml(log.idempotencyKey)}
+            ]
+        }
+    };
+
+    const filterForm = document.getElementById('filterForm');
+    const nicknameFilterEl = document.getElementById('nicknameFilter');
+    const emailFilterEl = document.getElementById('emailFilter');
+    const pageSizeEl = document.getElementById('pageSize');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const statusTextEl = document.getElementById('statusText');
+    const tableContainerEl = document.getElementById('tableContainer');
+    const paginationInfoEl = document.getElementById('paginationInfo');
+    const previousBtn = document.getElementById('previousBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const logTabEls = [...document.querySelectorAll('[data-log-type]')];
+
+    let activeLogType = 'report';
+    let currentPage = 1;
+    let latestPage = null;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function displayValue(value) {
+        return value === null || value === undefined || value === ''
+            ? '-'
+            : escapeHtml(value);
+    }
+
+    function formatDateTime(value) {
+        if (!value) {
+            return '<span class="muted">-</span>';
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return displayValue(value);
+        }
+
+        return escapeHtml(date.toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }));
+    }
+
+    function formatSigned(value) {
+        if (value === null || value === undefined) {
+            return '<span class="muted">-</span>';
+        }
+        const number = Number(value);
+        return escapeHtml(number > 0 ? `+${number}` : number);
+    }
+
+    function formatMilliseconds(value) {
+        return value === null || value === undefined
+            ? '<span class="muted">-</span>'
+            : `${escapeHtml(value)} ms`;
+    }
+
+    function renderUser(user) {
+        if (!user) {
+            return '<span class="muted">-</span>';
+        }
+        return `<strong>${displayValue(user.nickname)}</strong><br>` +
+            `<span class="secondary">${displayValue(user.email)}</span>`;
+    }
+
+    function renderPair(first, second) {
+        return `${displayValue(first)}<br><span class="secondary">${displayValue(second)}</span>`;
+    }
+
+    function formatId(value) {
+        return value === null || value === undefined || value === ''
+            ? null
+            : `#${value}`;
+    }
+
+    function renderBalancePair(free, paid) {
+        return `Free: ${displayValue(free)}<br><span class="secondary">Paid: ${displayValue(paid)}</span>`;
+    }
+
+    function renderBadge(value) {
+        const normalized = String(value ?? 'unknown')
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]/g, '');
+        return `<span class="badge badge-${normalized}">${displayValue(value)}</span>`;
+    }
+
+    function renderReference(log) {
+        if (!log.refType && (log.refId === null || log.refId === undefined)) {
+            return '<span class="muted">-</span>';
+        }
+        return `${displayValue(log.refType)}<br><span class="secondary">#${displayValue(log.refId)}</span>`;
+    }
+
+    function renderTokens(log) {
+        return `Total: ${displayValue(log.totalTokens)}<br>` +
+            `<span class="secondary">In: ${displayValue(log.inputTokens)} / Out: ${displayValue(log.outputTokens)}</span>`;
+    }
+
+    function renderError(log) {
+        const values = [log.errorCode, log.externalErrorCode, log.exceptionClass]
+            .filter(value => value !== null && value !== undefined && value !== '');
+        return values.length
+            ? values.map(value => displayValue(value)).join('<br>')
+            : '<span class="muted">-</span>';
+    }
+
+    function renderTable(items) {
+        const columns = logTypes[activeLogType].columns;
+        if (!items.length) {
+            tableContainerEl.innerHTML = '<div class="empty">No log records found.</div>';
+            return;
+        }
+
+        tableContainerEl.innerHTML = `
+            <div class="table-wrap">
+                <table class="log-table">
+                    <thead>
+                    <tr>${columns.map(column => `<th>${column.label}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                    ${items.map(item => `
+                        <tr>${columns.map(column => `<td>${column.render(item)}</td>`).join('')}</tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function renderPagination(page) {
+        latestPage = page;
+        const totalPages = page.totalPages || 0;
+        paginationInfoEl.textContent = totalPages
+            ? `Page ${page.currentPage} of ${totalPages} · ${page.totalCount} record(s)`
+            : 'No records';
+        previousBtn.disabled = !page.hasPrevious;
+        nextBtn.disabled = !page.hasNext;
+    }
+
+    async function request(url) {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {'Content-Type': 'application/json'}
+        });
+
+        if (response.status === 401) {
+            location.replace('/admin/login');
+            return null;
+        }
+
+        if (!response.ok) {
+            let message = 'Request failed.';
+            try {
+                const errorBody = await response.json();
+                if (errorBody && errorBody.message) {
+                    message = errorBody.message;
+                }
+            } catch (e) {
+                // ignore
+            }
+            throw new Error(message);
+        }
+
+        return response.json();
+    }
+
+    async function loadLogs() {
+        const logType = logTypes[activeLogType];
+        const params = new URLSearchParams({
+            page: String(currentPage),
+            size: pageSizeEl.value
+        });
+        const nickname = nicknameFilterEl.value.trim();
+        const email = emailFilterEl.value.trim();
+        if (nickname) {
+            params.set('nickname', nickname);
+        }
+        if (email) {
+            params.set('email', email);
+        }
+
+        statusTextEl.textContent = 'Loading...';
+        tableContainerEl.innerHTML = '';
+        searchBtn.disabled = true;
+        resetBtn.disabled = true;
+        pageSizeEl.disabled = true;
+        previousBtn.disabled = true;
+        nextBtn.disabled = true;
+
+        try {
+            const body = await request(`${logType.endpoint}?${params.toString()}`);
+            if (!body) {
+                return;
+            }
+            const page = body.data;
+            renderTable(page.items || []);
+            renderPagination(page);
+            statusTextEl.textContent = `${logType.endpoint} · Latest first`;
+        } catch (e) {
+            latestPage = null;
+            paginationInfoEl.textContent = '-';
+            tableContainerEl.innerHTML = `<div class="empty">${displayValue(e.message)}</div>`;
+            statusTextEl.textContent = 'Unable to load logs.';
+        } finally {
+            searchBtn.disabled = false;
+            resetBtn.disabled = false;
+            pageSizeEl.disabled = false;
+        }
+    }
+
+    function selectLogType(logType) {
+        if (!logTypes[logType]) {
+            return;
+        }
+        activeLogType = logType;
+        currentPage = 1;
+        logTabEls.forEach(tab => {
+            const isActive = tab.dataset.logType === activeLogType;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', String(isActive));
+        });
+        loadLogs();
+    }
+
+    logTabEls.forEach(tab => {
+        tab.addEventListener('click', () => selectLogType(tab.dataset.logType));
+    });
+
+    filterForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        currentPage = 1;
+        loadLogs();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        nicknameFilterEl.value = '';
+        emailFilterEl.value = '';
+        pageSizeEl.value = '20';
+        currentPage = 1;
+        loadLogs();
+    });
+
+    pageSizeEl.addEventListener('change', () => {
+        currentPage = 1;
+        loadLogs();
+    });
+
+    previousBtn.addEventListener('click', () => {
+        if (latestPage?.hasPrevious) {
+            currentPage--;
+            loadLogs();
+        }
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (latestPage?.hasNext) {
+            currentPage++;
+            loadLogs();
+        }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/admin/api/logout', {method: 'POST'});
+        } finally {
+            location.replace('/admin/login');
+        }
+    });
+
+    loadLogs();
+</script>
+</body>
+</html>

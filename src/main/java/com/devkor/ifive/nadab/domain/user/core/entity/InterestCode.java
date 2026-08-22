@@ -28,7 +28,7 @@ public enum InterestCode {
             case PREFERENCE -> "취향";
             case EMOTION -> "감정";
             case ROUTINE -> "루틴";
-            case RELATIONSHIP -> "인간관계";
+            case RELATIONSHIP -> "관계";
             case LOVE -> "사랑";
             case VALUES -> "가치관";
         };

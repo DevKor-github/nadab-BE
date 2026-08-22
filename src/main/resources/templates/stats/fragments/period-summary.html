@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="daily(period)" class="period-panel">
+  <div class="period-panel-header">
+    <div>
+      <div class="period-panel-eyebrow">선택한 일간 통계</div>
+      <h2 class="period-panel-title" th:text="${period.periodLabel}">2026-08-20</h2>
+    </div>
+    <form class="period-picker" method="get" th:action="@{/stats/daily}">
+      <div class="period-picker-field">
+        <label class="period-picker-label" for="dailyDate">기준일</label>
+        <input class="period-picker-input" id="dailyDate" name="date" type="date"
+               th:value="${period.periodValue}" required/>
+      </div>
+      <button class="period-picker-submit" type="submit">조회</button>
+      <a class="period-picker-current" th:href="@{/stats/daily}">오늘</a>
+    </form>
+  </div>
+  <div class="period-summary-grid">
+    <div class="period-summary-item">
+      <div class="period-summary-label">가입자 수</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.signupCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">할당된 질문 수</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.assignedQuestionCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">DAU · 일간 리포트 작성자</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.dauCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">공유 중인 일간 리포트</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.sharedDailyReportCount, 1, 'COMMA')}">0</div>
+    </div>
+  </div>
+</section>
+
+<section th:fragment="weekly(period)" class="period-panel">
+  <div class="period-panel-header">
+    <div>
+      <div class="period-panel-eyebrow">선택한 주간 통계</div>
+      <h2 class="period-panel-title" th:text="${period.periodLabel}">2026-08-17 ~ 2026-08-23</h2>
+    </div>
+    <form class="period-picker" method="get" th:action="@{/stats/weekly}">
+      <div class="period-picker-field">
+        <label class="period-picker-label" for="weeklyDate">기준 주</label>
+        <input class="period-picker-input" id="weeklyDate" name="week" type="week"
+               th:value="${period.periodValue}" required/>
+      </div>
+      <button class="period-picker-submit" type="submit">조회</button>
+      <a class="period-picker-current" th:href="@{/stats/weekly}">이번 주</a>
+    </form>
+  </div>
+  <div class="period-summary-grid">
+    <div class="period-summary-item">
+      <div class="period-summary-label">가입자 수</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.signupCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">할당된 질문 수</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.assignedQuestionCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">생성된 일간 리포트</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.completedDailyReportCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">생성된 주간 리포트</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.completedWeeklyReportCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">WAU · 일간 리포트 작성자</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.wauCount, 1, 'COMMA')}">0</div>
+    </div>
+  </div>
+</section>
+
+<section th:fragment="monthly(period)" class="period-panel">
+  <div class="period-panel-header">
+    <div>
+      <div class="period-panel-eyebrow">선택한 월간 통계</div>
+      <h2 class="period-panel-title" th:text="${period.periodLabel}">2026-08</h2>
+    </div>
+    <form class="period-picker" method="get" th:action="@{/stats/monthly}">
+      <div class="period-picker-field">
+        <label class="period-picker-label" for="monthlyDate">기준 월</label>
+        <input class="period-picker-input" id="monthlyDate" name="month" type="month"
+               th:value="${period.periodValue}" required/>
+      </div>
+      <button class="period-picker-submit" type="submit">조회</button>
+      <a class="period-picker-current" th:href="@{/stats/monthly}">이번 달</a>
+    </form>
+  </div>
+  <div class="period-summary-grid">
+    <div class="period-summary-item">
+      <div class="period-summary-label">가입자 수</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.signupCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">할당된 질문 수</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.assignedQuestionCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">생성된 일간 리포트</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.completedDailyReportCount, 1, 'COMMA')}">0</div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">생성된 월간 리포트 · Total</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.completedMonthlyReportTotalCount, 1, 'COMMA')}">0</div>
+      <div class="period-summary-breakdown">
+        <span>V1<strong th:text="${#numbers.formatInteger(period.completedMonthlyReportV1Count, 1, 'COMMA')}">0</strong></span>
+        <span>V2<strong th:text="${#numbers.formatInteger(period.completedMonthlyReportV2Count, 1, 'COMMA')}">0</strong></span>
+      </div>
+    </div>
+    <div class="period-summary-item">
+      <div class="period-summary-label">MAU · 일간 리포트 작성자</div>
+      <div class="period-summary-value" th:text="${#numbers.formatInteger(period.mauCount, 1, 'COMMA')}">0</div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.typereport.core.service;
 
 import com.devkor.ifive.nadab.domain.typereport.application.helper.TypeReportInputAssembler;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeContentFactory;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeReportContentFormat;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.AnalysisTypeCandidateDto;
@@ -157,6 +158,12 @@ public class TypeReportContentGenerationService {
             throw new AiResponseParseException(ErrorCode.TYPE_REPORT_JSON_MISSING_FIELDS);
         }
 
+        if (TypeReportContentFormat.containsUnsupportedMarkup(dto.typeAnalysis())
+                || TypeReportContentFormat.containsUnsupportedMarkup(dto.typeAnalysisContent())
+                || TypeReportContentFormat.containsUnsupportedMarkup(dto.emotionSummaryContent())) {
+            throw new AiResponseParseException(ErrorCode.TYPE_REPORT_AI_SEGMENT_INVALID);
+        }
+
         List<TypeReportContentDto.PersonaDto> personas = dto.personas();
         if (personas == null || personas.size() != PERSONA_COUNT) {
             throw new AiResponseParseException(ErrorCode.TYPE_REPORT_PERSONA_COUNT_INVALID);
@@ -171,6 +178,11 @@ public class TypeReportContentGenerationService {
             int contentLen = p.content() == null ? 0 : p.content().length();
             if (contentLen < PERSONA_CONTENT_MIN || contentLen > PERSONA_CONTENT_MAX) {
                 throw new AiResponseParseException(ErrorCode.TYPE_REPORT_PERSONA_CONTENT_LENGTH_INVALID);
+            }
+
+            if (TypeReportContentFormat.containsUnsupportedMarkup(p.title())
+                    || TypeReportContentFormat.containsUnsupportedMarkup(p.content())) {
+                throw new AiResponseParseException(ErrorCode.TYPE_REPORT_PERSONAS_INVALID);
             }
         }
     }

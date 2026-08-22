@@ -222,6 +222,7 @@
     .dot-orange { background: #f5a524; }
   </style>
   <link rel="stylesheet" th:href="@{/css/stats-peak.css}"/>
+  <link rel="stylesheet" th:href="@{/css/stats-period.css}"/>
 </head>
 <body>
 
@@ -338,6 +339,8 @@
   </div>
 </div>
 </div>
+
+<div th:replace="~{stats/fragments/period-summary :: weekly(${vm.selectedPeriod})}"></div>
 
 <script th:inline="javascript">
   const rawLabels = [[${vm.labels}]];

@@ -241,7 +241,7 @@ public class UserController {
                     - **PREFERENCE** : 취향
                     - **EMOTION** : 감정
                     - **ROUTINE** : 루틴
-                    - **RELATIONSHIP** : 인간관계
+                    - **RELATIONSHIP** : 관계
                     - **LOVE** : 사랑
                     - **VALUES** : 가치관
                     """,

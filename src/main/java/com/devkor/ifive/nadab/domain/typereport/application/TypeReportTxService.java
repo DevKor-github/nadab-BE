@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.typereport.application;
 
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeEmotionStatsContent;
+import com.devkor.ifive.nadab.domain.typereport.core.content.TypeReportContentFormat;
 import com.devkor.ifive.nadab.domain.typereport.core.content.TypeTextContent;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReportGenerationRequestedEventDto;
 import com.devkor.ifive.nadab.domain.typereport.core.dto.TypeReserveResultDto;
@@ -114,6 +115,16 @@ public class TypeReportTxService {
             String persona2Title,
             String persona2Content
     ) {
+        validateContentFormat(
+                typeAnalysis,
+                typeAnalysisContent,
+                emotionSummaryContent,
+                persona1Title,
+                persona1Content,
+                persona2Title,
+                persona2Content
+        );
+
         TypeTextContent normalizedTypeAnalysisContent = typeAnalysisContent.normalized();
         TypeTextContent normalizedEmotionSummaryContent = emotionSummaryContent.normalized();
         TypeEmotionStatsContent normalizedEmotionStats = emotionStats.normalized();
@@ -154,6 +165,29 @@ public class TypeReportTxService {
         }
 
         crystalLogRepository.markConfirmed(logId);
+    }
+
+    private void validateContentFormat(
+            String typeAnalysis,
+            TypeTextContent typeAnalysisContent,
+            TypeTextContent emotionSummaryContent,
+            String persona1Title,
+            String persona1Content,
+            String persona2Title,
+            String persona2Content
+    ) {
+        if (TypeReportContentFormat.containsUnsupportedMarkup(typeAnalysis)
+                || TypeReportContentFormat.containsUnsupportedMarkup(typeAnalysisContent)
+                || TypeReportContentFormat.containsUnsupportedMarkup(emotionSummaryContent)) {
+            throw new AiResponseParseException(ErrorCode.TYPE_REPORT_AI_SEGMENT_INVALID);
+        }
+
+        if (TypeReportContentFormat.containsUnsupportedMarkup(persona1Title)
+                || TypeReportContentFormat.containsUnsupportedMarkup(persona1Content)
+                || TypeReportContentFormat.containsUnsupportedMarkup(persona2Title)
+                || TypeReportContentFormat.containsUnsupportedMarkup(persona2Content)) {
+            throw new AiResponseParseException(ErrorCode.TYPE_REPORT_PERSONAS_INVALID);
+        }
     }
 
     public void failAndRefundType(Long userId, Long reportId, Long logId) {
