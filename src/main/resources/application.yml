@@ -114,11 +114,11 @@ ask-chat:
   answer:
     provider: OPENAI
     model: gpt-5.6-luna
+    reasoning-effort: low
     temperature: 1.0
     max-tokens: 900
     recent-message-limit: 10
     follow-up-question-count: 2
-    prompt-version: 2
   rag:
     embedding-model: text-embedding-3-small
     embedding-dimensions: 1536

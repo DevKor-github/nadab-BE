@@ -63,6 +63,7 @@ class AskChatAnswerLlmClientTest {
         properties = new AskChatAnswerProperties();
         properties.setProvider(LlmProvider.OPENAI);
         properties.setModel("gpt-5.6-luna");
+        properties.setReasoningEffort("low");
         properties.setTemperature(1.0);
         properties.setMaxTokens(900);
         properties.setFollowUpQuestionCount(2);
@@ -102,6 +103,7 @@ class AskChatAnswerLlmClientTest {
         assertThat(result.tokenUsage().totalTokens()).isEqualTo(150L);
         assertThat(result.referenceDocumentIds()).containsExactly(100L);
         assertThat(optionsCaptor.getValue().getTemperature()).isEqualTo(1.0);
+        assertThat(optionsCaptor.getValue().getReasoningEffort()).isEqualTo("low");
         assertThat(optionsCaptor.getValue().getMaxTokens()).isNull();
         assertThat(optionsCaptor.getValue().getMaxCompletionTokens()).isEqualTo(900);
     }
@@ -141,6 +143,75 @@ class AskChatAnswerLlmClientTest {
         assertThatThrownBy(() -> client.generate(context))
                 .isInstanceOfSatisfying(AiResponseParseException.class, ex ->
                         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.AI_RESPONSE_FORMAT_INVALID));
+    }
+
+    @Test
+    void generate_throws_format_exception_when_answer_contains_unsupported_script() throws Exception {
+        AskChatAnswerPromptContext context = context();
+        when(promptAugmenter.augment(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
+        when(llmRouter.route(LlmProvider.OPENAI)).thenReturn(chatClient);
+        when(chatClient.prompt()).thenReturn(requestSpec);
+        when(requestSpec.system("system")).thenReturn(requestSpec);
+        when(requestSpec.user("user")).thenReturn(requestSpec);
+        when(requestSpec.options(any())).thenReturn(requestSpec);
+        when(requestSpec.call()).thenReturn(callResponseSpec);
+        when(callResponseSpec.chatResponse()).thenReturn(chatResponse(
+                objectMapper.writeValueAsString(new AskChatGeneratedAnswer(
+                        "필요성이 अस्पष्ट한 소비는 보류하는 편이 나아요.",
+                        List.of()
+                )),
+                new DefaultUsage(1, 1, 2)
+        ));
+
+        assertThatThrownBy(() -> client.generate(context))
+                .isInstanceOfSatisfying(AiResponseParseException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.AI_RESPONSE_UNSUPPORTED_SCRIPT));
+    }
+
+    @Test
+    void generate_throws_format_exception_when_follow_up_question_exceeds_30_characters() throws Exception {
+        AskChatAnswerPromptContext context = context();
+        when(promptAugmenter.augment(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
+        when(llmRouter.route(LlmProvider.OPENAI)).thenReturn(chatClient);
+        when(chatClient.prompt()).thenReturn(requestSpec);
+        when(requestSpec.system("system")).thenReturn(requestSpec);
+        when(requestSpec.user("user")).thenReturn(requestSpec);
+        when(requestSpec.options(any())).thenReturn(requestSpec);
+        when(requestSpec.call()).thenReturn(callResponseSpec);
+        when(callResponseSpec.chatResponse()).thenReturn(chatResponse(
+                objectMapper.writeValueAsString(new AskChatGeneratedAnswer(
+                        "꾸준함이 강점으로 보여요.",
+                        List.of("가".repeat(31))
+                )),
+                new DefaultUsage(1, 1, 2)
+        ));
+
+        assertThatThrownBy(() -> client.generate(context))
+                .isInstanceOfSatisfying(AiResponseParseException.class, ex ->
+                        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.AI_RESPONSE_FORMAT_INVALID));
+    }
+
+    @Test
+    void generate_accepts_follow_up_question_with_30_characters() throws Exception {
+        AskChatAnswerPromptContext context = context();
+        when(promptAugmenter.augment(context)).thenReturn(new AskChatAnswerPrompt("system", "user"));
+        when(llmRouter.route(LlmProvider.OPENAI)).thenReturn(chatClient);
+        when(chatClient.prompt()).thenReturn(requestSpec);
+        when(requestSpec.system("system")).thenReturn(requestSpec);
+        when(requestSpec.user("user")).thenReturn(requestSpec);
+        when(requestSpec.options(any())).thenReturn(requestSpec);
+        when(requestSpec.call()).thenReturn(callResponseSpec);
+        when(callResponseSpec.chatResponse()).thenReturn(chatResponse(
+                objectMapper.writeValueAsString(new AskChatGeneratedAnswer(
+                        "꾸준함이 강점으로 보여요.",
+                        List.of("가".repeat(30))
+                )),
+                new DefaultUsage(1, 1, 2)
+        ));
+
+        var result = client.generate(context);
+
+        assertThat(result.answer().followUpQuestions()).containsExactly("가".repeat(30));
     }
 
     @Test

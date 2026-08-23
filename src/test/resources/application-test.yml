@@ -29,7 +29,6 @@ ask-chat:
     max-tokens: 700
     recent-message-limit: 10
     follow-up-question-count: 2
-    prompt-version: 1
   rag:
     embedding-retry-enabled: false
     embedding-retry-fixed-delay-ms: 60000

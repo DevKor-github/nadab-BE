@@ -202,6 +202,7 @@ public enum ErrorCode {
     // 502 Bad Gateway
     AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "AI 응답 형식을 해석할 수 없습니다"),
     AI_RESPONSE_FORMAT_INVALID(HttpStatus.BAD_GATEWAY, "AI 응답 JSON의 필수 필드가 비어있습니다"),
+    AI_RESPONSE_UNSUPPORTED_SCRIPT(HttpStatus.BAD_GATEWAY, "AI 응답에 허용하지 않는 문자 체계가 포함되어 있습니다"),
 
     // 503 Service Unavailable
     AI_NO_RESPONSE(HttpStatus.SERVICE_UNAVAILABLE, "AI 서비스로부터 응답을 받지 못했습니다"),
@@ -279,6 +280,9 @@ public enum ErrorCode {
     PROMPT_ASK_CHAT_FILE_NOT_FOUND(HttpStatus.BAD_REQUEST, "Ask Chat 답변 프롬프트 파일이 존재하지 않습니다"),
     PROMPT_ASK_CHAT_FILE_READ_FAILED(HttpStatus.BAD_REQUEST, "로컬 Ask Chat 답변 프롬프트 파일을 읽을 수 없습니다"),
     PROMPT_ASK_CHAT_ENV_VAR_NOT_SET(HttpStatus.BAD_REQUEST, "Ask Chat 답변 프롬프트 환경 변수가 설정되어 있지 않습니다"),
+
+    // 500 Internal Server Error
+    PROMPT_ASK_CHAT_VARIABLE_UNSUPPORTED(HttpStatus.INTERNAL_SERVER_ERROR, "Ask Chat 프롬프트에 지원하지 않는 변수가 포함되어 있습니다"),
 
     // ==================== NICKNAME (닉네임) ====================
     // 400 Bad Request
