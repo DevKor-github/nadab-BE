@@ -40,7 +40,4 @@ public class AskChatAnswerProperties {
 
     @Min(0)
     private int followUpQuestionCount = 2;
-
-    @Min(1)
-    private int promptVersion = 2;
 }

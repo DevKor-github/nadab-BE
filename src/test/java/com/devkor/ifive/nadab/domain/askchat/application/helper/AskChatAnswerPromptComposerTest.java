@@ -41,17 +41,22 @@ class AskChatAnswerPromptComposerTest {
 
         assertThat(prompt.systemPrompt()).isEqualTo("system template");
         assertThat(prompt.userPrompt())
-                .contains("프롬프트 버전: 2")
                 .contains("내가 방금 한 질문은 무엇이지?")
                 .contains("USER: 나는 어떤 사람이야?")
                 .contains("ASSISTANT: 말해준 걸 보면 관계를 중요하게 여기는 편으로 보여요.")
-                .contains("documentId=100")
-                .contains("ANSWER_ENTRY")
-                .contains("VALUES")
+                .contains("[기록 1]")
                 .contains("사용자는 기록에서 솔직함과 책임감을 중요하게 말한 적이 있다.")
                 .contains("followUpQuestions는 2개 이하");
         assertThat(prompt.userPrompt())
+                .doesNotContain("프롬프트 버전")
                 .doesNotContain("{promptVersion}")
+                .doesNotContain("documentId")
+                .doesNotContain("sourceType")
+                .doesNotContain("interestCode")
+                .doesNotContain("distance")
+                .doesNotContain("ANSWER_ENTRY")
+                .doesNotContain("VALUES")
+                .doesNotContain("0.18")
                 .doesNotContain("{question}")
                 .doesNotContain("{recentMessages}")
                 .doesNotContain("{referenceDocuments}")
@@ -92,7 +97,8 @@ class AskChatAnswerPromptComposerTest {
             @Override
             public String loadUserPrompt() {
                 return """
-                        프롬프트 버전: {promptVersion}
+                        [프롬프트 버전]
+                        {promptVersion}
 
                         [현재 질문]
                         {question}

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
@@ -17,6 +18,9 @@ public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter
 
     private static final String NO_REFERENCE_DOCUMENT = "검색된 사용자 기록이 없습니다.";
     private static final String NO_RECENT_MESSAGE = "최근 대화가 없습니다.";
+    private static final Pattern PROMPT_VERSION_SECTION_PATTERN = Pattern.compile(
+            "(?m)^\\[프롬프트 버전]\\R\\{promptVersion}(?:\\R){1,2}"
+    );
 
     private final AskChatAnswerProperties properties;
     private final AskChatAnswerPromptLoader promptLoader;
@@ -34,8 +38,11 @@ public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter
     }
 
     private String userPrompt(AskChatAnswerPromptContext context) {
-        return promptLoader.loadUserPrompt()
-                .replace("{promptVersion}", String.valueOf(properties.getPromptVersion()))
+        String template = PROMPT_VERSION_SECTION_PATTERN
+                .matcher(promptLoader.loadUserPrompt())
+                .replaceFirst("");
+
+        return template
                 .replace("{question}", context.question())
                 .replace("{recentMessages}", formatRecentMessages(context.recentMessages()))
                 .replace("{referenceDocuments}", formatReferenceDocuments(context.referenceDocuments()))
@@ -68,17 +75,12 @@ public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < documents.size(); i++) {
             AskChatAnswerReferenceDocument document = documents.get(i);
-            builder.append(i + 1)
-                    .append(". documentId=")
-                    .append(document.documentId())
-                    .append(", sourceType=")
-                    .append(document.sourceType())
-                    .append(", interestCode=")
-                    .append(document.interestCode())
-                    .append(", distance=")
-                    .append(document.distance())
+            builder.append("[기록 ")
+                    .append(i + 1)
+                    .append("]")
                     .append(System.lineSeparator())
                     .append(document.content())
+                    .append(System.lineSeparator())
                     .append(System.lineSeparator());
         }
         return builder.toString().trim();
