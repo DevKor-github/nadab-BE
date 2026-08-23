@@ -27,21 +27,6 @@ import java.util.Objects;
 @ConfigurationProperties(prefix = "daily-report.llm")
 public class DailyReportLlmProperties {
 
-    @NotBlank
-    private String model = "gpt-4o-mini";
-
-    @DecimalMin("0.0")
-    @DecimalMax("2.0")
-    private double temperature = 0.3;
-
-    @Min(1)
-    private int maxOutputTokens = 512;
-
-    @NotNull
-    private TokenLimitParameter tokenLimitParameter = TokenLimitParameter.MAX_TOKENS;
-
-    private String reasoningEffort;
-
     @Valid
     @NotEmpty
     private List<@NotNull ModelCandidate> candidates = new ArrayList<>();

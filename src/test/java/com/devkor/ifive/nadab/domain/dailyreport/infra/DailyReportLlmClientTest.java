@@ -1,7 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.infra;
 
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
-import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties;
+import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties.ModelCandidate;
 import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties.TokenLimitParameter;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -56,12 +56,17 @@ class DailyReportLlmClientTest {
     ChatClient.CallResponseSpec callResponseSpec;
 
     @Test
-    void generate_uses_default_options_and_returns_content_with_token_usage() {
+    void generate_uses_gpt_4o_mini_options_and_returns_content_with_token_usage() {
         // given
-        DailyReportLlmProperties properties = new DailyReportLlmProperties();
+        ModelCandidate modelCandidate = modelCandidate(
+                "gpt-4o-mini",
+                0.3,
+                TokenLimitParameter.MAX_TOKENS,
+                null
+        );
 
         // when
-        GenerationExecution execution = generateWith(properties);
+        GenerationExecution execution = generateWith(modelCandidate);
 
         // then
         assertThat(execution.result().content()).isEqualTo(new com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto(
@@ -79,17 +84,17 @@ class DailyReportLlmClientTest {
     }
 
     @Test
-    void generate_uses_dev_experiment_options() {
+    void generate_uses_gpt_5_6_luna_options() {
         // given
-        DailyReportLlmProperties properties = new DailyReportLlmProperties();
-        properties.setModel("gpt-5.6-luna");
-        properties.setTemperature(1.0);
-        properties.setMaxOutputTokens(512);
-        properties.setTokenLimitParameter(TokenLimitParameter.MAX_COMPLETION_TOKENS);
-        properties.setReasoningEffort("none");
+        ModelCandidate modelCandidate = modelCandidate(
+                "gpt-5.6-luna",
+                1.0,
+                TokenLimitParameter.MAX_COMPLETION_TOKENS,
+                "none"
+        );
 
         // when
-        GenerationExecution execution = generateWith(properties);
+        GenerationExecution execution = generateWith(modelCandidate);
 
         // then
         assertThat(execution.options().getModel()).isEqualTo("gpt-5.6-luna");
@@ -99,13 +104,12 @@ class DailyReportLlmClientTest {
         assertThat(execution.options().getReasoningEffort()).isEqualTo("none");
     }
 
-    private GenerationExecution generateWith(DailyReportLlmProperties properties) {
+    private GenerationExecution generateWith(ModelCandidate modelCandidate) {
         DailyReportLlmClient client = new DailyReportLlmClient(
                 dailyReportPromptLoader,
                 new ObjectMapper(),
                 llmRouter,
-                profileImageUrlBuilder,
-                properties
+                profileImageUrlBuilder
         );
         AnswerEntry answerEntry = AnswerEntry.create(
                 User.createUser("test@test.com", "hashed_password"),
@@ -127,12 +131,27 @@ class DailyReportLlmClientTest {
                 new DefaultUsage(100, 50, 150)
         ));
 
-        LlmGenerationResult<?> result = client.generate("question", answerEntry);
+        LlmGenerationResult<?> result = client.generate("question", answerEntry, modelCandidate);
 
         ArgumentCaptor<OpenAiChatOptions> optionsCaptor = ArgumentCaptor.forClass(OpenAiChatOptions.class);
         verify(requestSpec).options(optionsCaptor.capture());
 
         return new GenerationExecution(result, optionsCaptor.getValue());
+    }
+
+    private ModelCandidate modelCandidate(
+            String model,
+            double temperature,
+            TokenLimitParameter tokenLimitParameter,
+            String reasoningEffort
+    ) {
+        ModelCandidate modelCandidate = new ModelCandidate();
+        modelCandidate.setModel(model);
+        modelCandidate.setTemperature(temperature);
+        modelCandidate.setMaxOutputTokens(512);
+        modelCandidate.setTokenLimitParameter(tokenLimitParameter);
+        modelCandidate.setReasoningEffort(reasoningEffort);
+        return modelCandidate;
     }
 
     private ChatResponse chatResponse(String content, DefaultUsage usage) {

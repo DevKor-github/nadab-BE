@@ -6,6 +6,8 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -52,16 +54,16 @@ class DailyReportLlmPropertiesTest {
         });
     }
 
-    @Test
-    void dev_profile_inherits_shared_candidates_while_legacy_model_override_remains() {
+    @ParameterizedTest
+    @ValueSource(strings = {"local", "dev", "prod", "test"})
+    void runtime_profiles_inherit_shared_candidates(String profile) {
         contextRunner
-                .withPropertyValues("spring.profiles.active=dev")
+                .withPropertyValues("spring.profiles.active=" + profile)
                 .run(context -> {
                     assertThat(context.getStartupFailure()).isNull();
 
                     DailyReportLlmProperties properties = context.getBean(DailyReportLlmProperties.class);
 
-                    assertThat(properties.getModel()).isEqualTo("gpt-5.6-luna");
                     assertThat(properties.getCandidates())
                             .extracting(ModelCandidate::getModel, ModelCandidate::getWeight)
                             .containsExactly(
