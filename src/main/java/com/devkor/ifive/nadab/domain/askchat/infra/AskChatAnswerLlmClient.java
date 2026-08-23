@@ -28,6 +28,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AskChatAnswerLlmClient {
 
+    private static final int MAX_FOLLOW_UP_QUESTION_LENGTH = 30;
+
     /*
      * Keep prompt augmentation behind this boundary while evidence documents are stored in
      * ask_chat_message_references. A future Spring AI Advisor implementation can replace this
@@ -94,15 +96,31 @@ public class AskChatAnswerLlmClient {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
         }
 
+        if (containsUnsupportedScript(answer.answer())) {
+            throw new AiResponseParseException(ErrorCode.AI_RESPONSE_UNSUPPORTED_SCRIPT);
+        }
+
         if (answer.followUpQuestions().size() > properties.getFollowUpQuestionCount()) {
             throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
         }
 
         for (String followUpQuestion : answer.followUpQuestions()) {
-            if (isBlank(followUpQuestion)) {
+            if (isBlank(followUpQuestion)
+                    || followUpQuestion.codePointCount(0, followUpQuestion.length()) > MAX_FOLLOW_UP_QUESTION_LENGTH) {
                 throw new AiResponseParseException(ErrorCode.AI_RESPONSE_FORMAT_INVALID);
             }
+
+            if (containsUnsupportedScript(followUpQuestion)) {
+                throw new AiResponseParseException(ErrorCode.AI_RESPONSE_UNSUPPORTED_SCRIPT);
+            }
         }
+    }
+
+    private boolean containsUnsupportedScript(String value) {
+        return value.codePoints().anyMatch(codePoint -> switch (Character.UnicodeScript.of(codePoint)) {
+            case COMMON, INHERITED, HANGUL, LATIN -> false;
+            default -> true;
+        });
     }
 
     private List<Long> referenceDocumentIds(AskChatAnswerPromptContext context) {

@@ -6,10 +6,13 @@ import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerPromptContext
 import com.devkor.ifive.nadab.domain.askchat.core.dto.AskChatAnswerReferenceDocument;
 import com.devkor.ifive.nadab.domain.askchat.core.properties.AskChatAnswerProperties;
 import com.devkor.ifive.nadab.global.core.prompt.askchat.AskChatAnswerPromptLoader;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.ai.AiServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
@@ -20,6 +23,9 @@ public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter
     private static final String NO_RECENT_MESSAGE = "최근 대화가 없습니다.";
     private static final Pattern PROMPT_VERSION_SECTION_PATTERN = Pattern.compile(
             "(?m)^\\[프롬프트 버전]\\R\\{promptVersion}(?:\\R){1,2}"
+    );
+    private static final Pattern TEMPLATE_VARIABLE_PATTERN = Pattern.compile(
+            "\\{([A-Za-z][A-Za-z0-9_]*)}"
     );
 
     private final AskChatAnswerProperties properties;
@@ -42,11 +48,29 @@ public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter
                 .matcher(promptLoader.loadUserPrompt())
                 .replaceFirst("");
 
-        return template
-                .replace("{question}", context.question())
-                .replace("{recentMessages}", formatRecentMessages(context.recentMessages()))
-                .replace("{referenceDocuments}", formatReferenceDocuments(context.referenceDocuments()))
-                .replace("{followUpQuestionCount}", String.valueOf(properties.getFollowUpQuestionCount()));
+        return renderTemplate(template, context);
+    }
+
+    private String renderTemplate(String template, AskChatAnswerPromptContext context) {
+        String question = escapePromptData(context.question());
+        String recentMessages = formatRecentMessages(context.recentMessages());
+        String referenceDocuments = formatReferenceDocuments(context.referenceDocuments());
+        String followUpQuestionCount = String.valueOf(properties.getFollowUpQuestionCount());
+
+        Matcher matcher = TEMPLATE_VARIABLE_PATTERN.matcher(template);
+        StringBuilder builder = new StringBuilder();
+        while (matcher.find()) {
+            String replacement = switch (matcher.group(1)) {
+                case "question" -> question;
+                case "recentMessages" -> recentMessages;
+                case "referenceDocuments" -> referenceDocuments;
+                case "followUpQuestionCount" -> followUpQuestionCount;
+                default -> throw new AiServiceException(ErrorCode.PROMPT_ASK_CHAT_VARIABLE_UNSUPPORTED);
+            };
+            matcher.appendReplacement(builder, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(builder);
+        return builder.toString();
     }
 
     private String formatRecentMessages(List<AskChatAnswerConversationMessage> messages) {
@@ -61,7 +85,7 @@ public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter
                     .append(". ")
                     .append(message.role())
                     .append(": ")
-                    .append(message.content())
+                    .append(escapePromptData(message.content()))
                     .append(System.lineSeparator());
         }
         return builder.toString().trim();
@@ -79,10 +103,21 @@ public class AskChatAnswerPromptComposer implements AskChatAnswerPromptAugmenter
                     .append(i + 1)
                     .append("]")
                     .append(System.lineSeparator())
-                    .append(document.content())
+                    .append(escapePromptData(document.content()))
                     .append(System.lineSeparator())
                     .append(System.lineSeparator());
         }
         return builder.toString().trim();
+    }
+
+    private String escapePromptData(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 }
