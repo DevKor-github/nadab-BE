@@ -3,7 +3,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.infra;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.LlmDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
-import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties;
+import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties.ModelCandidate;
 import com.devkor.ifive.nadab.domain.user.infra.ProfileImageUrlBuilder;
 import com.devkor.ifive.nadab.global.core.prompt.daily.DailyReportPromptLoader;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -37,11 +37,14 @@ public class DailyReportLlmClient {
     private final ObjectMapper objectMapper;
     private final LlmRouter llmRouter;
     private final ProfileImageUrlBuilder profileImageUrlBuilder;
-    private final DailyReportLlmProperties properties;
 
     private final LlmProvider provider = LlmProvider.OPENAI;
 
-    public LlmGenerationResult<AiDailyReportResultDto> generate(String question, AnswerEntry answerEntry) {
+    public LlmGenerationResult<AiDailyReportResultDto> generate(
+            String question,
+            AnswerEntry answerEntry,
+            ModelCandidate modelCandidate
+    ) {
 
         String answer = answerEntry.getContent();
 
@@ -55,7 +58,7 @@ public class DailyReportLlmClient {
 
         ChatClient chatClient = llmRouter.route(provider);
 
-        OpenAiChatOptions options = buildOptions();
+        OpenAiChatOptions options = buildOptions(modelCandidate);
 
         UserMessage userMessage = buildUserMessage(prompt, withImagePrompt,answerEntry);
 
@@ -103,22 +106,18 @@ public class DailyReportLlmClient {
         }
     }
 
-    public String model() {
-        return properties.getModel();
-    }
-
-    private OpenAiChatOptions buildOptions() {
+    private OpenAiChatOptions buildOptions(ModelCandidate modelCandidate) {
         var builder = OpenAiChatOptions.builder()
-                .model(properties.getModel())
-                .temperature(properties.getTemperature());
+                .model(modelCandidate.getModel())
+                .temperature(modelCandidate.getTemperature());
 
-        switch (properties.getTokenLimitParameter()) {
-            case MAX_TOKENS -> builder.maxTokens(properties.getMaxOutputTokens());
-            case MAX_COMPLETION_TOKENS -> builder.maxCompletionTokens(properties.getMaxOutputTokens());
+        switch (modelCandidate.getTokenLimitParameter()) {
+            case MAX_TOKENS -> builder.maxTokens(modelCandidate.getMaxOutputTokens());
+            case MAX_COMPLETION_TOKENS -> builder.maxCompletionTokens(modelCandidate.getMaxOutputTokens());
         }
 
-        if (!isBlank(properties.getReasoningEffort())) {
-            builder.reasoningEffort(properties.getReasoningEffort());
+        if (!isBlank(modelCandidate.getReasoningEffort())) {
+            builder.reasoningEffort(modelCandidate.getReasoningEffort());
         }
 
         return builder.build();

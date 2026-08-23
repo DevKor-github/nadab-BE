@@ -97,10 +97,18 @@ api_prefix: /api/v1
 
 daily-report:
   llm:
-    model: gpt-4o-mini
-    temperature: 0.3
-    max-output-tokens: 512
-    token-limit-parameter: MAX_TOKENS
+    candidates:
+      - model: gpt-4o-mini
+        weight: 50
+        temperature: 0.3
+        max-output-tokens: 512
+        token-limit-parameter: MAX_TOKENS
+      - model: gpt-5.6-luna
+        weight: 50
+        temperature: 1.0
+        max-output-tokens: 512
+        token-limit-parameter: MAX_COMPLETION_TOKENS
+        reasoning-effort: none
 
 ask-chat:
   answer:
