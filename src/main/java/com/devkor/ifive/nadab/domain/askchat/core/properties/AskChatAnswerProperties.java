@@ -25,6 +25,9 @@ public class AskChatAnswerProperties {
     @NotBlank
     private String model = "gpt-5.6-luna";
 
+    @NotBlank
+    private String reasoningEffort = "low";
+
     @DecimalMin("0.0")
     @DecimalMax("2.0")
     private double temperature = 1.0;

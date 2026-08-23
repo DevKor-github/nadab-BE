@@ -63,6 +63,7 @@ class AskChatAnswerLlmClientTest {
         properties = new AskChatAnswerProperties();
         properties.setProvider(LlmProvider.OPENAI);
         properties.setModel("gpt-5.6-luna");
+        properties.setReasoningEffort("low");
         properties.setTemperature(1.0);
         properties.setMaxTokens(900);
         properties.setFollowUpQuestionCount(2);
@@ -102,6 +103,7 @@ class AskChatAnswerLlmClientTest {
         assertThat(result.tokenUsage().totalTokens()).isEqualTo(150L);
         assertThat(result.referenceDocumentIds()).containsExactly(100L);
         assertThat(optionsCaptor.getValue().getTemperature()).isEqualTo(1.0);
+        assertThat(optionsCaptor.getValue().getReasoningEffort()).isEqualTo("low");
         assertThat(optionsCaptor.getValue().getMaxTokens()).isNull();
         assertThat(optionsCaptor.getValue().getMaxCompletionTokens()).isEqualTo(900);
     }
