@@ -2,12 +2,14 @@ package com.devkor.ifive.nadab.domain.dailyreport.application;
 
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequest;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.application.helper.DailyReportModelSelector;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.Emotion;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.EmotionCode;
+import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties.ModelCandidate;
 import com.devkor.ifive.nadab.domain.dailyreport.infra.DailyReportLlmClient;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
@@ -62,6 +64,9 @@ class DailyReportServiceTest {
     ProfileImageService profileImageService;
 
     @Mock
+    DailyReportModelSelector dailyReportModelSelector;
+
+    @Mock
     DailyReportLlmClient dailyReportLlmClient;
 
     @Mock
@@ -80,6 +85,7 @@ class DailyReportServiceTest {
                 userDailyQuestionRepository,
                 dailyReportTxService,
                 profileImageService,
+                dailyReportModelSelector,
                 dailyReportLlmClient,
                 reportGenerationLogRecorder,
                 profileImageUrlBuilder
@@ -99,6 +105,7 @@ class DailyReportServiceTest {
         AnswerEntry answerEntry = AnswerEntry.create(user, question, "answer", today, null);
         AiDailyReportResultDto aiResult = new AiDailyReportResultDto("message", "ACHIEVEMENT");
         Emotion emotion = emotion(EmotionCode.ACHIEVEMENT);
+        ModelCandidate modelCandidate = modelCandidate("gpt-5.6-luna");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(dailyQuestionRepository.findByIdWithInterest(20L)).thenReturn(Optional.of(question));
@@ -106,7 +113,7 @@ class DailyReportServiceTest {
                 .thenReturn(Optional.of(UserDailyQuestion.create(user, today, question)));
         when(dailyReportTxService.prepareDaily(user, question, "answer", false, null))
                 .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId));
-        when(dailyReportLlmClient.model()).thenReturn("gpt-5.6-luna");
+        when(dailyReportModelSelector.select()).thenReturn(modelCandidate);
         when(reportGenerationLogRecorder.start(
                 userId,
                 ReportGenerationType.DAILY,
@@ -115,7 +122,7 @@ class DailyReportServiceTest {
                 LlmProvider.OPENAI,
                 "gpt-5.6-luna"
         )).thenReturn(generationLogId);
-        when(dailyReportLlmClient.generate("question", answerEntry))
+        when(dailyReportLlmClient.generate("question", answerEntry, modelCandidate))
                 .thenReturn(new LlmGenerationResult<>(aiResult, new LlmTokenUsage(100L, 50L, 150L)));
         when(dailyReportTxService.confirmDailyAndReward(
                 any(PrepareDailyResultDto.class),
@@ -133,6 +140,8 @@ class DailyReportServiceTest {
         assertThat(response.reportId()).isEqualTo(reportId);
         assertThat(response.content()).isEqualTo("message");
         assertThat(response.balanceAfter()).isEqualTo(110L);
+        verify(dailyReportModelSelector).select();
+        verify(dailyReportLlmClient).generate("question", answerEntry, modelCandidate);
 
         InOrder inOrder = inOrder(reportGenerationLogRecorder);
         inOrder.verify(reportGenerationLogRecorder).recordTokenUsage(generationLogId, 100L, 50L, 150L, null);
@@ -151,6 +160,7 @@ class DailyReportServiceTest {
         AnswerEntry answerEntry = AnswerEntry.create(user, question, "answer", today, null);
         AiDailyReportResultDto aiResult = new AiDailyReportResultDto("message", "ACHIEVEMENT");
         Emotion emotion = emotion(EmotionCode.ACHIEVEMENT);
+        ModelCandidate modelCandidate = modelCandidate("gpt-4o-mini");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(dailyQuestionRepository.findByIdWithInterest(20L)).thenReturn(Optional.of(question));
@@ -158,9 +168,10 @@ class DailyReportServiceTest {
                 .thenReturn(Optional.of(UserDailyQuestion.create(user, today, question)));
         when(dailyReportTxService.prepareDaily(user, question, "answer", false, null))
                 .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId));
+        when(dailyReportModelSelector.select()).thenReturn(modelCandidate);
         when(reportGenerationLogRecorder.start(any(), any(), any(), any(), any(), any()))
                 .thenReturn(generationLogId);
-        when(dailyReportLlmClient.generate("question", answerEntry))
+        when(dailyReportLlmClient.generate("question", answerEntry, modelCandidate))
                 .thenReturn(new LlmGenerationResult<>(aiResult, LlmTokenUsage.empty()));
         when(dailyReportTxService.confirmDailyAndReward(any(), eq(aiResult), eq(null)))
                 .thenReturn(new ConfirmDailyAndRewardDto(emotion, 110L));
@@ -189,5 +200,11 @@ class DailyReportServiceTest {
         Emotion emotion = mock(Emotion.class);
         when(emotion.getCode()).thenReturn(code);
         return emotion;
+    }
+
+    private ModelCandidate modelCandidate(String model) {
+        ModelCandidate modelCandidate = new ModelCandidate();
+        modelCandidate.setModel(model);
+        return modelCandidate;
     }
 }

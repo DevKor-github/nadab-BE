@@ -37,6 +37,7 @@ class DailyStatsServiceTest {
         when(repo.findCompletedDailyReportCountsLast7Days(startDate, selectedDate))
                 .thenReturn(List.of(new DateCountDto(selectedDate, 9L)));
         when(repo.countSharedDailyReports(selectedDate)).thenReturn(2L);
+        when(repo.countSharedDailyReports(today)).thenReturn(4L);
 
         DailyStatsViewModel vm = service.getDailyStats(selectedDate);
 
@@ -51,9 +52,12 @@ class DailyStatsServiceTest {
         assertThat(vm.selectedPeriod().assignedQuestionCount()).isEqualTo(7L);
         assertThat(vm.selectedPeriod().dauCount()).isEqualTo(9L);
         assertThat(vm.selectedPeriod().sharedDailyReportCount()).isEqualTo(2L);
+        assertThat(vm.sharedDailyReportCount()).isEqualTo(4L);
 
         verify(repo).findSignupCountsLast7Days(startDate, selectedDate);
         verify(repo).findAssignedQuestionCountsLast7Days(startDate, selectedDate);
         verify(repo).findCompletedDailyReportCountsLast7Days(startDate, selectedDate);
+        verify(repo).countSharedDailyReports(selectedDate);
+        verify(repo).countSharedDailyReports(today);
     }
 }

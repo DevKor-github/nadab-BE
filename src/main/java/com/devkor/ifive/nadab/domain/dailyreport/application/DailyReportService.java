@@ -5,11 +5,13 @@ import com.devkor.ifive.nadab.domain.dailyreport.api.dto.request.DailyReportRequ
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateAnswerImageUploadUrlResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.CreateDailyReportResponse;
 import com.devkor.ifive.nadab.domain.dailyreport.api.dto.response.ImageStatusResponse;
+import com.devkor.ifive.nadab.domain.dailyreport.application.helper.DailyReportModelSelector;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.ConfirmDailyAndRewardDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.PrepareDailyResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.dto.AiDailyReportResultDto;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.ImageStatus;
+import com.devkor.ifive.nadab.domain.dailyreport.core.properties.DailyReportLlmProperties.ModelCandidate;
 import com.devkor.ifive.nadab.domain.dailyreport.infra.DailyReportLlmClient;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
@@ -48,6 +50,7 @@ public class DailyReportService {
     private final DailyReportTxService dailyReportTxService;
     private final ProfileImageService profileImageService;
 
+    private final DailyReportModelSelector dailyReportModelSelector;
     private final DailyReportLlmClient dailyReportLlmClient;
     private final ReportGenerationLogRecorder reportGenerationLogRecorder;
 
@@ -88,19 +91,20 @@ public class DailyReportService {
         PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer(), isDayPassed, request.objectKey());
 
         AnswerEntry answerEntry = prep.entry();
+        ModelCandidate modelCandidate = dailyReportModelSelector.select();
         Long generationLogId = reportGenerationLogRecorder.start(
                 userId,
                 ReportGenerationType.DAILY,
                 prep.reportId(),
                 ReportGenerationStep.DAILY_GENERATE,
                 LlmProvider.OPENAI,
-                dailyReportLlmClient.model()
+                modelCandidate.getModel()
         );
 
         AiDailyReportResultDto dto;
         try {
             LlmGenerationResult<AiDailyReportResultDto> generationResult =
-                    dailyReportLlmClient.generate(question.getQuestionText(), answerEntry);
+                    dailyReportLlmClient.generate(question.getQuestionText(), answerEntry, modelCandidate);
             dto = generationResult.content();
             LlmTokenUsage tokenUsage = generationResult.tokenUsage();
             reportGenerationLogRecorder.recordTokenUsage(

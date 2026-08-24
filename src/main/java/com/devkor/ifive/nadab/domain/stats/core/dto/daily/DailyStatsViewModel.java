@@ -13,5 +13,6 @@ public record DailyStatsViewModel(
         PeakStatViewModel signupPeak,
         PeakStatViewModel assignedQuestionPeak,
         PeakStatViewModel dauPeak,
+        long sharedDailyReportCount,
         String refreshedAt // "2026-02-27 21:34:12"
 ) {}
