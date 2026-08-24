@@ -74,15 +74,18 @@ public class DailyStatsService {
         );
 
         int selectedIndex = days.size() - 1;
-        long sharedDailyReportCount = repo.countSharedDailyReports(selectedDate);
+        long selectedDateSharedDailyReportCount = repo.countSharedDailyReports(selectedDate);
         DailyPeriodStatsViewModel selectedPeriod = new DailyPeriodStatsViewModel(
                 selectedDate.toString(),
                 selectedDate.toString(),
                 signupCounts.get(selectedIndex),
                 assignedCounts.get(selectedIndex),
                 completedCounts.get(selectedIndex),
-                sharedDailyReportCount
+                selectedDateSharedDailyReportCount
         );
+        long sharedDailyReportCount = selectedDate.equals(today)
+                ? selectedDateSharedDailyReportCount
+                : repo.countSharedDailyReports(today);
 
         return new DailyStatsViewModel(
                 labels,
@@ -93,6 +96,7 @@ public class DailyStatsService {
                 signupPeak,
                 assignedQuestionPeak,
                 dauPeak,
+                sharedDailyReportCount,
                 OffsetDateTime.now(SEOUL).format(FMT)
         );
     }

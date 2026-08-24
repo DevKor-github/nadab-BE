@@ -73,6 +73,7 @@ class StatsControllerTemplateTest {
                 currentPeak,
                 pastPeak,
                 PeakStatViewModel.empty(),
+                4_321L,
                 "2026-08-13 12:00:00"
         ));
 
@@ -86,6 +87,8 @@ class StatsControllerTemplateTest {
                 .andExpect(content().string(containsString("value=\"2026-08-13\"")))
                 .andExpect(content().string(containsString("할당된 질문 수")))
                 .andExpect(content().string(containsString("DAU · 일간 리포트 작성자")))
+                .andExpect(content().string(containsString("현재 공유 중인 일간 리포트")))
+                .andExpect(content().string(containsString("4,321")))
                 .andExpect(content().string(containsString("공유 중인 일간 리포트")))
                 .andExpect(content().string(containsString("역대 최고")))
                 .andExpect(content().string(containsString("1,234")))
@@ -94,6 +97,8 @@ class StatsControllerTemplateTest {
                 .andExpect(content().string(containsString("기록 없음")))
                 .andReturn().getResponse().getContentAsString();
 
+        assertThat(html.indexOf("현재 공유 중인 일간 리포트"))
+                .isLessThan(html.indexOf("<canvas id=\"signupChart\""));
         assertThat(html.indexOf("<canvas id=\"completedChart\""))
                 .isLessThan(html.indexOf("선택한 일간 통계"));
     }
