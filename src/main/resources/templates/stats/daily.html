@@ -290,6 +290,14 @@
      th:href="@{/stats/total}">전체</a>
 </div>
 
+<!-- KPI -->
+<div class="kpi-card">
+  <div>
+    <div class="kpi-label">현재 공유 중인 일간 리포트</div>
+    <div class="kpi-value" th:text="${#numbers.formatInteger(vm.sharedDailyReportCount, 1, 'COMMA')}">0</div>
+  </div>
+</div>
+
 <!-- Charts -->
 <div class="charts-grid">
   <!-- Chart 1 -->
