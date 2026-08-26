@@ -109,10 +109,11 @@ class DailyReportServiceTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(dailyQuestionRepository.findByIdWithInterest(20L)).thenReturn(Optional.of(question));
+        UserDailyQuestion assignment = UserDailyQuestion.create(user, today, question);
         when(userDailyQuestionRepository.findByUserIdAndDate(eq(userId), any(LocalDate.class)))
-                .thenReturn(Optional.of(UserDailyQuestion.create(user, today, question)));
-        when(dailyReportTxService.prepareDaily(user, question, "answer", false, null))
-                .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId));
+                .thenReturn(Optional.of(assignment));
+        when(dailyReportTxService.prepareDaily(user, question, assignment, "answer", false, null))
+                .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId, "revision question"));
         when(dailyReportModelSelector.select()).thenReturn(modelCandidate);
         when(reportGenerationLogRecorder.start(
                 userId,
@@ -122,7 +123,7 @@ class DailyReportServiceTest {
                 LlmProvider.OPENAI,
                 "gpt-5.6-luna"
         )).thenReturn(generationLogId);
-        when(dailyReportLlmClient.generate("question", answerEntry, modelCandidate))
+        when(dailyReportLlmClient.generate("revision question", answerEntry, modelCandidate))
                 .thenReturn(new LlmGenerationResult<>(aiResult, new LlmTokenUsage(100L, 50L, 150L)));
         when(dailyReportTxService.confirmDailyAndReward(
                 any(PrepareDailyResultDto.class),
@@ -141,7 +142,7 @@ class DailyReportServiceTest {
         assertThat(response.content()).isEqualTo("message");
         assertThat(response.balanceAfter()).isEqualTo(110L);
         verify(dailyReportModelSelector).select();
-        verify(dailyReportLlmClient).generate("question", answerEntry, modelCandidate);
+        verify(dailyReportLlmClient).generate("revision question", answerEntry, modelCandidate);
 
         InOrder inOrder = inOrder(reportGenerationLogRecorder);
         inOrder.verify(reportGenerationLogRecorder).recordTokenUsage(generationLogId, 100L, 50L, 150L, null);
@@ -164,10 +165,11 @@ class DailyReportServiceTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(dailyQuestionRepository.findByIdWithInterest(20L)).thenReturn(Optional.of(question));
+        UserDailyQuestion assignment = UserDailyQuestion.create(user, today, question);
         when(userDailyQuestionRepository.findByUserIdAndDate(eq(userId), any(LocalDate.class)))
-                .thenReturn(Optional.of(UserDailyQuestion.create(user, today, question)));
-        when(dailyReportTxService.prepareDaily(user, question, "answer", false, null))
-                .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId));
+                .thenReturn(Optional.of(assignment));
+        when(dailyReportTxService.prepareDaily(user, question, assignment, "answer", false, null))
+                .thenReturn(new PrepareDailyResultDto(answerEntry, reportId, userId, "question"));
         when(dailyReportModelSelector.select()).thenReturn(modelCandidate);
         when(reportGenerationLogRecorder.start(any(), any(), any(), any(), any(), any()))
                 .thenReturn(generationLogId);
@@ -192,7 +194,6 @@ class DailyReportServiceTest {
     private DailyQuestion dailyQuestion(Long id) {
         DailyQuestion question = mock(DailyQuestion.class);
         when(question.getId()).thenReturn(id);
-        when(question.getQuestionText()).thenReturn("question");
         return question;
     }
 

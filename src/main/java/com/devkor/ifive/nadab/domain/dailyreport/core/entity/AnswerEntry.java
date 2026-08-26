@@ -50,9 +50,15 @@ public class AnswerEntry extends AuditableEntity {
 
     public static AnswerEntry create(User user, DailyQuestion question, String content, LocalDate date,
                                      @Nullable String imageKey) {
+        return create(user, question, null, content, date, imageKey);
+    }
+
+    public static AnswerEntry create(User user, DailyQuestion question, @Nullable DailyQuestionRevision questionRevision,
+                                     String content, LocalDate date, @Nullable String imageKey) {
         AnswerEntry e = new AnswerEntry();
         e.user = user;
         e.question = question;
+        e.questionRevision = questionRevision;
         e.content = content;
         e.date = date;
         e.imageKey = imageKey;

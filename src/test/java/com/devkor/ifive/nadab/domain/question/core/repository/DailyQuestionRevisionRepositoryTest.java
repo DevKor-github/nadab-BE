@@ -14,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 
@@ -107,6 +106,29 @@ class DailyQuestionRevisionRepositoryTest extends PostgresIntegrationTestSupport
     }
 
     @Test
+    void answer_entry_persists_matching_question_revision() {
+        User user = new UserBuilder(em).build();
+        DailyQuestion question = em.find(DailyQuestion.class, 1L);
+        DailyQuestionRevision revision = revisionRepository
+                .findByDailyQuestion_IdAndRevisionNo(question.getId(), question.getCurrentRevisionNo())
+                .orElseThrow();
+        AnswerEntry answerEntry = AnswerEntry.create(
+                user,
+                question,
+                revision,
+                "answer",
+                LocalDate.of(2026, 8, 26),
+                null
+        );
+
+        em.persistAndFlush(answerEntry);
+        em.clear();
+
+        AnswerEntry found = em.find(AnswerEntry.class, answerEntry.getId());
+        assertThat(found.getQuestionRevision().getId()).isEqualTo(revision.getId());
+    }
+
+    @Test
     void rejects_answer_entry_revision_from_different_logical_question() {
         User user = new UserBuilder(em).build();
         DailyQuestion answerQuestion = em.find(DailyQuestion.class, 2L);
@@ -116,11 +138,11 @@ class DailyQuestionRevisionRepositoryTest extends PostgresIntegrationTestSupport
         AnswerEntry answerEntry = AnswerEntry.create(
                 user,
                 answerQuestion,
+                differentQuestionRevision,
                 "answer",
                 LocalDate.of(2026, 8, 25),
                 null
         );
-        ReflectionTestUtils.setField(answerEntry, "questionRevision", differentQuestionRevision);
 
         assertThatThrownBy(() -> answerEntryRepository.saveAndFlush(answerEntry))
                 .isInstanceOf(DataIntegrityViolationException.class);

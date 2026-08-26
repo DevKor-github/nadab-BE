@@ -69,4 +69,22 @@ public class DailyQuestionExposure {
         exposure.assignedAt = OffsetDateTime.now();
         return exposure;
     }
+
+    public boolean isOpen() {
+        return rerolledAt == null && answeredAt == null;
+    }
+
+    public void markRerolled() {
+        if (!isOpen()) {
+            throw new IllegalStateException("Only an open daily question exposure can be rerolled");
+        }
+        rerolledAt = OffsetDateTime.now();
+    }
+
+    public void markAnswered() {
+        if (!isOpen()) {
+            throw new IllegalStateException("Only an open daily question exposure can be answered");
+        }
+        answeredAt = OffsetDateTime.now();
+    }
 }

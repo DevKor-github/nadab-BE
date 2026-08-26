@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.dailyreport.core.service;
 import com.devkor.ifive.nadab.domain.dailyreport.core.entity.AnswerEntry;
 import com.devkor.ifive.nadab.domain.dailyreport.core.repository.AnswerEntryRepository;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestionRevision;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,14 @@ public class AnswerEntryService {
 
 
     @Transactional
-    public AnswerEntry getOrCreateTodayAnswerEntry(User user, DailyQuestion dq, String answerText, boolean isDayPassed,
-                                                   @Nullable String imageKey) {
+    public AnswerEntry getOrCreateTodayAnswerEntry(
+            User user,
+            DailyQuestion dq,
+            @Nullable DailyQuestionRevision questionRevision,
+            String answerText,
+            boolean isDayPassed,
+            @Nullable String imageKey
+    ) {
 
         LocalDate targetDate =
                 isDayPassed ? TodayDateTimeProvider.getTodayDate().minusDays(1) : TodayDateTimeProvider.getTodayDate();
@@ -35,7 +42,14 @@ public class AnswerEntryService {
                 })
                 .orElseGet(() -> {
                     try {
-                        return answerEntryRepository.save(AnswerEntry.create(user, dq, answerText, targetDate, imageKey));
+                        return answerEntryRepository.save(AnswerEntry.create(
+                                user,
+                                dq,
+                                questionRevision,
+                                answerText,
+                                targetDate,
+                                imageKey
+                        ));
                     } catch (DataIntegrityViolationException e) {
                         // 동시 요청에서 이미 누가 만들었을 수 있음 -> 재조회로 멱등 처리
                         return answerEntryRepository.findByUserAndDate(user, targetDate)
