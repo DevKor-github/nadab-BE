@@ -1,6 +1,10 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionListItemViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewQuery;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewRowViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewSortDirection;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionReactionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionRevisionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionStatsViewModel;
@@ -13,7 +17,9 @@ import javax.annotation.Nullable;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +61,31 @@ public class QuestionStatsService {
                         unansweredCount
                 ),
                 revisions,
-                OffsetDateTime.now(SEOUL).format(FMT)
+                refreshedAt()
+        );
+    }
+
+    public DailyQuestionOverviewViewModel getQuestionOverview(DailyQuestionOverviewQuery query) {
+        List<DailyQuestionOverviewRowViewModel> allQuestions = repository.findQuestionOverview();
+        String normalizedKeyword = query.keyword().toLowerCase(Locale.ROOT);
+
+        List<DailyQuestionOverviewRowViewModel> filteredQuestions = allQuestions.stream()
+                .filter(question -> matchesKeyword(question, normalizedKeyword))
+                .filter(question -> query.interestCode() == null
+                        || question.interestCode() == query.interestCode())
+                .filter(question -> query.questionLevel() == null
+                        || question.questionLevel() == query.questionLevel())
+                .filter(question -> query.active() == null
+                        || question.active() == query.active())
+                .filter(question -> question.currentExposureCount() >= query.minimumCurrentExposureCount())
+                .sorted(overviewComparator(query))
+                .toList();
+
+        return new DailyQuestionOverviewViewModel(
+                filteredQuestions,
+                allQuestions.size(),
+                query,
+                refreshedAt()
         );
     }
 
@@ -72,5 +102,46 @@ public class QuestionStatsService {
                 .filter(question -> question.questionId() == questionId)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private boolean matchesKeyword(
+            DailyQuestionOverviewRowViewModel question,
+            String normalizedKeyword
+    ) {
+        return normalizedKeyword.isEmpty()
+                || Long.toString(question.questionId()).contains(normalizedKeyword)
+                || question.questionText().toLowerCase(Locale.ROOT).contains(normalizedKeyword);
+    }
+
+    private Comparator<DailyQuestionOverviewRowViewModel> overviewComparator(
+            DailyQuestionOverviewQuery query
+    ) {
+        Comparator<DailyQuestionOverviewRowViewModel> comparator = switch (query.sort()) {
+            case QUESTION_ID -> Comparator.comparingLong(DailyQuestionOverviewRowViewModel::questionId);
+            case CURRENT_REVISION_NO -> Comparator.comparingInt(DailyQuestionOverviewRowViewModel::currentRevisionNo);
+            case CURRENT_EXPOSURE_COUNT -> Comparator.comparingLong(DailyQuestionOverviewRowViewModel::currentExposureCount);
+            case CURRENT_ANSWERED_COUNT -> Comparator.comparingLong(DailyQuestionOverviewRowViewModel::currentAnsweredCount);
+            case CURRENT_ANSWER_RATE -> Comparator.comparingDouble(DailyQuestionOverviewRowViewModel::currentAnswerRate);
+            case CURRENT_REROLLED_COUNT -> Comparator.comparingLong(DailyQuestionOverviewRowViewModel::currentRerolledCount);
+            case CURRENT_REROLL_RATE -> Comparator.comparingDouble(DailyQuestionOverviewRowViewModel::currentRerollRate);
+            case CURRENT_UNANSWERED_COUNT -> Comparator.comparingLong(DailyQuestionOverviewRowViewModel::currentUnansweredCount);
+            case TOTAL_EXPOSURE_COUNT -> Comparator.comparingLong(DailyQuestionOverviewRowViewModel::totalExposureCount);
+            case TOTAL_ANSWERED_COUNT -> Comparator.comparingLong(DailyQuestionOverviewRowViewModel::totalAnsweredCount);
+            case TOTAL_ANSWER_RATE -> Comparator.comparingDouble(DailyQuestionOverviewRowViewModel::totalAnswerRate);
+        };
+
+        if (query.direction() == DailyQuestionOverviewSortDirection.DESC) {
+            comparator = comparator.reversed();
+        }
+
+        return comparator
+                .thenComparing(Comparator.comparingLong(
+                        DailyQuestionOverviewRowViewModel::currentExposureCount
+                ).reversed())
+                .thenComparingLong(DailyQuestionOverviewRowViewModel::questionId);
+    }
+
+    private String refreshedAt() {
+        return OffsetDateTime.now(SEOUL).format(FMT);
     }
 }

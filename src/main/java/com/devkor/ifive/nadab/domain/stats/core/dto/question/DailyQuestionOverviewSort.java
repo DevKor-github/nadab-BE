@@ -1,0 +1,15 @@
+package com.devkor.ifive.nadab.domain.stats.core.dto.question;
+
+public enum DailyQuestionOverviewSort {
+    QUESTION_ID,
+    CURRENT_REVISION_NO,
+    CURRENT_EXPOSURE_COUNT,
+    CURRENT_ANSWERED_COUNT,
+    CURRENT_ANSWER_RATE,
+    CURRENT_REROLLED_COUNT,
+    CURRENT_REROLL_RATE,
+    CURRENT_UNANSWERED_COUNT,
+    TOTAL_EXPOSURE_COUNT,
+    TOTAL_ANSWERED_COUNT,
+    TOTAL_ANSWER_RATE
+}

@@ -6,6 +6,7 @@ import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestionExposureS
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestionRevision;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionListItemViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewRowViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionRevisionStatsViewModel;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.infra.builder.UserBuilder;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -102,6 +104,55 @@ class QuestionStatsRepositoryTest extends PostgresIntegrationTestSupport {
         assertThat(stats.getFirst().rerolledCount()).isZero();
         assertThat(stats.getFirst().unansweredCount()).isZero();
         assertThat(stats.getFirst().answerRate()).isZero();
+    }
+
+    @Test
+    void aggregates_current_revision_and_all_revision_stats_per_question() {
+        insertSecondRevision();
+        em.flush();
+        em.clear();
+
+        DailyQuestion question = em.find(DailyQuestion.class, 1L);
+        DailyQuestionRevision revision1 = findRevision(1);
+        DailyQuestionRevision revision2 = findRevision(2);
+
+        persistExposure(question, revision1, ExposureState.ANSWERED);
+        persistExposure(question, revision1, ExposureState.REROLLED);
+        persistExposure(question, revision1, ExposureState.OPEN);
+        persistExposure(question, revision2, ExposureState.ANSWERED);
+        persistExposure(question, revision2, ExposureState.OPEN);
+        em.flush();
+        em.clear();
+
+        List<DailyQuestionOverviewRowViewModel> overview = repository.findQuestionOverview();
+
+        DailyQuestionOverviewRowViewModel question1 = overview.stream()
+                .filter(row -> row.questionId() == 1L)
+                .findFirst()
+                .orElseThrow();
+        assertThat(question1.questionText()).isEqualTo("수정된 질문");
+        assertThat(question1.currentRevisionNo()).isEqualTo(2);
+        assertThat(question1.currentRevisionEffectiveFrom())
+                .isEqualTo(OffsetDateTime.parse("2026-08-26T00:00:00+09:00"));
+        assertThat(question1.currentExposureCount()).isEqualTo(2L);
+        assertThat(question1.currentAnsweredCount()).isEqualTo(1L);
+        assertThat(question1.currentRerolledCount()).isZero();
+        assertThat(question1.currentUnansweredCount()).isEqualTo(1L);
+        assertThat(question1.currentAnswerRate()).isEqualTo(0.5);
+        assertThat(question1.currentRerollRate()).isZero();
+        assertThat(question1.totalExposureCount()).isEqualTo(5L);
+        assertThat(question1.totalAnsweredCount()).isEqualTo(2L);
+        assertThat(question1.totalRerolledCount()).isEqualTo(1L);
+        assertThat(question1.totalUnansweredCount()).isEqualTo(2L);
+        assertThat(question1.totalAnswerRate()).isEqualTo(0.4);
+
+        DailyQuestionOverviewRowViewModel question2 = overview.stream()
+                .filter(row -> row.questionId() == 2L)
+                .findFirst()
+                .orElseThrow();
+        assertThat(question2.currentExposureCount()).isZero();
+        assertThat(question2.totalExposureCount()).isZero();
+        assertThat(question2.currentAnswerRate()).isZero();
     }
 
     private void insertSecondRevision() {

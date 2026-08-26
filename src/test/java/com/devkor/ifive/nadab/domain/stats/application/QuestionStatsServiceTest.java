@@ -1,6 +1,11 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionListItemViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewQuery;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewRowViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewSort;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewSortDirection;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionRevisionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.repository.QuestionStatsRepository;
@@ -76,6 +81,118 @@ class QuestionStatsServiceTest {
         verify(repository, never()).findRevisionStats(999L);
     }
 
+    @Test
+    void overview_defaults_to_current_exposure_descending_with_stable_id_tiebreaker() {
+        QuestionStatsRepository repository = mock(QuestionStatsRepository.class);
+        QuestionStatsService service = new QuestionStatsService(repository);
+        DailyQuestionOverviewRowViewModel question1 = overviewQuestion(
+                1L, InterestCode.PREFERENCE, "질문 1", 1, true,
+                2L, 1L, 0L, 1L,
+                7L, 3L, 2L, 2L
+        );
+        DailyQuestionOverviewRowViewModel question2 = overviewQuestion(
+                2L, InterestCode.EMOTION, "질문 2", 2, true,
+                5L, 2L, 2L, 1L,
+                5L, 2L, 2L, 1L
+        );
+        DailyQuestionOverviewRowViewModel question3 = overviewQuestion(
+                3L, InterestCode.RELATIONSHIP, "질문 3", 2, false,
+                5L, 1L, 3L, 1L,
+                10L, 4L, 4L, 2L
+        );
+        when(repository.findQuestionOverview()).thenReturn(List.of(question1, question3, question2));
+
+        DailyQuestionOverviewViewModel overview = service.getQuestionOverview(
+                DailyQuestionOverviewQuery.defaults()
+        );
+
+        assertThat(overview.rows())
+                .extracting(DailyQuestionOverviewRowViewModel::questionId)
+                .containsExactly(2L, 3L, 1L);
+        assertThat(overview.totalQuestionCount()).isEqualTo(3);
+        assertThat(overview.filteredQuestionCount()).isEqualTo(3);
+        assertThat(overview.rows().getLast().totalExposureCount()).isEqualTo(7L);
+        assertThat(overview.refreshedAt()).isNotBlank();
+    }
+
+    @Test
+    void overview_filters_by_keyword_metadata_and_minimum_current_exposure() {
+        QuestionStatsRepository repository = mock(QuestionStatsRepository.class);
+        QuestionStatsService service = new QuestionStatsService(repository);
+        DailyQuestionOverviewRowViewModel matchingQuestion = overviewQuestion(
+                12L, InterestCode.EMOTION, "비 올 때 듣는 노래", 2, false,
+                8L, 3L, 4L, 1L,
+                12L, 5L, 5L, 2L
+        );
+        when(repository.findQuestionOverview()).thenReturn(List.of(
+                overviewQuestion(
+                        1L, InterestCode.PREFERENCE, "자주 듣는 노래", 1, true,
+                        10L, 6L, 2L, 2L,
+                        10L, 6L, 2L, 2L
+                ),
+                matchingQuestion,
+                overviewQuestion(
+                        13L, InterestCode.EMOTION, "비 오는 날의 질문", 2, false,
+                        2L, 1L, 1L, 0L,
+                        2L, 1L, 1L, 0L
+                )
+        ));
+        DailyQuestionOverviewQuery query = new DailyQuestionOverviewQuery(
+                "  비  ",
+                InterestCode.EMOTION,
+                2,
+                false,
+                5L,
+                DailyQuestionOverviewSort.QUESTION_ID,
+                DailyQuestionOverviewSortDirection.ASC
+        );
+
+        DailyQuestionOverviewViewModel overview = service.getQuestionOverview(query);
+
+        assertThat(overview.rows()).containsExactly(matchingQuestion);
+        assertThat(overview.totalQuestionCount()).isEqualTo(3);
+        assertThat(overview.filteredQuestionCount()).isEqualTo(1);
+        assertThat(overview.query().keyword()).isEqualTo("비");
+    }
+
+    @Test
+    void overview_can_rank_reroll_rate_after_excluding_small_samples() {
+        QuestionStatsRepository repository = mock(QuestionStatsRepository.class);
+        QuestionStatsService service = new QuestionStatsService(repository);
+        DailyQuestionOverviewRowViewModel question1 = overviewQuestion(
+                1L, InterestCode.PREFERENCE, "질문 1", 1, true,
+                100L, 70L, 20L, 10L,
+                100L, 70L, 20L, 10L
+        );
+        DailyQuestionOverviewRowViewModel question2 = overviewQuestion(
+                2L, InterestCode.PREFERENCE, "질문 2", 1, true,
+                10L, 4L, 5L, 1L,
+                10L, 4L, 5L, 1L
+        );
+        DailyQuestionOverviewRowViewModel smallSample = overviewQuestion(
+                3L, InterestCode.PREFERENCE, "질문 3", 1, true,
+                2L, 0L, 2L, 0L,
+                2L, 0L, 2L, 0L
+        );
+        when(repository.findQuestionOverview()).thenReturn(List.of(question1, question2, smallSample));
+        DailyQuestionOverviewQuery query = new DailyQuestionOverviewQuery(
+                "",
+                null,
+                null,
+                null,
+                10L,
+                DailyQuestionOverviewSort.CURRENT_REROLL_RATE,
+                DailyQuestionOverviewSortDirection.DESC
+        );
+
+        DailyQuestionOverviewViewModel overview = service.getQuestionOverview(query);
+
+        assertThat(overview.rows())
+                .extracting(DailyQuestionOverviewRowViewModel::questionId)
+                .containsExactly(2L, 1L);
+        assertThat(overview.rows().getFirst().currentRerollRate()).isEqualTo(0.5);
+    }
+
     private DailyQuestionListItemViewModel question(long questionId) {
         return new DailyQuestionListItemViewModel(
                 questionId,
@@ -110,6 +227,40 @@ class QuestionStatsServiceTest {
                 answeredCount,
                 rerolledCount,
                 unansweredCount
+        );
+    }
+
+    private DailyQuestionOverviewRowViewModel overviewQuestion(
+            long questionId,
+            InterestCode interestCode,
+            String questionText,
+            int questionLevel,
+            boolean active,
+            long currentExposureCount,
+            long currentAnsweredCount,
+            long currentRerolledCount,
+            long currentUnansweredCount,
+            long totalExposureCount,
+            long totalAnsweredCount,
+            long totalRerolledCount,
+            long totalUnansweredCount
+    ) {
+        return new DailyQuestionOverviewRowViewModel(
+                questionId,
+                interestCode,
+                questionText,
+                questionLevel,
+                2,
+                active ? null : EFFECTIVE_FROM,
+                EFFECTIVE_FROM,
+                currentExposureCount,
+                currentAnsweredCount,
+                currentRerolledCount,
+                currentUnansweredCount,
+                totalExposureCount,
+                totalAnsweredCount,
+                totalRerolledCount,
+                totalUnansweredCount
         );
     }
 }
