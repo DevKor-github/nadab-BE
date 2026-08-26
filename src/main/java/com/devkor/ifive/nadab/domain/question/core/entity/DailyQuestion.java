@@ -33,4 +33,7 @@ public class DailyQuestion extends SoftDeletableEntity {
 
     @Column(name = "leading_question_guide", length = 100)
     private String leadingQuestionGuide;
+
+    @Column(name = "current_revision_no", nullable = false)
+    private int currentRevisionNo;
 }

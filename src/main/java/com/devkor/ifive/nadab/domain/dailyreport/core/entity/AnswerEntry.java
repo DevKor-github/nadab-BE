@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestionRevision;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
@@ -33,6 +34,10 @@ public class AnswerEntry extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "question_id", nullable = false)
     private DailyQuestion question;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_revision_id")
+    private DailyQuestionRevision questionRevision;
 
     @Column(name = "content", length = 500, nullable = false)
     private String content;
