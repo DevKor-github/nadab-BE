@@ -2,6 +2,7 @@ package com.devkor.ifive.nadab.domain.stats.controller;
 
 import com.devkor.ifive.nadab.domain.stats.application.DailyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.MonthlyStatsService;
+import com.devkor.ifive.nadab.domain.stats.application.QuestionStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TotalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
@@ -9,6 +10,7 @@ import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.helper.StatsPeriodResolver;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.total.TotalStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalStatsViewModel;
@@ -31,6 +33,7 @@ public class StatsController {
     private final MonthlyStatsService monthlyStatsService;
     private final TotalStatsService totalStatsService;
     private final TypeStatsService typeStatsService;
+    private final QuestionStatsService questionStatsService;
     private final WithdrawalStatsService withdrawalStatsService;
 
 
@@ -84,6 +87,18 @@ public class StatsController {
         model.addAttribute("vm", vm);
         model.addAttribute("activeTab", "type");
         return "stats/type";
+    }
+
+    @GetMapping("/stats/question")
+    public String questionStats(
+            @RequestParam(required = false) Long questionId,
+            Model model
+    ) {
+        DailyQuestionStatsViewModel vm = questionStatsService.getQuestionStats(questionId);
+        model.addAttribute("vm", vm);
+        model.addAttribute("requestedQuestionId", questionId);
+        model.addAttribute("activeTab", "question");
+        return "stats/question";
     }
 
     @GetMapping("/stats/withdrawal")

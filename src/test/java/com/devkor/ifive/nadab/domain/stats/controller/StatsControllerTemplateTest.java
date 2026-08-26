@@ -3,6 +3,7 @@ package com.devkor.ifive.nadab.domain.stats.controller;
 import com.devkor.ifive.nadab.domain.admin.infra.security.AdminPageAuthInterceptor;
 import com.devkor.ifive.nadab.domain.stats.application.DailyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.MonthlyStatsService;
+import com.devkor.ifive.nadab.domain.stats.application.QuestionStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TotalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
@@ -12,19 +13,27 @@ import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionListItemViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionReactionStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionRevisionStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestSeriesViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.security.filter.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -52,6 +61,8 @@ class StatsControllerTemplateTest {
     private TotalStatsService totalStatsService;
     @MockitoBean
     private TypeStatsService typeStatsService;
+    @MockitoBean
+    private QuestionStatsService questionStatsService;
     @MockitoBean
     private WithdrawalStatsService withdrawalStatsService;
     @MockitoBean
@@ -191,6 +202,115 @@ class StatsControllerTemplateTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/stats/monthly").param("month", "2026-13"))
                 .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question").param("questionId", "not-a-number"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void questionStats_renders_selector_totals_and_revision_history() throws Exception {
+        OffsetDateTime effectiveFrom = OffsetDateTime.parse("2026-08-26T12:00:00+09:00");
+        DailyQuestionListItemViewModel selectedQuestion = new DailyQuestionListItemViewModel(
+                42L,
+                InterestCode.PREFERENCE,
+                "현재 질문 문구",
+                2,
+                2,
+                null
+        );
+        DailyQuestionRevisionStatsViewModel revision = new DailyQuestionRevisionStatsViewModel(
+                102L,
+                2,
+                InterestCode.PREFERENCE,
+                "수정된 질문 문구",
+                2,
+                "공감 가이드",
+                "힌트 가이드",
+                "리딩 질문 가이드",
+                null,
+                effectiveFrom,
+                "V20260826_1200",
+                10L,
+                4L,
+                3L,
+                3L
+        );
+        when(questionStatsService.getQuestionStats(42L)).thenReturn(new DailyQuestionStatsViewModel(
+                List.of(
+                        selectedQuestion,
+                        new DailyQuestionListItemViewModel(
+                                43L,
+                                InterestCode.EMOTION,
+                                "다른 질문 문구",
+                                1,
+                                1,
+                                null
+                        )
+                ),
+                selectedQuestion,
+                new DailyQuestionReactionStatsViewModel(15L, 6L, 4L, 5L),
+                List.of(revision),
+                "2026-08-26 12:30:00"
+        ));
+
+        String html = mockMvc.perform(get("/stats/question").param("questionId", "42"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("name=\"questionId\"")))
+                .andExpect(content().string(containsString("id=\"questionSearch\"")))
+                .andExpect(content().string(containsString("id=\"questionSelect\"")))
+                .andExpect(content().string(containsString("id=\"questionSearchStatus\"")))
+                .andExpect(content().string(containsString("id=\"questionSearchResults\"")))
+                .andExpect(content().string(containsString("검색 결과가 없습니다.")))
+                .andExpect(content().string(containsString("QUESTION #42")))
+                .andExpect(content().string(containsString("누적 노출")))
+                .andExpect(content().string(containsString("누적 답변")))
+                .andExpect(content().string(containsString("40.0%")))
+                .andExpect(content().string(containsString("Revision 2")))
+                .andExpect(content().string(containsString("V20260826_1200")))
+                .andExpect(content().string(containsString("공감 가이드")))
+                .andExpect(content().string(containsString("V20260825_1200")))
+                .andExpect(content().string(containsString("이후 실제로 생성된 할당과 교체만 집계합니다.")))
+                .andExpect(content().string(containsString("href=\"/stats/question\"")))
+                .andExpect(content().string(containsString("active\" href=\"/stats/question\"")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html)
+                .contains(
+                        "이 페이지를 읽는 방법",
+                        "Question ID (질문 ID)",
+                        "Revision (수정 버전)",
+                        "교체가 곧 불호를 뜻하지는 않습니다.",
+                        "예시로 이해하기",
+                        "해석할 때 주의할 점"
+                );
+        assertThat(html.indexOf("Revision별 반응 및 수정 이력"))
+                .isLessThan(html.indexOf("이 페이지를 읽는 방법"));
+    }
+
+    @Test
+    void questionStats_renders_empty_state_for_unknown_question() throws Exception {
+        when(questionStatsService.getQuestionStats(999L)).thenReturn(new DailyQuestionStatsViewModel(
+                List.of(),
+                null,
+                new DailyQuestionReactionStatsViewModel(0L, 0L, 0L, 0L),
+                List.of(),
+                "2026-08-26 12:30:00"
+        ));
+
+        mockMvc.perform(get("/stats/question").param("questionId", "999"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("해당 ID의 질문을 찾을 수 없습니다.")));
+    }
+
+    @Test
+    void all_stats_templates_include_question_tab() throws Exception {
+        for (String template : List.of("daily", "weekly", "monthly", "type", "question", "withdrawal", "total")) {
+            String source = new ClassPathResource("templates/stats/" + template + ".html")
+                    .getContentAsString(StandardCharsets.UTF_8);
+
+            assertThat(source)
+                    .as(template)
+                    .contains("th:href=\"@{/stats/question}\"", ">질문</a>");
+        }
     }
 
     @Test
