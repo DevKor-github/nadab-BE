@@ -138,6 +138,23 @@
     .tab-link:hover { color: var(--text-1); }
     .tab-link.active { background: var(--accent); color: #fff; }
 
+    .question-view-nav {
+      display: flex;
+      gap: 8px;
+      margin: -8px 0 20px;
+    }
+    .question-view-link {
+      padding: 7px 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      font-size: .76rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .question-view-link:hover { border-color: var(--accent); color: var(--accent); }
+    .question-view-link.active { color: var(--text-1); background: var(--surface-2); }
+
     .panel {
       margin-bottom: 20px;
       overflow: hidden;
@@ -459,6 +476,11 @@
   <a class="tab-link" th:classappend="${activeTab} == 'withdrawal' ? ' active' : ''" th:href="@{/stats/withdrawal}">탈퇴</a>
   <a class="tab-link" th:classappend="${activeTab} == 'total' ? ' active' : ''" th:href="@{/stats/total}">전체</a>
 </div>
+
+<nav class="question-view-nav" aria-label="질문 통계 화면">
+  <a class="question-view-link active" th:href="@{/stats/question}" aria-current="page">질문 상세</a>
+  <a class="question-view-link" th:href="@{/stats/question/overview}">전체 질문 현황</a>
+</nav>
 
 <section class="panel" aria-labelledby="questionSelectorTitle">
   <div class="panel-header">

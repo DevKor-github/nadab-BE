@@ -10,11 +10,18 @@ import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.helper.StatsPeriodResolver;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewQuery;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewSort;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewSortDirection;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.total.TotalStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
+import com.devkor.ifive.nadab.global.core.response.ErrorCode;
+import com.devkor.ifive.nadab.global.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -99,6 +107,39 @@ public class StatsController {
         model.addAttribute("requestedQuestionId", questionId);
         model.addAttribute("activeTab", "question");
         return "stats/question";
+    }
+
+    @GetMapping("/stats/question/overview")
+    public String questionOverview(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(required = false) InterestCode interestCode,
+            @RequestParam(required = false) Integer questionLevel,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(defaultValue = "0") long minimumCurrentExposureCount,
+            @RequestParam(defaultValue = "CURRENT_EXPOSURE_COUNT") DailyQuestionOverviewSort sort,
+            @RequestParam(defaultValue = "DESC") DailyQuestionOverviewSortDirection direction,
+            Model model
+    ) {
+        if ((questionLevel != null && (questionLevel < 1 || questionLevel > 5))
+                || minimumCurrentExposureCount < 0L) {
+            throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
+        }
+
+        DailyQuestionOverviewQuery query = new DailyQuestionOverviewQuery(
+                keyword,
+                interestCode,
+                questionLevel,
+                active,
+                minimumCurrentExposureCount,
+                sort,
+                direction
+        );
+        DailyQuestionOverviewViewModel vm = questionStatsService.getQuestionOverview(query);
+        model.addAttribute("vm", vm);
+        model.addAttribute("interestCodes", InterestCode.values());
+        model.addAttribute("questionLevels", List.of(1, 2, 3, 4, 5));
+        model.addAttribute("activeTab", "question");
+        return "stats/question-overview";
     }
 
     @GetMapping("/stats/withdrawal")
