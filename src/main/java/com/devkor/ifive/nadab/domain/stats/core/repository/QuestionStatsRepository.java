@@ -7,6 +7,8 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import javax.annotation.Nullable;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Repository
@@ -30,6 +32,16 @@ public class QuestionStatsRepository {
                 order by q.id
                 """, DailyQuestionListItemViewModel.class)
                 .getResultList();
+    }
+
+    @Nullable
+    public OffsetDateTime findAnalyticsBaselineEffectiveFrom() {
+        return em.createQuery("""
+                select min(revision.effectiveFrom)
+                from DailyQuestionRevision revision
+                where revision.revisionNo = 1
+                """, OffsetDateTime.class)
+                .getSingleResult();
     }
 
     public List<DailyQuestionRevisionStatsViewModel> findRevisionStats(long questionId) {

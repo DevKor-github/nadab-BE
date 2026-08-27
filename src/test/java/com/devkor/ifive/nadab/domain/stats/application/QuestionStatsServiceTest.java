@@ -25,6 +25,8 @@ class QuestionStatsServiceTest {
 
     private static final OffsetDateTime EFFECTIVE_FROM =
             OffsetDateTime.parse("2026-08-26T00:00:00+09:00");
+    private static final OffsetDateTime ANALYTICS_BASELINE =
+            OffsetDateTime.parse("2026-08-25T12:00:00+09:00");
 
     @Test
     void defaults_to_first_question_and_sums_all_revision_counts() {
@@ -38,6 +40,7 @@ class QuestionStatsServiceTest {
         );
         when(repository.findQuestions()).thenReturn(questions);
         when(repository.findRevisionStats(1L)).thenReturn(revisions);
+        when(repository.findAnalyticsBaselineEffectiveFrom()).thenReturn(ANALYTICS_BASELINE);
 
         DailyQuestionStatsViewModel stats = service.getQuestionStats(null);
 
@@ -48,6 +51,7 @@ class QuestionStatsServiceTest {
         assertThat(stats.total().rerolledCount()).isEqualTo(1L);
         assertThat(stats.total().unansweredCount()).isEqualTo(2L);
         assertThat(stats.total().answerRate()).isEqualTo(0.4);
+        assertThat(stats.baselineEffectiveFrom()).isEqualTo(ANALYTICS_BASELINE);
         assertThat(stats.refreshedAt()).isNotBlank();
         verify(repository).findRevisionStats(1L);
     }
@@ -101,6 +105,7 @@ class QuestionStatsServiceTest {
                 10L, 4L, 4L, 2L
         );
         when(repository.findQuestionOverview()).thenReturn(List.of(question1, question3, question2));
+        when(repository.findAnalyticsBaselineEffectiveFrom()).thenReturn(ANALYTICS_BASELINE);
 
         DailyQuestionOverviewViewModel overview = service.getQuestionOverview(
                 DailyQuestionOverviewQuery.defaults()
@@ -112,6 +117,7 @@ class QuestionStatsServiceTest {
         assertThat(overview.totalQuestionCount()).isEqualTo(3);
         assertThat(overview.filteredQuestionCount()).isEqualTo(3);
         assertThat(overview.rows().getLast().totalExposureCount()).isEqualTo(7L);
+        assertThat(overview.baselineEffectiveFrom()).isEqualTo(ANALYTICS_BASELINE);
         assertThat(overview.refreshedAt()).isNotBlank();
     }
 

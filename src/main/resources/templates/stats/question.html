@@ -523,8 +523,10 @@
 </section>
 
 <div class="baseline-notice">
-  <strong>Baseline</strong>
-  <span><code>V20260825_1200</code> 이후 실제로 생성된 할당과 교체만 집계합니다. 이전 할당·답변은 추정하거나 현재 revision에 소급하지 않습니다.</span>
+  <strong>집계 시작 기준</strong>
+  <span>질문 반응 추적 기능이 배포된 시점 이후<span
+      th:if="${vm.baselineEffectiveFrom != null}"
+      th:text="|(${#temporals.format(vm.baselineEffectiveFrom, 'yyyy년 M월 d일 HH:mm')} KST)|">(2026년 8월 27일 12:00 KST)</span> 실제로 생성된 할당과 교체만 집계합니다. 배포 전 할당·답변은 추정하거나 현재 수정 버전에 소급하지 않습니다.</span>
 </div>
 
 <div th:if="${vm.selectedQuestion == null}" class="empty-state">
@@ -729,7 +731,7 @@
         <li>교체에는 그날의 기분, 질문 난이도, 답변할 시간 부족 등 여러 이유가 있을 수 있으므로 불호로 단정하지 않습니다.</li>
         <li>미응답은 아직 진행 중인 상태를 포함하므로 시간이 지나면 답변 또는 교체로 바뀔 수 있습니다.</li>
         <li>노출 수가 적은 Revision의 비율은 쉽게 흔들리므로 충분한 표본이 쌓였는지 함께 확인합니다.</li>
-        <li><code>V20260825_1200</code> 이전 데이터는 소급하지 않았습니다. 이 기준점 이후 실제로 기록된 노출과 반응만 통계에 포함됩니다.</li>
+        <li>질문 반응 추적 기능 배포 전 데이터는 소급하지 않았습니다. 기능 배포 이후 실제로 기록된 노출과 반응만 통계에 포함됩니다.</li>
       </ul>
     </div>
   </div>

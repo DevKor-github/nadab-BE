@@ -56,7 +56,8 @@
 
     .btn-refresh,
     .btn-submit,
-    .btn-reset {
+    .btn-reset,
+    .btn-download {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -76,6 +77,8 @@
     .btn-submit { border-color: var(--accent); color: #fff; background: var(--accent); }
     .btn-refresh:hover,
     .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-download { border-color: rgba(77,232,194,.45); color: var(--accent-3); }
+    .btn-download:hover { background: rgba(77,232,194,.08); }
     .btn-refresh svg { width: 14px; height: 14px; }
 
     .health-bar {
@@ -212,6 +215,7 @@
     .filter-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
     .result-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+    .result-actions { display: flex; align-items: center; gap: 12px; }
     .result-count { color: var(--text-3); font-family: 'DM Mono', monospace; font-size: .72rem; }
     .result-count strong { color: var(--accent); }
     .table-scroll { overflow: auto; max-height: 70vh; }
@@ -297,6 +301,7 @@
       .summary-grid, .filter-grid { grid-template-columns: 1fr; }
       .baseline-notice, .interpretation-note { flex-direction: column; gap: 4px; }
       .result-header { align-items: flex-start; flex-direction: column; }
+      .result-actions { width: 100%; justify-content: space-between; }
       .filter-actions { justify-content: stretch; }
       .filter-actions > * { flex: 1; }
       .table-scroll { max-height: 65vh; }
@@ -339,8 +344,10 @@
 </nav>
 
 <div class="baseline-notice">
-  <strong>Baseline</strong>
-  <span><code>V20260825_1200</code> 이후 실제로 기록된 노출과 반응만 집계합니다.</span>
+  <strong>집계 시작 기준</strong>
+  <span>질문 반응 추적 기능이 배포된 시점 이후<span
+      th:if="${vm.baselineEffectiveFrom != null}"
+      th:text="|(${#temporals.format(vm.baselineEffectiveFrom, 'yyyy년 M월 d일 HH:mm')} KST)|">(2026년 8월 27일 12:00 KST)</span> 실제로 기록된 노출과 반응만 집계합니다.</span>
 </div>
 
 <section class="summary-grid" aria-label="전체 질문 요약">
@@ -448,7 +455,20 @@
       <h2 id="overviewTableTitle" class="panel-title">전체 질문 현황</h2>
       <p class="panel-subtitle">행을 선택하면 해당 질문의 Revision별 상세 화면으로 이동합니다.</p>
     </div>
-    <div class="result-count"><strong th:text="${#numbers.formatInteger(vm.filteredQuestionCount(), 1, 'COMMA')}">0</strong> / <span th:text="${#numbers.formatInteger(vm.totalQuestionCount, 1, 'COMMA')}">0</span> questions</div>
+    <div class="result-actions">
+      <div class="result-count"><strong th:text="${#numbers.formatInteger(vm.filteredQuestionCount(), 1, 'COMMA')}">0</strong> / <span th:text="${#numbers.formatInteger(vm.totalQuestionCount, 1, 'COMMA')}">0</span> questions</div>
+      <a class="btn-download"
+         download
+         th:href="@{/stats/question/overview.csv(
+           keyword=${vm.query.keyword},
+           interestCode=${vm.query.interestCode != null ? vm.query.interestCode.name() : null},
+           questionLevel=${vm.query.questionLevel},
+           active=${vm.query.active},
+           minimumCurrentExposureCount=${vm.query.minimumCurrentExposureCount},
+           sort=${vm.query.sort.name()},
+           direction=${vm.query.direction.name()}
+         )}">CSV 다운로드</a>
+    </div>
   </div>
   <div class="table-scroll">
     <table class="question-table"

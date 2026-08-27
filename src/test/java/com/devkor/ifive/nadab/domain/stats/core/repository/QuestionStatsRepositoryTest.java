@@ -55,6 +55,19 @@ class QuestionStatsRepositoryTest extends PostgresIntegrationTestSupport {
     }
 
     @Test
+    void finds_earliest_revision_one_effective_time_as_analytics_baseline() {
+        OffsetDateTime revisionOneEffectiveFrom = repository.findRevisionStats(1L).stream()
+                .filter(revision -> revision.revisionNo() == 1)
+                .findFirst()
+                .orElseThrow()
+                .effectiveFrom();
+
+        OffsetDateTime baselineEffectiveFrom = repository.findAnalyticsBaselineEffectiveFrom();
+
+        assertThat(baselineEffectiveFrom).isEqualTo(revisionOneEffectiveFrom);
+    }
+
+    @Test
     void aggregates_terminal_and_open_exposures_by_revision() {
         insertSecondRevision();
         em.flush();

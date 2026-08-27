@@ -8,6 +8,7 @@ import com.devkor.ifive.nadab.domain.stats.application.TotalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
+import com.devkor.ifive.nadab.domain.stats.application.helper.DailyQuestionOverviewCsvExporter;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyPeriodStatsViewModel;
@@ -33,6 +34,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -48,11 +51,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StatsController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(DailyQuestionOverviewCsvExporter.class)
 class StatsControllerTemplateTest {
+
+    private static final OffsetDateTime ANALYTICS_BASELINE =
+            OffsetDateTime.parse("2026-08-25T12:00:00+09:00");
 
     @Autowired
     private MockMvc mockMvc;
@@ -218,6 +226,8 @@ class StatsControllerTemplateTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/stats/question/overview").param("sort", "INVALID"))
                 .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question/overview.csv").param("questionLevel", "6"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -245,6 +255,7 @@ class StatsControllerTemplateTest {
                 List.of(question),
                 875,
                 query,
+                ANALYTICS_BASELINE,
                 "2026-08-26 12:30:00"
         ));
 
@@ -267,8 +278,12 @@ class StatsControllerTemplateTest {
                 .andExpect(content().string(containsString("40.0%")))
                 .andExpect(content().string(containsString("30.0%")))
                 .andExpect(content().string(containsString("data-sort=\"CURRENT_REROLL_RATE\"")))
+                .andExpect(content().string(containsString("CSV 다운로드")))
+                .andExpect(content().string(containsString("href=\"/stats/question/overview.csv")))
                 .andExpect(content().string(containsString("href=\"/stats/question?questionId=42\"")))
-                .andExpect(content().string(containsString("V20260825_1200")))
+                .andExpect(content().string(containsString("집계 시작 기준")))
+                .andExpect(content().string(containsString("질문 반응 추적 기능이 배포된 시점 이후")))
+                .andExpect(content().string(containsString("(2026년 8월 25일 12:00 KST)")))
                 .andExpect(content().string(containsString("tab-link  active\" href=\"/stats/question\"")));
     }
 
@@ -287,6 +302,7 @@ class StatsControllerTemplateTest {
                 List.of(),
                 875,
                 query,
+                ANALYTICS_BASELINE,
                 "2026-08-26 12:30:00"
         ));
 
@@ -314,9 +330,75 @@ class StatsControllerTemplateTest {
                         "--sort-ascending: #ff5c68",
                         ".question-table.sort-ascending .sort-indicator",
                         "question-table  sort-ascending",
-                        "sort-indicator\">↑"
+                        "sort-indicator\">↑",
+                        "interestCode=EMOTION",
+                        "questionLevel=2",
+                        "active=false",
+                        "minimumCurrentExposureCount=10",
+                        "sort=CURRENT_REROLL_RATE",
+                        "direction=ASC"
                 );
 
+        verify(questionStatsService).getQuestionOverview(query);
+    }
+
+    @Test
+    void questionOverviewCsv_downloads_filtered_and_sorted_rows() throws Exception {
+        DailyQuestionOverviewQuery query = new DailyQuestionOverviewQuery(
+                "노래",
+                InterestCode.EMOTION,
+                2,
+                false,
+                10L,
+                DailyQuestionOverviewSort.CURRENT_REROLL_RATE,
+                DailyQuestionOverviewSortDirection.ASC
+        );
+        DailyQuestionOverviewRowViewModel question = new DailyQuestionOverviewRowViewModel(
+                42L,
+                InterestCode.EMOTION,
+                "노래 질문",
+                2,
+                3,
+                OffsetDateTime.parse("2026-08-27T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-08-26T12:00:00+09:00"),
+                10L,
+                4L,
+                3L,
+                3L,
+                15L,
+                6L,
+                4L,
+                5L
+        );
+        when(questionStatsService.getQuestionOverview(query)).thenReturn(new DailyQuestionOverviewViewModel(
+                List.of(question),
+                875,
+                query,
+                ANALYTICS_BASELINE,
+                "2026-08-27 10:00:00"
+        ));
+
+        byte[] csvBytes = mockMvc.perform(get("/stats/question/overview.csv")
+                        .param("keyword", "노래")
+                        .param("interestCode", "EMOTION")
+                        .param("questionLevel", "2")
+                        .param("active", "false")
+                        .param("minimumCurrentExposureCount", "10")
+                        .param("sort", "CURRENT_REROLL_RATE")
+                        .param("direction", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv;charset=UTF-8"))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"nadab_daily_question_stats.csv\""
+                ))
+                .andReturn().getResponse().getContentAsByteArray();
+
+        assertThat(csvBytes).startsWith((byte) 0xEF, (byte) 0xBB, (byte) 0xBF);
+        assertThat(new String(csvBytes, StandardCharsets.UTF_8))
+                .contains("질문 ID,질문 문구")
+                .contains("42,\"노래 질문\",\"EMOTION\",\"감정\"")
+                .contains(",10,4,40.0,3,30.0,3,15,6,40.0,4,5\r\n");
         verify(questionStatsService).getQuestionOverview(query);
     }
 
@@ -363,6 +445,7 @@ class StatsControllerTemplateTest {
                 selectedQuestion,
                 new DailyQuestionReactionStatsViewModel(15L, 6L, 4L, 5L),
                 List.of(revision),
+                ANALYTICS_BASELINE,
                 "2026-08-26 12:30:00"
         ));
 
@@ -381,8 +464,10 @@ class StatsControllerTemplateTest {
                 .andExpect(content().string(containsString("Revision 2")))
                 .andExpect(content().string(containsString("V20260826_1200")))
                 .andExpect(content().string(containsString("공감 가이드")))
-                .andExpect(content().string(containsString("V20260825_1200")))
-                .andExpect(content().string(containsString("이후 실제로 생성된 할당과 교체만 집계합니다.")))
+                .andExpect(content().string(containsString("집계 시작 기준")))
+                .andExpect(content().string(containsString("질문 반응 추적 기능이 배포된 시점 이후")))
+                .andExpect(content().string(containsString("(2026년 8월 25일 12:00 KST)")))
+                .andExpect(content().string(containsString("배포 전 할당·답변은 추정하거나 현재 수정 버전에 소급하지 않습니다.")))
                 .andExpect(content().string(containsString("href=\"/stats/question\"")))
                 .andExpect(content().string(containsString("active\" href=\"/stats/question\"")))
                 .andReturn().getResponse().getContentAsString();
@@ -394,7 +479,8 @@ class StatsControllerTemplateTest {
                         "Revision (수정 버전)",
                         "교체가 곧 불호를 뜻하지는 않습니다.",
                         "예시로 이해하기",
-                        "해석할 때 주의할 점"
+                        "해석할 때 주의할 점",
+                        "질문 반응 추적 기능 배포 전 데이터는 소급하지 않았습니다."
                 );
         assertThat(html.indexOf("Revision별 반응 및 수정 이력"))
                 .isLessThan(html.indexOf("이 페이지를 읽는 방법"));
@@ -407,6 +493,7 @@ class StatsControllerTemplateTest {
                 null,
                 new DailyQuestionReactionStatsViewModel(0L, 0L, 0L, 0L),
                 List.of(),
+                ANALYTICS_BASELINE,
                 "2026-08-26 12:30:00"
         ));
 

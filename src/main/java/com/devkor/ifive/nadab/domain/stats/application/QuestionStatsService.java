@@ -61,6 +61,7 @@ public class QuestionStatsService {
                         unansweredCount
                 ),
                 revisions,
+                repository.findAnalyticsBaselineEffectiveFrom(),
                 refreshedAt()
         );
     }
@@ -85,6 +86,7 @@ public class QuestionStatsService {
                 filteredQuestions,
                 allQuestions.size(),
                 query,
+                repository.findAnalyticsBaselineEffectiveFrom(),
                 refreshedAt()
         );
     }
