@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.dailyreport.core.entity;
 
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestionRevision;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.global.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
@@ -34,6 +35,10 @@ public class AnswerEntry extends AuditableEntity {
     @JoinColumn(name = "question_id", nullable = false)
     private DailyQuestion question;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_revision_id")
+    private DailyQuestionRevision questionRevision;
+
     @Column(name = "content", length = 500, nullable = false)
     private String content;
 
@@ -45,9 +50,15 @@ public class AnswerEntry extends AuditableEntity {
 
     public static AnswerEntry create(User user, DailyQuestion question, String content, LocalDate date,
                                      @Nullable String imageKey) {
+        return create(user, question, null, content, date, imageKey);
+    }
+
+    public static AnswerEntry create(User user, DailyQuestion question, @Nullable DailyQuestionRevision questionRevision,
+                                     String content, LocalDate date, @Nullable String imageKey) {
         AnswerEntry e = new AnswerEntry();
         e.user = user;
         e.question = question;
+        e.questionRevision = questionRevision;
         e.content = content;
         e.date = date;
         e.imageKey = imageKey;

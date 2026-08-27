@@ -5,8 +5,10 @@ import com.devkor.ifive.nadab.domain.question.api.dto.response.DailyQuestionResp
 import com.devkor.ifive.nadab.domain.question.application.helper.DailyQuestionSelector;
 import com.devkor.ifive.nadab.domain.question.application.helper.QuestionLevelPolicy;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestionRevision;
 import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
 import com.devkor.ifive.nadab.domain.question.core.repository.UserDailyQuestionRepository;
+import com.devkor.ifive.nadab.domain.question.core.service.DailyQuestionExposureService;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserInterestRepository;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
@@ -33,6 +35,7 @@ public class QuestionCommandServiceV2 {
 
     private final QuestionLevelPolicy questionLevelPolicy;
     private final DailyQuestionSelector dailyQuestionSelector;
+    private final DailyQuestionExposureService dailyQuestionExposureService;
 
     public DailyQuestionResponseV2 getOrCreateTodayQuestion(Long userId) {
 
@@ -44,16 +47,21 @@ public class QuestionCommandServiceV2 {
                 .orElseGet(() -> this.createTodayQuestion(userId, today));
 
         DailyQuestion question = udq.getDailyQuestion();
+        DailyQuestionRevision revision = dailyQuestionExposureService
+                .findLatestRevision(udq)
+                .orElse(null);
 
         boolean answered = answerEntryRepository.existsActiveAnswer(userId, question.getId());
 
         return new DailyQuestionResponseV2(
                 question.getId(),
-                question.getInterest().getCode().toString(),
-                question.getQuestionText(),
-                question.getEmpathyGuide(),
-                question.getHintGuide(),
-                question.getLeadingQuestionGuide(),
+                revision != null
+                        ? revision.getInterest().getCode().toString()
+                        : question.getInterest().getCode().toString(),
+                revision != null ? revision.getQuestionText() : question.getQuestionText(),
+                revision != null ? revision.getEmpathyGuide() : question.getEmpathyGuide(),
+                revision != null ? revision.getHintGuide() : question.getHintGuide(),
+                revision != null ? revision.getLeadingQuestionGuide() : question.getLeadingQuestionGuide(),
                 answered,
                 udq.getRerollLeft()
         );
@@ -62,27 +70,30 @@ public class QuestionCommandServiceV2 {
     public UserDailyQuestion createTodayQuestion(Long userId, LocalDate todayKst) {
         // 동시성: 여러 요청이 동시에 들어오면 UNIQUE(user_id, date)로 한 번만 성공해야 함
         // -> insert 시도 후 unique 위반이면 다시 조회해서 반환
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_INTEREST_NOT_FOUND));
+
+        boolean isFirstQuestion = !(userDailyQuestionRepository.existsByUserId(userId));
+
+        Integer levelOnly = questionLevelPolicy.levelOnlyForFirstTime(isFirstQuestion);
+
+        DailyQuestion picked = dailyQuestionSelector.pickFirst(user.getId(), userInterestId, levelOnly);
+
+        UserDailyQuestion saved;
         try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
-
-            Long userInterestId = userInterestRepository.findInterestIdByUserId(userId)
-                    .orElseThrow(() -> new NotFoundException(ErrorCode.USER_INTEREST_NOT_FOUND));
-
-            boolean isFirstQuestion = !(userDailyQuestionRepository.existsByUserId(userId));
-
-            Integer levelOnly = questionLevelPolicy.levelOnlyForFirstTime(isFirstQuestion);
-
-            DailyQuestion picked = dailyQuestionSelector.pickFirst(user.getId(), userInterestId, levelOnly);
-
             UserDailyQuestion udq = UserDailyQuestion.create(user, todayKst, picked);
-            return userDailyQuestionRepository.save(udq);
-
+            saved = userDailyQuestionRepository.save(udq);
         } catch (DataIntegrityViolationException e) {
             // 이미 생성됨(경합 상황)
             return userDailyQuestionRepository.findByUserIdAndDate(userId, todayKst)
                     .orElseThrow(() -> e);
         }
+
+        dailyQuestionExposureService.recordInitialAssignment(saved);
+        return saved;
     }
 
     public DailyQuestionResponseV2 rerollTodayQuestion(Long userId) {
@@ -113,6 +124,7 @@ public class QuestionCommandServiceV2 {
         );
 
         udq.rerollTo(newQ);
+        dailyQuestionExposureService.recordReroll(udq, newQ);
 
         return new DailyQuestionResponseV2(
                 newQ.getId(),

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>NADAB - Question Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #161920;
+      --surface-2: #1e2230;
+      --border: #2a2f3e;
+      --accent: #6c8fff;
+      --accent-2: #ff7eb3;
+      --accent-3: #4de8c2;
+      --warning: #ffc44d;
+      --text-1: #e8eaf2;
+      --text-2: #8b91a8;
+      --text-3: #4f556a;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      padding: 28px 24px 60px;
+    }
+
+    button, input, select { font: inherit; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--text-2);
+      text-transform: uppercase;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+
+    .refreshed-at {
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: var(--text-3);
+    }
+    .refreshed-at span { color: var(--text-2); }
+
+    .btn-refresh,
+    .btn-submit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 38px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-2);
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .2s, color .2s, background .2s;
+    }
+    .btn-refresh:hover,
+    .btn-submit:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(108,143,255,.08);
+    }
+    .btn-refresh svg { width: 14px; height: 14px; }
+    .btn-submit { flex-shrink: 0; min-width: 72px; white-space: nowrap; }
+
+    .health-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      color: var(--text-2);
+    }
+    .health-bar.ok { border-color: rgba(77,232,194,.45); }
+    .health-bar.error { border-color: rgba(255,126,179,.45); }
+    .health-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--text-3);
+    }
+    .health-bar.ok .health-dot { background: var(--accent-3); box-shadow: 0 0 6px rgba(77,232,194,.7); }
+    .health-bar.error .health-dot { background: var(--accent-2); box-shadow: 0 0 6px rgba(255,126,179,.7); }
+    @keyframes pulse { 50% { opacity: .25; } }
+    .health-bar.loading .health-dot { animation: pulse 1.1s ease infinite; }
+    .health-text { color: var(--text-1); font-weight: 500; }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      margin-bottom: 28px;
+      width: fit-content;
+      max-width: 100%;
+      overflow-x: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+    }
+    .tab-link {
+      flex-shrink: 0;
+      padding: 7px 22px;
+      border-radius: 999px;
+      color: var(--text-2);
+      font-size: .82rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .2s, color .2s;
+    }
+    .tab-link:hover { color: var(--text-1); }
+    .tab-link.active { background: var(--accent); color: #fff; }
+
+    .question-view-nav {
+      display: flex;
+      gap: 8px;
+      margin: -8px 0 20px;
+    }
+    .question-view-link {
+      padding: 7px 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      font-size: .76rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .question-view-link:hover { border-color: var(--accent); color: var(--accent); }
+    .question-view-link.active { color: var(--text-1); background: var(--surface-2); }
+
+    .panel {
+      margin-bottom: 20px;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .panel-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-title { font-size: .92rem; font-weight: 700; }
+    .panel-subtitle { margin-top: 5px; color: var(--text-2); font-size: .78rem; line-height: 1.5; }
+    .panel-body { padding: 20px 22px; }
+
+    .selector-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, .6fr) minmax(320px, 1.4fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .field-group { display: grid; gap: 8px; }
+    .field-label {
+      color: var(--text-2);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .id-form { display: flex; gap: 8px; }
+    .field-control {
+      width: 100%;
+      min-height: 40px;
+      padding: 9px 12px;
+      color: var(--text-1);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+    }
+    .field-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,143,255,.1); }
+    select.field-control { cursor: pointer; }
+    option { background: var(--surface-2); color: var(--text-1); }
+    .list-controls { display: grid; grid-template-columns: minmax(180px, .6fr) minmax(260px, 1fr); gap: 8px; }
+    .search-status {
+      min-height: 18px;
+      color: var(--text-3);
+      font-size: .7rem;
+      line-height: 1.4;
+    }
+    .search-results {
+      display: grid;
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+    }
+    .search-results[hidden] { display: none; }
+    .search-result-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 13px;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-2);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+    .search-result-item:last-child { border-bottom: 0; }
+    .search-result-item:hover,
+    .search-result-item:focus-visible {
+      color: var(--text-1);
+      background: rgba(108,143,255,.1);
+      outline: none;
+    }
+    .search-result-id {
+      flex-shrink: 0;
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      line-height: 1.55;
+    }
+    .search-result-text { font-size: .76rem; line-height: 1.55; }
+    .search-empty { padding: 16px; color: var(--text-3); font-size: .76rem; text-align: center; }
+
+    .baseline-notice {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      border: 1px solid rgba(255,196,77,.28);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      background: rgba(255,196,77,.06);
+      font-size: .78rem;
+      line-height: 1.55;
+    }
+    .baseline-notice strong { color: var(--warning); }
+
+    .question-summary {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .question-id {
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-size: .76rem;
+      font-weight: 500;
+    }
+    .question-text { max-width: 900px; font-size: 1.15rem; font-weight: 700; line-height: 1.55; }
+    .question-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      color: var(--text-2);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+    }
+    .badge-current { color: var(--accent-3); border-color: rgba(77,232,194,.35); background: rgba(77,232,194,.08); }
+    .badge-inactive { color: var(--accent-2); border-color: rgba(255,126,179,.35); background: rgba(255,126,179,.08); }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      min-height: 120px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .kpi-label {
+      margin-bottom: 12px;
+      color: var(--text-2);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .kpi-value {
+      color: var(--text-1);
+      font-family: 'DM Mono', monospace;
+      font-size: 2rem;
+      font-weight: 500;
+    }
+    .kpi-card.answer .kpi-value { color: var(--accent-3); }
+    .kpi-card.reroll .kpi-value { color: var(--accent-2); }
+    .kpi-card.rate .kpi-value { color: var(--accent); }
+    .kpi-help { margin-top: 8px; color: var(--text-3); font-size: .68rem; line-height: 1.4; }
+
+    .revision-list { display: grid; gap: 14px; }
+    .revision-card {
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .revision-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .revision-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .revision-title { font-size: .95rem; font-weight: 700; }
+    .revision-meta {
+      display: grid;
+      gap: 5px;
+      color: var(--text-3);
+      font-family: 'DM Mono', monospace;
+      font-size: .68rem;
+      text-align: right;
+    }
+    .revision-body { padding: 20px; }
+    .snapshot-question { margin-bottom: 18px; font-size: .96rem; font-weight: 600; line-height: 1.55; }
+    .revision-metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .metric {
+      padding: 12px;
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+    }
+    .metric-label { margin-bottom: 6px; color: var(--text-3); font-size: .66rem; text-transform: uppercase; }
+    .metric-value { font-family: 'DM Mono', monospace; font-size: 1rem; }
+    .rate-track { height: 4px; margin-top: 8px; overflow: hidden; background: var(--border); border-radius: 999px; }
+    .rate-fill { height: 100%; background: var(--accent); border-radius: inherit; }
+
+    details.snapshot-details { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+    details.snapshot-details summary { color: var(--text-2); font-size: .74rem; font-weight: 600; cursor: pointer; }
+    .snapshot-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .snapshot-item { padding: 12px; background: var(--surface-2); border-radius: var(--radius-sm); }
+    .snapshot-label { margin-bottom: 5px; color: var(--text-3); font-size: .66rem; }
+    .snapshot-value { color: var(--text-2); font-size: .76rem; line-height: 1.5; white-space: pre-wrap; }
+
+    .empty-state {
+      padding: 52px 24px;
+      text-align: center;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+    }
+    .empty-title { margin-bottom: 8px; font-size: 1rem; }
+    .empty-copy { color: var(--text-2); font-size: .8rem; line-height: 1.5; }
+
+    .guide-panel { margin-top: 30px; margin-bottom: 0; }
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .guide-item {
+      padding: 15px 16px;
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+    }
+    .guide-term {
+      margin-bottom: 6px;
+      color: var(--text-1);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+    .guide-definition { color: var(--text-2); font-size: .76rem; line-height: 1.65; }
+    .guide-example,
+    .guide-cautions {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+    }
+    .guide-example {
+      border: 1px solid rgba(108,143,255,.3);
+      background: rgba(108,143,255,.07);
+    }
+    .guide-cautions {
+      border: 1px solid rgba(255,196,77,.28);
+      background: rgba(255,196,77,.06);
+    }
+    .guide-section-title { margin-bottom: 8px; font-size: .8rem; font-weight: 700; }
+    .guide-example .guide-section-title { color: var(--accent); }
+    .guide-cautions .guide-section-title { color: var(--warning); }
+    .guide-example p,
+    .guide-cautions li { color: var(--text-2); font-size: .76rem; line-height: 1.65; }
+    .guide-cautions ul { padding-left: 18px; }
+    .guide-cautions li + li { margin-top: 5px; }
+    .guide-emphasis { color: var(--text-1); font-weight: 600; }
+
+    @media (max-width: 980px) {
+      .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .revision-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 20px 14px 40px; }
+      .page-header, .question-summary, .revision-header { flex-direction: column; align-items: stretch; }
+      .header-right { flex-wrap: wrap; }
+      .selector-grid, .list-controls, .snapshot-grid, .guide-grid { grid-template-columns: 1fr; }
+      .kpi-grid, .revision-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .revision-meta { text-align: left; }
+    }
+
+    @media (max-width: 420px) {
+      .kpi-grid, .revision-metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">NADAB · Stats</div>
+  <div class="header-right">
+    <div id="healthBar" class="health-bar loading">
+      <span class="health-dot"></span>
+      <span id="healthText" class="health-text">서버 확인 중…</span>
+    </div>
+    <div class="refreshed-at">
+      마지막 갱신 <span th:text="${vm.refreshedAt}">-</span>
+    </div>
+    <button class="btn-refresh" type="button" onclick="location.reload()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.5 8A5.5 5.5 0 1 1 9 2.6"/>
+        <polyline points="9 1 13.5 2.6 12 7"/>
+      </svg>
+      새로고침
+    </button>
+  </div>
+</div>
+
+<div class="tabs">
+  <a class="tab-link" th:classappend="${activeTab} == 'daily' ? ' active' : ''" th:href="@{/stats/daily}">일간</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'weekly' ? ' active' : ''" th:href="@{/stats/weekly}">주간</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'monthly' ? ' active' : ''" th:href="@{/stats/monthly}">월간</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'type' ? ' active' : ''" th:href="@{/stats/type}">유형</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'question' ? ' active' : ''" th:href="@{/stats/question}">질문</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'withdrawal' ? ' active' : ''" th:href="@{/stats/withdrawal}">탈퇴</a>
+  <a class="tab-link" th:classappend="${activeTab} == 'total' ? ' active' : ''" th:href="@{/stats/total}">전체</a>
+</div>
+
+<nav class="question-view-nav" aria-label="질문 통계 화면">
+  <a class="question-view-link active" th:href="@{/stats/question}" aria-current="page">질문 상세</a>
+  <a class="question-view-link" th:href="@{/stats/question/overview}">전체 질문 현황</a>
+</nav>
+
+<section class="panel" aria-labelledby="questionSelectorTitle">
+  <div class="panel-header">
+    <h1 id="questionSelectorTitle" class="panel-title">질문 찾기</h1>
+    <p class="panel-subtitle">질문 ID를 직접 입력하거나 현재 질문 문구로 목록을 좁힌 뒤 선택할 수 있습니다.</p>
+  </div>
+  <div class="panel-body selector-grid">
+    <form id="questionIdForm" class="field-group" method="get" th:action="@{/stats/question}">
+      <label class="field-label" for="questionIdInput">질문 ID</label>
+      <div class="id-form">
+        <input id="questionIdInput"
+               class="field-control"
+               type="number"
+               name="questionId"
+               min="1"
+               placeholder="예: 42"
+               th:value="${vm.selectedQuestion != null ? vm.selectedQuestion.questionId : requestedQuestionId}"/>
+        <button class="btn-submit" type="submit">조회</button>
+      </div>
+    </form>
+    <div class="field-group">
+      <label class="field-label" for="questionSearch">질문 검색 및 목록 선택</label>
+      <div class="list-controls">
+        <input id="questionSearch" class="field-control" type="search" placeholder="ID 또는 질문 문구 검색" autocomplete="off"/>
+        <select id="questionSelect" class="field-control" aria-label="질문 목록">
+          <option value="">질문을 선택하세요</option>
+          <option th:each="question : ${vm.questions}"
+                  th:value="${question.questionId}"
+                  th:text="|#${question.questionId} · ${question.questionText}|"
+                  th:attr="data-search=|${question.questionId} ${question.questionText}|"
+                  th:selected="${vm.selectedQuestion != null and question.questionId == vm.selectedQuestion.questionId}">
+            #1 · 질문 문구
+          </option>
+        </select>
+      </div>
+      <div id="questionSearchStatus" class="search-status" aria-live="polite"></div>
+      <div id="questionSearchResults" class="search-results" aria-label="질문 검색 결과" hidden></div>
+    </div>
+  </div>
+</section>
+
+<div class="baseline-notice">
+  <strong>집계 시작 기준</strong>
+  <span>질문 반응 추적 기능이 배포된 시점 이후<span
+      th:if="${vm.baselineEffectiveFrom != null}"
+      th:text="|(${#temporals.format(vm.baselineEffectiveFrom, 'yyyy년 M월 d일 HH:mm')} KST)|">(2026년 8월 27일 12:00 KST)</span> 실제로 생성된 할당과 교체만 집계합니다. 배포 전 할당·답변은 추정하거나 현재 수정 버전에 소급하지 않습니다.</span>
+</div>
+
+<div th:if="${vm.selectedQuestion == null}" class="empty-state">
+  <div class="empty-title"
+       th:text="${requestedQuestionId != null ? '해당 ID의 질문을 찾을 수 없습니다.' : '조회할 질문이 없습니다.'}">
+    조회할 질문이 없습니다.
+  </div>
+  <div class="empty-copy">다른 질문 ID를 입력하거나 목록에서 질문을 선택해 주세요.</div>
+</div>
+
+<th:block th:if="${vm.selectedQuestion != null}">
+  <section class="panel" aria-labelledby="selectedQuestionTitle">
+    <div class="panel-body question-summary">
+      <div>
+        <div class="question-id" th:text="|QUESTION #${vm.selectedQuestion.questionId}|">QUESTION #1</div>
+        <h1 id="selectedQuestionTitle" class="question-text" th:text="${vm.selectedQuestion.questionText}">선택한 질문</h1>
+        <div class="question-meta">
+          <span class="badge" th:text="|CURRENT REV ${vm.selectedQuestion.currentRevisionNo}|">CURRENT REV 1</span>
+          <span class="badge" th:text="|LEVEL ${vm.selectedQuestion.questionLevel}|">LEVEL 1</span>
+          <span class="badge"
+                th:text="${vm.selectedQuestion.interestCode != null ? vm.selectedQuestion.interestCode.displayNameKo() : '관심사 미지정'}">
+            관심사
+          </span>
+          <span class="badge"
+                th:classappend="${!vm.selectedQuestion.active()} ? ' badge-inactive' : ''"
+                th:text="${vm.selectedQuestion.active()} ? 'ACTIVE' : 'INACTIVE'">ACTIVE</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="kpi-grid" aria-label="선택 질문 누적 반응">
+    <div class="kpi-card">
+      <div class="kpi-label">누적 노출</div>
+      <div class="kpi-value" th:text="${#numbers.formatInteger(vm.total.exposureCount, 1, 'COMMA')}">0</div>
+      <div class="kpi-help">최초 할당과 교체 후 할당 포함</div>
+    </div>
+    <div class="kpi-card answer">
+      <div class="kpi-label">누적 답변</div>
+      <div class="kpi-value" th:text="${#numbers.formatInteger(vm.total.answeredCount, 1, 'COMMA')}">0</div>
+      <div class="kpi-help">답변 저장이 완료된 노출</div>
+    </div>
+    <div class="kpi-card rate">
+      <div class="kpi-label">답변 비율</div>
+      <div class="kpi-value" th:text="|${#numbers.formatDecimal(vm.total.answerRatePercent(), 1, 1)}%|">0.0%</div>
+      <div class="kpi-help">누적 답변 / 누적 노출</div>
+    </div>
+    <div class="kpi-card reroll">
+      <div class="kpi-label">교체</div>
+      <div class="kpi-value" th:text="${#numbers.formatInteger(vm.total.rerolledCount, 1, 'COMMA')}">0</div>
+      <div class="kpi-help">다른 질문으로 넘긴 노출</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">미응답</div>
+      <div class="kpi-value" th:text="${#numbers.formatInteger(vm.total.unansweredCount, 1, 'COMMA')}">0</div>
+      <div class="kpi-help">교체·답변이 아직 없는 노출</div>
+    </div>
+  </section>
+
+  <section aria-labelledby="revisionHistoryTitle">
+    <div class="panel-header" style="padding-left: 0; padding-right: 0; border-bottom: 0;">
+      <h2 id="revisionHistoryTitle" class="panel-title">Revision별 반응 및 수정 이력</h2>
+      <p class="panel-subtitle">최신 revision부터 표시합니다. 각 스냅샷의 적용 시점과 Flyway 출처를 함께 확인할 수 있습니다.</p>
+    </div>
+
+    <div th:if="${#lists.isEmpty(vm.revisions)}" class="empty-state">
+      <div class="empty-title">Revision 이력이 없습니다.</div>
+      <div class="empty-copy">질문 revision 데이터가 생성되었는지 확인해 주세요.</div>
+    </div>
+
+    <div th:unless="${#lists.isEmpty(vm.revisions)}" class="revision-list">
+      <article class="revision-card" th:each="revision : ${vm.revisions}">
+        <div class="revision-header">
+          <div class="revision-heading">
+            <h3 class="revision-title" th:text="|Revision ${revision.revisionNo}|">Revision 1</h3>
+            <span class="badge badge-current"
+                  th:if="${revision.revisionNo == vm.selectedQuestion.currentRevisionNo}">CURRENT</span>
+            <span class="badge badge-inactive"
+                  th:unless="${revision.active()}">INACTIVE SNAPSHOT</span>
+          </div>
+          <div class="revision-meta">
+            <span th:text="|적용 ${#temporals.format(revision.effectiveFrom, 'yyyy-MM-dd HH:mm:ss XXX')}|">적용 시각</span>
+            <span th:text="|Flyway ${revision.sourceMigration}|">Flyway migration</span>
+          </div>
+        </div>
+        <div class="revision-body">
+          <p class="snapshot-question" th:text="${revision.questionText}">Revision 질문 문구</p>
+
+          <div class="revision-metrics">
+            <div class="metric">
+              <div class="metric-label">노출</div>
+              <div class="metric-value" th:text="${#numbers.formatInteger(revision.exposureCount, 1, 'COMMA')}">0</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">답변</div>
+              <div class="metric-value" th:text="${#numbers.formatInteger(revision.answeredCount, 1, 'COMMA')}">0</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">답변 비율</div>
+              <div class="metric-value" th:text="|${#numbers.formatDecimal(revision.answerRatePercent(), 1, 1)}%|">0.0%</div>
+              <div class="rate-track" aria-hidden="true">
+                <div class="rate-fill" th:style="|width: ${revision.answerRatePercent()}%|"></div>
+              </div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">교체</div>
+              <div class="metric-value" th:text="${#numbers.formatInteger(revision.rerolledCount, 1, 'COMMA')}">0</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">미응답</div>
+              <div class="metric-value" th:text="${#numbers.formatInteger(revision.unansweredCount, 1, 'COMMA')}">0</div>
+            </div>
+          </div>
+
+          <details class="snapshot-details">
+            <summary>전체 질문 스냅샷 보기</summary>
+            <div class="snapshot-grid">
+              <div class="snapshot-item">
+                <div class="snapshot-label">관심사 · 레벨</div>
+                <div class="snapshot-value"
+                     th:text="|${revision.interestCode != null ? revision.interestCode.displayNameKo() : '미지정'} · LEVEL ${revision.questionLevel}|">
+                  관심사 · LEVEL 1
+                </div>
+              </div>
+              <div class="snapshot-item">
+                <div class="snapshot-label">활성 상태</div>
+                <div class="snapshot-value" th:text="${revision.active()} ? 'ACTIVE' : 'INACTIVE'">ACTIVE</div>
+              </div>
+              <div class="snapshot-item">
+                <div class="snapshot-label">공감 가이드</div>
+                <div class="snapshot-value" th:text="${revision.empathyGuide != null ? revision.empathyGuide : '-'}">-</div>
+              </div>
+              <div class="snapshot-item">
+                <div class="snapshot-label">힌트 가이드</div>
+                <div class="snapshot-value" th:text="${revision.hintGuide != null ? revision.hintGuide : '-'}">-</div>
+              </div>
+              <div class="snapshot-item">
+                <div class="snapshot-label">리딩 질문 가이드</div>
+                <div class="snapshot-value" th:text="${revision.leadingQuestionGuide != null ? revision.leadingQuestionGuide : '-'}">-</div>
+              </div>
+              <div class="snapshot-item">
+                <div class="snapshot-label">Revision ID</div>
+                <div class="snapshot-value" th:text="${revision.revisionId}">1</div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </article>
+    </div>
+  </section>
+</th:block>
+
+<section class="panel guide-panel" aria-labelledby="statsGuideTitle">
+  <div class="panel-header">
+    <h2 id="statsGuideTitle" class="panel-title">이 페이지를 읽는 방법</h2>
+    <p class="panel-subtitle">질문 통계에서 사용하는 용어와 숫자의 의미입니다. 데이터 구조를 몰라도 아래 기준으로 해석할 수 있습니다.</p>
+  </div>
+  <div class="panel-body">
+    <div class="guide-grid">
+      <div class="guide-item">
+        <h3 class="guide-term">Question ID (질문 ID)</h3>
+        <p class="guide-definition">하나의 질문을 계속 식별하는 고정 번호입니다. 질문 문구나 가이드가 수정되어도 Question ID는 바뀌지 않습니다.</p>
+      </div>
+      <div class="guide-item">
+        <h3 class="guide-term">Revision (수정 버전)</h3>
+        <p class="guide-definition">질문의 특정 시점 상태를 보존한 버전입니다. 문구·가이드·레벨·활성 상태 등이 바뀌면 새 Revision이 생기며, 이전 버전의 통계는 그대로 유지됩니다. <span class="guide-emphasis">CURRENT</span>는 현재 사용 중인 최신 버전입니다.</p>
+      </div>
+      <div class="guide-item">
+        <h3 class="guide-term">노출</h3>
+        <p class="guide-definition">해당 Revision의 질문이 사용자에게 실제로 할당된 횟수입니다. 하루의 최초 할당뿐 아니라 질문 교체 후 새로 받은 할당도 포함합니다.</p>
+      </div>
+      <div class="guide-item">
+        <h3 class="guide-term">답변</h3>
+        <p class="guide-definition">노출된 질문에 대한 답변이 저장된 횟수입니다. 답변은 사용자가 보았던 당시 Revision에 연결됩니다.</p>
+      </div>
+      <div class="guide-item">
+        <h3 class="guide-term">교체</h3>
+        <p class="guide-definition">사용자가 답변하지 않고 다른 질문으로 넘긴 횟수입니다. 선호도를 살펴보는 참고 신호이지만, 교체가 곧 불호를 뜻하지는 않습니다.</p>
+      </div>
+      <div class="guide-item">
+        <h3 class="guide-term">미응답</h3>
+        <p class="guide-definition">아직 답변도 교체도 발생하지 않은 노출입니다. 오늘 진행 중인 질문처럼 나중에 답변 또는 교체로 바뀔 수 있는 건도 포함합니다.</p>
+      </div>
+      <div class="guide-item">
+        <h3 class="guide-term">답변 비율</h3>
+        <p class="guide-definition"><span class="guide-emphasis">답변 횟수 ÷ 노출 횟수</span>로 계산합니다. 비율만 보지 말고 노출 표본 수를 함께 확인해야 합니다.</p>
+      </div>
+      <div class="guide-item">
+        <h3 class="guide-term">전체 누적과 Revision별 수치</h3>
+        <p class="guide-definition">상단 누적 수치는 선택한 Question ID의 모든 Revision을 합친 값입니다. 아래 카드는 수정 버전별 반응 차이를 비교하기 위한 값입니다.</p>
+      </div>
+    </div>
+
+    <div class="guide-example">
+      <h3 class="guide-section-title">예시로 이해하기</h3>
+      <p>Revision 1이 100회 노출된 뒤 질문 문구를 수정하면 Revision 2가 시작됩니다. 이후 노출과 반응은 Revision 2에 별도로 쌓이고, <span class="guide-emphasis">상단 전체 누적에는 Revision 1과 2가 모두 합산</span>됩니다. 따라서 수정 효과를 볼 때는 Revision별 카드를 비교하세요.</p>
+    </div>
+
+    <div class="guide-cautions">
+      <h3 class="guide-section-title">해석할 때 주의할 점</h3>
+      <ul>
+        <li>교체에는 그날의 기분, 질문 난이도, 답변할 시간 부족 등 여러 이유가 있을 수 있으므로 불호로 단정하지 않습니다.</li>
+        <li>미응답은 아직 진행 중인 상태를 포함하므로 시간이 지나면 답변 또는 교체로 바뀔 수 있습니다.</li>
+        <li>노출 수가 적은 Revision의 비율은 쉽게 흔들리므로 충분한 표본이 쌓였는지 함께 확인합니다.</li>
+        <li>질문 반응 추적 기능 배포 전 데이터는 소급하지 않았습니다. 기능 배포 이후 실제로 기록된 노출과 반응만 통계에 포함됩니다.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<script>
+  const questionIdForm = document.getElementById('questionIdForm');
+  const questionIdInput = document.getElementById('questionIdInput');
+  const questionSearch = document.getElementById('questionSearch');
+  const questionSelect = document.getElementById('questionSelect');
+  const questionSearchStatus = document.getElementById('questionSearchStatus');
+  const questionSearchResults = document.getElementById('questionSearchResults');
+  const questionOptions = Array.from(questionSelect.querySelectorAll('option[data-search]'));
+  const maxVisibleSearchResults = 20;
+  let matchedQuestionOptions = [];
+
+  function openQuestion(questionId) {
+    questionIdInput.value = questionId;
+    questionIdForm.submit();
+  }
+
+  function clearSearchResults() {
+    questionOptions.forEach(option => option.hidden = false);
+    questionSelect.value = questionOptions.some(option => option.value === questionIdInput.value)
+      ? questionIdInput.value
+      : '';
+    matchedQuestionOptions = [];
+    questionSearchStatus.textContent = '';
+    questionSearchResults.replaceChildren();
+    questionSearchResults.hidden = true;
+  }
+
+  function renderSearchResults(query) {
+    matchedQuestionOptions = questionOptions.filter(option =>
+      option.dataset.search.toLocaleLowerCase('ko-KR').includes(query)
+    );
+    questionOptions.forEach(option => option.hidden = !matchedQuestionOptions.includes(option));
+    questionSelect.value = '';
+    questionSearchResults.replaceChildren();
+    questionSearchResults.hidden = false;
+
+    if (matchedQuestionOptions.length === 0) {
+      questionSearchStatus.textContent = '검색 결과 0개';
+      const empty = document.createElement('div');
+      empty.className = 'search-empty';
+      empty.textContent = '검색 결과가 없습니다.';
+      questionSearchResults.appendChild(empty);
+      return;
+    }
+
+    const visibleOptions = matchedQuestionOptions.slice(0, maxVisibleSearchResults);
+    questionSearchStatus.textContent = matchedQuestionOptions.length > maxVisibleSearchResults
+      ? `${matchedQuestionOptions.length}개 중 ${maxVisibleSearchResults}개 표시`
+      : `${matchedQuestionOptions.length}개 검색 결과`;
+
+    visibleOptions.forEach(option => {
+      const resultButton = document.createElement('button');
+      resultButton.type = 'button';
+      resultButton.className = 'search-result-item';
+      resultButton.setAttribute('aria-label', `질문 조회: ${option.textContent.trim()}`);
+      resultButton.addEventListener('click', () => openQuestion(option.value));
+
+      const resultId = document.createElement('span');
+      resultId.className = 'search-result-id';
+      resultId.textContent = `#${option.value}`;
+
+      const resultText = document.createElement('span');
+      resultText.className = 'search-result-text';
+      resultText.textContent = option.textContent.replace(/^#\d+\s*·\s*/, '').trim();
+
+      resultButton.append(resultId, resultText);
+      questionSearchResults.appendChild(resultButton);
+    });
+  }
+
+  questionSearch.addEventListener('input', () => {
+    const query = questionSearch.value.trim().toLocaleLowerCase('ko-KR');
+    if (!query) {
+      clearSearchResults();
+      return;
+    }
+    renderSearchResults(query);
+  });
+
+  questionSearch.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && matchedQuestionOptions.length > 0) {
+      event.preventDefault();
+      openQuestion(matchedQuestionOptions[0].value);
+    }
+    if (event.key === 'Escape') {
+      questionSearch.value = '';
+      clearSearchResults();
+    }
+  });
+
+  questionSelect.addEventListener('change', () => {
+    if (!questionSelect.value) return;
+    openQuestion(questionSelect.value);
+  });
+
+  async function checkHealth() {
+    const bar = document.getElementById('healthBar');
+    const text = document.getElementById('healthText');
+    try {
+      const response = await fetch('/health', { cache: 'no-store' });
+      if (response.ok) {
+        bar.className = 'health-bar ok';
+        text.textContent = 'SERVER OK';
+      } else {
+        bar.className = 'health-bar error';
+        text.textContent = `ERROR ${response.status}`;
+      }
+    } catch {
+      bar.className = 'health-bar error';
+      text.textContent = 'UNREACHABLE';
+    }
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 30_000);
+</script>
+
+</body>
+</html>

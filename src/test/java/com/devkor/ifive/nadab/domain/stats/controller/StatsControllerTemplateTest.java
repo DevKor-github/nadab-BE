@@ -3,41 +3,64 @@ package com.devkor.ifive.nadab.domain.stats.controller;
 import com.devkor.ifive.nadab.domain.admin.infra.security.AdminPageAuthInterceptor;
 import com.devkor.ifive.nadab.domain.stats.application.DailyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.MonthlyStatsService;
+import com.devkor.ifive.nadab.domain.stats.application.QuestionStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TotalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
+import com.devkor.ifive.nadab.domain.stats.application.helper.DailyQuestionOverviewCsvExporter;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.peak.PeakStatViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionListItemViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewQuery;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewRowViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewSort;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewSortDirection;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionReactionStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionRevisionStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestSeriesViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
+import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.security.filter.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StatsController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(DailyQuestionOverviewCsvExporter.class)
 class StatsControllerTemplateTest {
+
+    private static final OffsetDateTime ANALYTICS_BASELINE =
+            OffsetDateTime.parse("2026-08-25T12:00:00+09:00");
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,6 +75,8 @@ class StatsControllerTemplateTest {
     private TotalStatsService totalStatsService;
     @MockitoBean
     private TypeStatsService typeStatsService;
+    @MockitoBean
+    private QuestionStatsService questionStatsService;
     @MockitoBean
     private WithdrawalStatsService withdrawalStatsService;
     @MockitoBean
@@ -191,6 +216,302 @@ class StatsControllerTemplateTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/stats/monthly").param("month", "2026-13"))
                 .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question").param("questionId", "not-a-number"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question/overview").param("questionLevel", "0"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question/overview").param("questionLevel", "6"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question/overview").param("minimumCurrentExposureCount", "-1"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question/overview").param("sort", "INVALID"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/question/overview.csv").param("questionLevel", "6"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void questionOverview_renders_filters_sortable_table_and_detail_links() throws Exception {
+        OffsetDateTime effectiveFrom = OffsetDateTime.parse("2026-08-26T12:00:00+09:00");
+        DailyQuestionOverviewQuery query = DailyQuestionOverviewQuery.defaults();
+        DailyQuestionOverviewRowViewModel question = new DailyQuestionOverviewRowViewModel(
+                42L,
+                InterestCode.PREFERENCE,
+                "현재 질문 문구",
+                2,
+                2,
+                null,
+                effectiveFrom,
+                10L,
+                4L,
+                3L,
+                3L,
+                15L,
+                6L,
+                4L,
+                5L
+        );
+        when(questionStatsService.getQuestionOverview(query)).thenReturn(new DailyQuestionOverviewViewModel(
+                List.of(question),
+                875,
+                query,
+                ANALYTICS_BASELINE,
+                "2026-08-26 12:30:00"
+        ));
+
+        mockMvc.perform(get("/stats/question/overview"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("전체 질문 현황")))
+                .andExpect(content().string(containsString("name=\"keyword\"")))
+                .andExpect(content().string(containsString("name=\"interestCode\"")))
+                .andExpect(content().string(containsString("name=\"questionLevel\"")))
+                .andExpect(content().string(containsString("name=\"active\"")))
+                .andExpect(content().string(containsString("name=\"minimumCurrentExposureCount\"")))
+                .andExpect(content().string(containsString("name=\"sort\"")))
+                .andExpect(content().string(containsString("name=\"direction\"")))
+                .andExpect(content().string(containsString("875")))
+                .andExpect(content().string(containsString("CURRENT REVISION")))
+                .andExpect(content().string(containsString("현재 Revision 반응")))
+                .andExpect(content().string(containsString("전체 Revision 누적")))
+                .andExpect(content().string(containsString("현재 질문 문구")))
+                .andExpect(content().string(containsString("#42")))
+                .andExpect(content().string(containsString("40.0%")))
+                .andExpect(content().string(containsString("30.0%")))
+                .andExpect(content().string(containsString("data-sort=\"CURRENT_REROLL_RATE\"")))
+                .andExpect(content().string(containsString("CSV 다운로드")))
+                .andExpect(content().string(containsString("href=\"/stats/question/overview.csv")))
+                .andExpect(content().string(containsString("href=\"/stats/question?questionId=42\"")))
+                .andExpect(content().string(containsString("집계 시작 기준")))
+                .andExpect(content().string(containsString("질문 반응 추적 기능이 배포된 시점 이후")))
+                .andExpect(content().string(containsString("(2026년 8월 25일 12:00 KST)")))
+                .andExpect(content().string(containsString("tab-link  active\" href=\"/stats/question\"")));
+    }
+
+    @Test
+    void questionOverview_preserves_filters_and_sort_order() throws Exception {
+        DailyQuestionOverviewQuery query = new DailyQuestionOverviewQuery(
+                "노래",
+                InterestCode.EMOTION,
+                2,
+                false,
+                10L,
+                DailyQuestionOverviewSort.CURRENT_REROLL_RATE,
+                DailyQuestionOverviewSortDirection.ASC
+        );
+        when(questionStatsService.getQuestionOverview(query)).thenReturn(new DailyQuestionOverviewViewModel(
+                List.of(),
+                875,
+                query,
+                ANALYTICS_BASELINE,
+                "2026-08-26 12:30:00"
+        ));
+
+        String html = mockMvc.perform(get("/stats/question/overview")
+                        .param("keyword", "노래")
+                        .param("interestCode", "EMOTION")
+                        .param("questionLevel", "2")
+                        .param("active", "false")
+                        .param("minimumCurrentExposureCount", "10")
+                        .param("sort", "CURRENT_REROLL_RATE")
+                        .param("direction", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("value=\"노래\"")))
+                .andExpect(content().string(containsString("value=\"10\"")))
+                .andExpect(content().string(containsString("조건에 맞는 질문이 없습니다.")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html)
+                .containsPattern("<option value=\"EMOTION\"\\s+selected=\"selected\">감정</option>")
+                .containsPattern("<option value=\"2\"\\s+selected=\"selected\">LEVEL 2</option>")
+                .containsPattern("<option value=\"false\"\\s+selected=\"selected\">INACTIVE</option>")
+                .containsPattern("<option value=\"CURRENT_REROLL_RATE\"\\s+selected=\"selected\">현재 Rev 교체율</option>")
+                .containsPattern("<option value=\"ASC\"\\s+selected=\"selected\">오름차순</option>")
+                .contains(
+                        "--sort-ascending: #ff5c68",
+                        ".question-table.sort-ascending .sort-indicator",
+                        "question-table  sort-ascending",
+                        "sort-indicator\">↑",
+                        "interestCode=EMOTION",
+                        "questionLevel=2",
+                        "active=false",
+                        "minimumCurrentExposureCount=10",
+                        "sort=CURRENT_REROLL_RATE",
+                        "direction=ASC"
+                );
+
+        verify(questionStatsService).getQuestionOverview(query);
+    }
+
+    @Test
+    void questionOverviewCsv_downloads_filtered_and_sorted_rows() throws Exception {
+        DailyQuestionOverviewQuery query = new DailyQuestionOverviewQuery(
+                "노래",
+                InterestCode.EMOTION,
+                2,
+                false,
+                10L,
+                DailyQuestionOverviewSort.CURRENT_REROLL_RATE,
+                DailyQuestionOverviewSortDirection.ASC
+        );
+        DailyQuestionOverviewRowViewModel question = new DailyQuestionOverviewRowViewModel(
+                42L,
+                InterestCode.EMOTION,
+                "노래 질문",
+                2,
+                3,
+                OffsetDateTime.parse("2026-08-27T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-08-26T12:00:00+09:00"),
+                10L,
+                4L,
+                3L,
+                3L,
+                15L,
+                6L,
+                4L,
+                5L
+        );
+        when(questionStatsService.getQuestionOverview(query)).thenReturn(new DailyQuestionOverviewViewModel(
+                List.of(question),
+                875,
+                query,
+                ANALYTICS_BASELINE,
+                "2026-08-27 10:00:00"
+        ));
+
+        byte[] csvBytes = mockMvc.perform(get("/stats/question/overview.csv")
+                        .param("keyword", "노래")
+                        .param("interestCode", "EMOTION")
+                        .param("questionLevel", "2")
+                        .param("active", "false")
+                        .param("minimumCurrentExposureCount", "10")
+                        .param("sort", "CURRENT_REROLL_RATE")
+                        .param("direction", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv;charset=UTF-8"))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"nadab_daily_question_stats.csv\""
+                ))
+                .andReturn().getResponse().getContentAsByteArray();
+
+        assertThat(csvBytes).startsWith((byte) 0xEF, (byte) 0xBB, (byte) 0xBF);
+        assertThat(new String(csvBytes, StandardCharsets.UTF_8))
+                .contains("질문 ID,질문 문구")
+                .contains("42,\"노래 질문\",\"EMOTION\",\"감정\"")
+                .contains(",10,4,40.0,3,30.0,3,15,6,40.0,4,5\r\n");
+        verify(questionStatsService).getQuestionOverview(query);
+    }
+
+    @Test
+    void questionStats_renders_selector_totals_and_revision_history() throws Exception {
+        OffsetDateTime effectiveFrom = OffsetDateTime.parse("2026-08-26T12:00:00+09:00");
+        DailyQuestionListItemViewModel selectedQuestion = new DailyQuestionListItemViewModel(
+                42L,
+                InterestCode.PREFERENCE,
+                "현재 질문 문구",
+                2,
+                2,
+                null
+        );
+        DailyQuestionRevisionStatsViewModel revision = new DailyQuestionRevisionStatsViewModel(
+                102L,
+                2,
+                InterestCode.PREFERENCE,
+                "수정된 질문 문구",
+                2,
+                "공감 가이드",
+                "힌트 가이드",
+                "리딩 질문 가이드",
+                null,
+                effectiveFrom,
+                "V20260826_1200",
+                10L,
+                4L,
+                3L,
+                3L
+        );
+        when(questionStatsService.getQuestionStats(42L)).thenReturn(new DailyQuestionStatsViewModel(
+                List.of(
+                        selectedQuestion,
+                        new DailyQuestionListItemViewModel(
+                                43L,
+                                InterestCode.EMOTION,
+                                "다른 질문 문구",
+                                1,
+                                1,
+                                null
+                        )
+                ),
+                selectedQuestion,
+                new DailyQuestionReactionStatsViewModel(15L, 6L, 4L, 5L),
+                List.of(revision),
+                ANALYTICS_BASELINE,
+                "2026-08-26 12:30:00"
+        ));
+
+        String html = mockMvc.perform(get("/stats/question").param("questionId", "42"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("name=\"questionId\"")))
+                .andExpect(content().string(containsString("id=\"questionSearch\"")))
+                .andExpect(content().string(containsString("id=\"questionSelect\"")))
+                .andExpect(content().string(containsString("id=\"questionSearchStatus\"")))
+                .andExpect(content().string(containsString("id=\"questionSearchResults\"")))
+                .andExpect(content().string(containsString("검색 결과가 없습니다.")))
+                .andExpect(content().string(containsString("QUESTION #42")))
+                .andExpect(content().string(containsString("누적 노출")))
+                .andExpect(content().string(containsString("누적 답변")))
+                .andExpect(content().string(containsString("40.0%")))
+                .andExpect(content().string(containsString("Revision 2")))
+                .andExpect(content().string(containsString("V20260826_1200")))
+                .andExpect(content().string(containsString("공감 가이드")))
+                .andExpect(content().string(containsString("집계 시작 기준")))
+                .andExpect(content().string(containsString("질문 반응 추적 기능이 배포된 시점 이후")))
+                .andExpect(content().string(containsString("(2026년 8월 25일 12:00 KST)")))
+                .andExpect(content().string(containsString("배포 전 할당·답변은 추정하거나 현재 수정 버전에 소급하지 않습니다.")))
+                .andExpect(content().string(containsString("href=\"/stats/question\"")))
+                .andExpect(content().string(containsString("active\" href=\"/stats/question\"")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html)
+                .contains(
+                        "이 페이지를 읽는 방법",
+                        "Question ID (질문 ID)",
+                        "Revision (수정 버전)",
+                        "교체가 곧 불호를 뜻하지는 않습니다.",
+                        "예시로 이해하기",
+                        "해석할 때 주의할 점",
+                        "질문 반응 추적 기능 배포 전 데이터는 소급하지 않았습니다."
+                );
+        assertThat(html.indexOf("Revision별 반응 및 수정 이력"))
+                .isLessThan(html.indexOf("이 페이지를 읽는 방법"));
+    }
+
+    @Test
+    void questionStats_renders_empty_state_for_unknown_question() throws Exception {
+        when(questionStatsService.getQuestionStats(999L)).thenReturn(new DailyQuestionStatsViewModel(
+                List.of(),
+                null,
+                new DailyQuestionReactionStatsViewModel(0L, 0L, 0L, 0L),
+                List.of(),
+                ANALYTICS_BASELINE,
+                "2026-08-26 12:30:00"
+        ));
+
+        mockMvc.perform(get("/stats/question").param("questionId", "999"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("해당 ID의 질문을 찾을 수 없습니다.")));
+    }
+
+    @Test
+    void all_stats_templates_include_question_tab() throws Exception {
+        for (String template : List.of("daily", "weekly", "monthly", "type", "question", "question-overview", "withdrawal", "total")) {
+            String source = new ClassPathResource("templates/stats/" + template + ".html")
+                    .getContentAsString(StandardCharsets.UTF_8);
+
+            assertThat(source)
+                    .as(template)
+                    .contains("th:href=\"@{/stats/question}\"", ">질문</a>");
+        }
     }
 
     @Test
