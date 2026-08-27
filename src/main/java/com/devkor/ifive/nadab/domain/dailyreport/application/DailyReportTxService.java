@@ -13,6 +13,9 @@ import com.devkor.ifive.nadab.domain.dailyreport.core.repository.EmotionReposito
 import com.devkor.ifive.nadab.domain.dailyreport.core.service.AnswerEntryService;
 import com.devkor.ifive.nadab.domain.dailyreport.core.service.PendingDailyReportService;
 import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.entity.DailyQuestionRevision;
+import com.devkor.ifive.nadab.domain.question.core.entity.UserDailyQuestion;
+import com.devkor.ifive.nadab.domain.question.core.service.DailyQuestionExposureService;
 import com.devkor.ifive.nadab.domain.user.core.entity.Interest;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -45,20 +48,42 @@ public class DailyReportTxService {
 
     private final AnswerEntryService answerEntryService;
     private final PendingDailyReportService pendingDailyReportService;
+    private final DailyQuestionExposureService dailyQuestionExposureService;
 
 
     private static final long DAILY_REPORT_REWARD = 10L;
 
-    protected PrepareDailyResultDto prepareDaily(User user, DailyQuestion dq, String answerText, boolean isDayPassed,
-                                                 @Nullable String imageKey) {
+    protected PrepareDailyResultDto prepareDaily(
+            User user,
+            DailyQuestion dq,
+            UserDailyQuestion assignment,
+            String answerText,
+            boolean isDayPassed,
+            @Nullable String imageKey
+    ) {
+
+        DailyQuestionRevision questionRevision = dailyQuestionExposureService
+                .recordAnswer(assignment)
+                .orElse(null);
 
         //  AnswerEntry 생성 또는 조회 (별도의 트랜잭션)
-        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(user, dq, answerText, isDayPassed, imageKey);
+        AnswerEntry entry = answerEntryService.getOrCreateTodayAnswerEntry(
+                user,
+                dq,
+                questionRevision,
+                answerText,
+                isDayPassed,
+                imageKey
+        );
 
         // DailyReport PENDING 생성 또는 조회 (별도의 트랜잭션)
         DailyReport report = pendingDailyReportService.getOrCreatePendingDailyReport(entry, isDayPassed);
 
-        return new PrepareDailyResultDto(entry, report.getId(), user.getId());
+        String questionText = entry.getQuestionRevision() != null
+                ? entry.getQuestionRevision().getQuestionText()
+                : dq.getQuestionText();
+
+        return new PrepareDailyResultDto(entry, report.getId(), user.getId(), questionText);
     }
 
     protected ConfirmDailyAndRewardDto confirmDailyAndReward(

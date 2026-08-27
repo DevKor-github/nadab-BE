@@ -88,7 +88,14 @@ public class DailyReportService {
             throw new BadRequestException(ErrorCode.DAILY_QUESTION_MISMATCH);
         }
 
-        PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(user, question, request.answer(), isDayPassed, request.objectKey());
+        PrepareDailyResultDto prep = dailyReportTxService.prepareDaily(
+                user,
+                question,
+                udq,
+                request.answer(),
+                isDayPassed,
+                request.objectKey()
+        );
 
         AnswerEntry answerEntry = prep.entry();
         ModelCandidate modelCandidate = dailyReportModelSelector.select();
@@ -104,7 +111,7 @@ public class DailyReportService {
         AiDailyReportResultDto dto;
         try {
             LlmGenerationResult<AiDailyReportResultDto> generationResult =
-                    dailyReportLlmClient.generate(question.getQuestionText(), answerEntry, modelCandidate);
+                    dailyReportLlmClient.generate(prep.questionText(), answerEntry, modelCandidate);
             dto = generationResult.content();
             LlmTokenUsage tokenUsage = generationResult.tokenUsage();
             reportGenerationLogRecorder.recordTokenUsage(
