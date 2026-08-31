@@ -18,6 +18,8 @@ public record AskChatStatsViewModel(
         double averageGenerationDurationMs,
         long p95GenerationDurationMs,
         List<AskChatErrorStatsDto> errorStats,
+        AskChatWalletStatsViewModel walletStats,
+        AskChatRagStatsViewModel ragStats,
         String refreshedAt
 ) {
 }

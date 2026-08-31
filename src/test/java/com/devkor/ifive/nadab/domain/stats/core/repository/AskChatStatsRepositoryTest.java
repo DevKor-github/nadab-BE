@@ -1,10 +1,17 @@
 package com.devkor.ifive.nadab.domain.stats.core.repository;
 
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyMessageStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyRagDocumentStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyRagReferenceStatsDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailySessionStatsDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatErrorStatsDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatMessageSummaryDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagErrorStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagSourceStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagSummaryDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatSessionSummaryDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyWalletStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatWalletSummaryDto;
 import com.devkor.ifive.nadab.infra.db.PostgresIntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -119,6 +126,120 @@ class AskChatStatsRepositoryTest extends PostgresIntegrationTestSupport {
         );
     }
 
+    @Test
+    void aggregates_wallet_and_rag_statuses_by_seoul_date() {
+        Long firstUserId = insertUser("ask-chat-billing-rag-first");
+        Long secondUserId = insertUser("ask-chat-billing-rag-second");
+        Long firstSessionId = insertSession(firstUserId, "ACTIVE", utc(2026, 8, 10, 13, 0));
+        Long secondSessionId = insertSession(secondUserId, "ACTIVE", utc(2026, 8, 11, 13, 0));
+        Long firstMessageId = insertMessageWithId(firstSessionId, utc(2026, 8, 10, 13, 1));
+        Long secondMessageId = insertMessageWithId(secondSessionId, utc(2026, 8, 11, 13, 1));
+
+        insertWalletLog(firstUserId, firstSessionId, 7, 0, 7, 0,
+                "INITIAL_FREE_GRANT", "CONFIRMED", utc(2026, 8, 10, 13, 2));
+        insertWalletLog(firstUserId, firstSessionId, -1, 0, 6, 0,
+                "ANSWER_SUCCESS_CONSUME", "CONFIRMED", utc(2026, 8, 10, 13, 3));
+        insertWalletLog(firstUserId, firstSessionId, 0, -1, 6, 0,
+                "ANSWER_SUCCESS_CONSUME", "CONFIRMED", utc(2026, 8, 10, 13, 4));
+        insertWalletLog(firstUserId, firstSessionId, -1, 0, 6, 0,
+                "ANSWER_SUCCESS_CONSUME", "PENDING", utc(2026, 8, 10, 13, 5));
+        insertWalletLog(secondUserId, secondSessionId, 0, -1, 0, 0,
+                "ANSWER_SUCCESS_CONSUME", "REFUNDED", utc(2026, 8, 11, 13, 2));
+        insertWalletLog(secondUserId, secondSessionId, 0, 1, 0, 1,
+                "ANSWER_FAILURE_REFUND", "CONFIRMED", utc(2026, 8, 11, 13, 3));
+        insertWalletLog(secondUserId, secondSessionId, 0, 10, 0, 11,
+                "CRYSTAL_CHARGE", "CONFIRMED", utc(2026, 8, 11, 13, 4));
+
+        Long completedMessageDocumentId = insertRagDocument(
+                firstUserId, "ASK_CHAT_MESSAGE", firstMessageId, "COMPLETED", 0, null,
+                utc(2026, 8, 10, 13, 6)
+        );
+        Long failedAnswerDocumentId = insertRagDocument(
+                firstUserId, "ANSWER_ENTRY", 1001L, "FAILED", 2, "EMBEDDING_TIMEOUT",
+                utc(2026, 8, 10, 13, 7)
+        );
+        Long deadLetterDocumentId = insertRagDocument(
+                secondUserId, "ASK_CHAT_MESSAGE", secondMessageId, "DEAD_LETTER", 3, null,
+                utc(2026, 8, 11, 13, 6)
+        );
+        insertRagDocument(
+                secondUserId, "ANSWER_ENTRY", 1002L, "COMPLETED", 0, null,
+                utc(2026, 8, 11, 15, 1)
+        );
+        insertReference(firstMessageId, completedMessageDocumentId, 0, utc(2026, 8, 10, 13, 8));
+        insertReference(firstMessageId, failedAnswerDocumentId, 1, utc(2026, 8, 10, 13, 9));
+        insertReference(secondMessageId, completedMessageDocumentId, 0, utc(2026, 8, 11, 13, 8));
+
+        OffsetDateTime startInclusive = utc(2026, 8, 9, 15, 0);
+        OffsetDateTime endExclusive = utc(2026, 8, 11, 15, 0);
+
+        List<AskChatDailyWalletStatsDto> dailyWalletStats = repository.findDailyWalletStats(
+                startInclusive,
+                endExclusive
+        );
+        AskChatWalletSummaryDto walletSummary = repository.findWalletSummary(startInclusive, endExclusive);
+        List<AskChatDailyRagDocumentStatsDto> dailyDocuments = repository.findDailyRagDocumentStats(
+                startInclusive,
+                endExclusive
+        );
+        List<AskChatDailyRagReferenceStatsDto> dailyReferences = repository.findDailyRagReferenceStats(
+                startInclusive,
+                endExclusive
+        );
+        AskChatRagSummaryDto ragSummary = repository.findRagSummary(startInclusive, endExclusive);
+        List<AskChatRagSourceStatsDto> sourceStats = repository.findRagSourceStats(startInclusive, endExclusive);
+        List<AskChatRagErrorStatsDto> ragErrors = repository.findRagErrorStats(startInclusive, endExclusive);
+
+        assertThat(dailyWalletStats.get(0))
+                .extracting(
+                        AskChatDailyWalletStatsDto::totalLogCount,
+                        AskChatDailyWalletStatsDto::pendingLogCount,
+                        AskChatDailyWalletStatsDto::confirmedLogCount,
+                        AskChatDailyWalletStatsDto::freeTurnsGranted,
+                        AskChatDailyWalletStatsDto::freeTurnsConsumed,
+                        AskChatDailyWalletStatsDto::paidTurnsConsumed,
+                        AskChatDailyWalletStatsDto::netFreeTurnDelta,
+                        AskChatDailyWalletStatsDto::netPaidTurnDelta
+                )
+                .containsExactly(4L, 1L, 3L, 7L, 1L, 1L, 5L, -1L);
+        assertThat(dailyWalletStats.get(1))
+                .extracting(
+                        AskChatDailyWalletStatsDto::totalLogCount,
+                        AskChatDailyWalletStatsDto::refundedLogCount,
+                        AskChatDailyWalletStatsDto::paidTurnsRefunded,
+                        AskChatDailyWalletStatsDto::paidTurnsCharged,
+                        AskChatDailyWalletStatsDto::netPaidTurnDelta
+                )
+                .containsExactly(3L, 1L, 1L, 10L, 10L);
+        assertThat(walletSummary).isEqualTo(
+                new AskChatWalletSummaryDto(7L, 1L, 5L, 1L, 7L, 1L, 1L, 0L, 1L, 10L, 5L, 9L)
+        );
+
+        assertThat(dailyDocuments.get(0))
+                .extracting(
+                        AskChatDailyRagDocumentStatsDto::date,
+                        AskChatDailyRagDocumentStatsDto::totalDocumentCount,
+                        AskChatDailyRagDocumentStatsDto::completedDocumentCount,
+                        AskChatDailyRagDocumentStatsDto::failedDocumentCount,
+                        AskChatDailyRagDocumentStatsDto::averageFailedRetryCount
+                )
+                .containsExactly(LocalDate.of(2026, 8, 10), 2L, 1L, 1L, 2.0);
+        assertThat(dailyDocuments.get(1).deadLetterDocumentCount()).isEqualTo(1L);
+        assertThat(dailyReferences).containsExactly(
+                new AskChatDailyRagReferenceStatsDto(LocalDate.of(2026, 8, 10), 2L, 2L),
+                new AskChatDailyRagReferenceStatsDto(LocalDate.of(2026, 8, 11), 1L, 1L)
+        );
+        assertThat(ragSummary).isEqualTo(new AskChatRagSummaryDto(3L, 0L, 1L, 1L, 1L, 2.5, 3L, 2L));
+        assertThat(sourceStats).containsExactly(
+                new AskChatRagSourceStatsDto("ASK_CHAT_MESSAGE", 2L, 0L, 1L, 0L, 1L),
+                new AskChatRagSourceStatsDto("ANSWER_ENTRY", 1L, 0L, 0L, 1L, 0L)
+        );
+        assertThat(ragErrors).containsExactly(
+                new AskChatRagErrorStatsDto("EMBEDDING_TIMEOUT", 1L),
+                new AskChatRagErrorStatsDto("UNKNOWN", 1L)
+        );
+    }
+
     private Long insertUser(String prefix) {
         return jdbcTemplate.queryForObject("""
                 insert into users (email, password_hash, nickname, signup_status)
@@ -159,6 +280,69 @@ class AskChatStatsRepositoryTest extends PostgresIntegrationTestSupport {
                 )
                 values (?, ?, ?, 'test message', ?, ?, ?)
                 """, sessionId, role, status, generationDurationMs, errorCode, createdAt);
+    }
+
+    private Long insertMessageWithId(Long sessionId, OffsetDateTime createdAt) {
+        return jdbcTemplate.queryForObject("""
+                insert into ask_chat_messages (session_id, role, status, content, created_at)
+                values (?, 'ASSISTANT', 'COMPLETED', 'reference message', ?)
+                returning id
+                """, Long.class, sessionId, createdAt);
+    }
+
+    private void insertWalletLog(
+            Long userId,
+            Long sessionId,
+            int freeTurnDelta,
+            int paidTurnDelta,
+            int freeTurnBalanceAfter,
+            int paidTurnBalanceAfter,
+            String reason,
+            String status,
+            OffsetDateTime createdAt
+    ) {
+        jdbcTemplate.update("""
+                insert into ask_chat_wallet_logs (
+                    user_id, session_id, free_turn_delta, paid_turn_delta,
+                    free_turn_balance_after, paid_turn_balance_after,
+                    reason, status, created_at
+                )
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, userId, sessionId, freeTurnDelta, paidTurnDelta,
+                freeTurnBalanceAfter, paidTurnBalanceAfter, reason, status, createdAt);
+    }
+
+    private Long insertRagDocument(
+            Long userId,
+            String sourceType,
+            Long sourceId,
+            String embeddingStatus,
+            int retryCount,
+            String errorCode,
+            OffsetDateTime createdAt
+    ) {
+        return jdbcTemplate.queryForObject("""
+                insert into ask_chat_rag_documents (
+                    user_id, source_type, source_id, content, metadata,
+                    embedding_model, embedding_version, embedding_status,
+                    error_code, retry_count, created_at, updated_at
+                )
+                values (?, ?, ?, 'rag content', '{}'::jsonb, ?, 1, ?, ?, ?, ?, ?)
+                returning id
+                """, Long.class, userId, sourceType, sourceId,
+                "text-embedding-3-small", embeddingStatus, errorCode, retryCount, createdAt, createdAt);
+    }
+
+    private void insertReference(
+            Long messageId,
+            Long ragDocumentId,
+            int displayOrder,
+            OffsetDateTime createdAt
+    ) {
+        jdbcTemplate.update("""
+                insert into ask_chat_message_references (message_id, rag_document_id, display_order, created_at)
+                values (?, ?, ?, ?)
+                """, messageId, ragDocumentId, displayOrder, createdAt);
     }
 
     private OffsetDateTime utc(int year, int month, int day, int hour, int minute) {

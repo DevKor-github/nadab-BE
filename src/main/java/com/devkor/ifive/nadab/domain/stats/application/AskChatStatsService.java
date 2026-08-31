@@ -1,12 +1,23 @@
 package com.devkor.ifive.nadab.domain.stats.application;
 
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyMessageStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyRagDocumentStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyRagReferenceStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyRagStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailySessionStatsDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyWalletStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyWalletStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatErrorStatsDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatMessageSummaryDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagErrorStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagSourceStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagSummaryDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatSessionSummaryDto;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatWalletStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatWalletSummaryDto;
 import com.devkor.ifive.nadab.domain.stats.core.repository.AskChatStatsRepository;
 import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -70,17 +81,51 @@ public class AskChatStatsService {
                 startInclusive,
                 endExclusive
         );
+        List<AskChatDailyWalletStatsDto> dailyWalletStats = repository.findDailyWalletStats(
+                startInclusive,
+                endExclusive
+        );
+        AskChatWalletSummaryDto walletSummary = repository.findWalletSummary(
+                startInclusive,
+                endExclusive
+        );
+        List<AskChatDailyRagDocumentStatsDto> dailyRagDocumentStats = repository.findDailyRagDocumentStats(
+                startInclusive,
+                endExclusive
+        );
+        List<AskChatDailyRagReferenceStatsDto> dailyRagReferenceStats = repository.findDailyRagReferenceStats(
+                startInclusive,
+                endExclusive
+        );
+        AskChatRagSummaryDto ragSummary = repository.findRagSummary(startInclusive, endExclusive);
+        List<AskChatRagSourceStatsDto> ragSourceStats = repository.findRagSourceStats(
+                startInclusive,
+                endExclusive
+        );
+        List<AskChatRagErrorStatsDto> ragErrorStats = repository.findRagErrorStats(
+                startInclusive,
+                endExclusive
+        );
 
         Map<LocalDate, AskChatDailySessionStatsDto> sessionStatsByDate = new HashMap<>();
         dailySessionStats.forEach(stats -> sessionStatsByDate.put(stats.date(), stats));
         Map<LocalDate, AskChatDailyMessageStatsDto> messageStatsByDate = new HashMap<>();
         dailyMessageStats.forEach(stats -> messageStatsByDate.put(stats.date(), stats));
+        Map<LocalDate, AskChatDailyWalletStatsDto> walletStatsByDate = new HashMap<>();
+        dailyWalletStats.forEach(stats -> walletStatsByDate.put(stats.date(), stats));
+        Map<LocalDate, AskChatDailyRagDocumentStatsDto> ragDocumentStatsByDate = new HashMap<>();
+        dailyRagDocumentStats.forEach(stats -> ragDocumentStatsByDate.put(stats.date(), stats));
+        Map<LocalDate, AskChatDailyRagReferenceStatsDto> ragReferenceStatsByDate = new HashMap<>();
+        dailyRagReferenceStats.forEach(stats -> ragReferenceStatsByDate.put(stats.date(), stats));
 
         List<AskChatDailyStatsViewModel> dailyStats = startDate.datesUntil(endDate.plusDays(1))
                 .map(date -> toDailyViewModel(
                         date,
                         sessionStatsByDate.get(date),
-                        messageStatsByDate.get(date)
+                        messageStatsByDate.get(date),
+                        walletStatsByDate.get(date),
+                        ragDocumentStatsByDate.get(date),
+                        ragReferenceStatsByDate.get(date)
                 ))
                 .toList();
 
@@ -105,6 +150,8 @@ public class AskChatStatsService {
                 messageSummary.averageGenerationDurationMs(),
                 messageSummary.p95GenerationDurationMs(),
                 errorStats,
+                toWalletStatsViewModel(walletSummary),
+                toRagStatsViewModel(ragSummary, ragSourceStats, ragErrorStats),
                 OffsetDateTime.now(SEOUL).format(REFRESHED_AT_FORMATTER)
         );
     }
@@ -112,7 +159,10 @@ public class AskChatStatsService {
     private AskChatDailyStatsViewModel toDailyViewModel(
             LocalDate date,
             AskChatDailySessionStatsDto sessionStats,
-            AskChatDailyMessageStatsDto messageStats
+            AskChatDailyMessageStatsDto messageStats,
+            AskChatDailyWalletStatsDto walletStats,
+            AskChatDailyRagDocumentStatsDto ragDocumentStats,
+            AskChatDailyRagReferenceStatsDto ragReferenceStats
     ) {
         return new AskChatDailyStatsViewModel(
                 date,
@@ -124,7 +174,87 @@ public class AskChatStatsService {
                 messageStats == null ? 0L : messageStats.completedAssistantMessageCount(),
                 messageStats == null ? 0L : messageStats.failedAssistantMessageCount(),
                 messageStats == null ? 0.0 : messageStats.averageGenerationDurationMs(),
-                messageStats == null ? 0L : messageStats.p95GenerationDurationMs()
+                messageStats == null ? 0L : messageStats.p95GenerationDurationMs(),
+                toDailyWalletStatsViewModel(walletStats),
+                toDailyRagStatsViewModel(ragDocumentStats, ragReferenceStats)
+        );
+    }
+
+    private AskChatDailyWalletStatsViewModel toDailyWalletStatsViewModel(
+            AskChatDailyWalletStatsDto stats
+    ) {
+        if (stats == null) {
+            return new AskChatDailyWalletStatsViewModel(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+        }
+        return new AskChatDailyWalletStatsViewModel(
+                stats.totalLogCount(),
+                stats.pendingLogCount(),
+                stats.confirmedLogCount(),
+                stats.refundedLogCount(),
+                stats.freeTurnsGranted(),
+                stats.freeTurnsConsumed(),
+                stats.paidTurnsConsumed(),
+                stats.freeTurnsRefunded(),
+                stats.paidTurnsRefunded(),
+                stats.paidTurnsCharged(),
+                stats.netFreeTurnDelta(),
+                stats.netPaidTurnDelta()
+        );
+    }
+
+    private AskChatDailyRagStatsViewModel toDailyRagStatsViewModel(
+            AskChatDailyRagDocumentStatsDto documentStats,
+            AskChatDailyRagReferenceStatsDto referenceStats
+    ) {
+        return new AskChatDailyRagStatsViewModel(
+                documentStats == null ? 0L : documentStats.totalDocumentCount(),
+                documentStats == null ? 0L : documentStats.pendingDocumentCount(),
+                documentStats == null ? 0L : documentStats.completedDocumentCount(),
+                documentStats == null ? 0L : documentStats.failedDocumentCount(),
+                documentStats == null ? 0L : documentStats.deadLetterDocumentCount(),
+                documentStats == null ? 0.0 : documentStats.averageFailedRetryCount(),
+                referenceStats == null ? 0L : referenceStats.referenceCount(),
+                referenceStats == null ? 0L : referenceStats.uniqueReferencedDocumentCount()
+        );
+    }
+
+    private AskChatWalletStatsViewModel toWalletStatsViewModel(AskChatWalletSummaryDto summary) {
+        return new AskChatWalletStatsViewModel(
+                summary.totalLogCount(),
+                summary.pendingLogCount(),
+                summary.confirmedLogCount(),
+                summary.refundedLogCount(),
+                summary.freeTurnsGranted(),
+                summary.freeTurnsConsumed(),
+                summary.paidTurnsConsumed(),
+                summary.freeTurnsRefunded(),
+                summary.paidTurnsRefunded(),
+                summary.paidTurnsCharged(),
+                summary.netFreeTurnDelta(),
+                summary.netPaidTurnDelta()
+        );
+    }
+
+    private AskChatRagStatsViewModel toRagStatsViewModel(
+            AskChatRagSummaryDto summary,
+            List<AskChatRagSourceStatsDto> sourceStats,
+            List<AskChatRagErrorStatsDto> errorStats
+    ) {
+        double embeddingCompletionRatePercent = summary.totalDocumentCount() == 0
+                ? 0.0
+                : summary.completedDocumentCount() * 100.0 / summary.totalDocumentCount();
+        return new AskChatRagStatsViewModel(
+                summary.totalDocumentCount(),
+                summary.pendingDocumentCount(),
+                summary.completedDocumentCount(),
+                summary.failedDocumentCount(),
+                summary.deadLetterDocumentCount(),
+                embeddingCompletionRatePercent,
+                summary.averageFailedRetryCount(),
+                summary.totalReferenceCount(),
+                summary.uniqueReferencedDocumentCount(),
+                sourceStats,
+                errorStats
         );
     }
 }

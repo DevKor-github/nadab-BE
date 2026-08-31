@@ -12,6 +12,8 @@ public record AskChatDailyStatsViewModel(
         long completedAssistantMessageCount,
         long failedAssistantMessageCount,
         double averageGenerationDurationMs,
-        long p95GenerationDurationMs
+        long p95GenerationDurationMs,
+        AskChatDailyWalletStatsViewModel walletStats,
+        AskChatDailyRagStatsViewModel ragStats
 ) {
 }
