@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="tabs(activeTab)" class="tabs">
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'daily' ? ' active' : ''"
+     th:href="@{/stats/daily}">일간</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'weekly' ? ' active' : ''"
+     th:href="@{/stats/weekly}">주간</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'monthly' ? ' active' : ''"
+     th:href="@{/stats/monthly}">월간</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'type' ? ' active' : ''"
+     th:href="@{/stats/type}">유형</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'question' ? ' active' : ''"
+     th:href="@{/stats/question}">질문</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'withdrawal' ? ' active' : ''"
+     th:href="@{/stats/withdrawal}">탈퇴</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'total' ? ' active' : ''"
+     th:href="@{/stats/total}">전체</a>
+</div>
+</body>
+</html>

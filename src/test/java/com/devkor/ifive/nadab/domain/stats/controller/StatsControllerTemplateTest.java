@@ -284,7 +284,7 @@ class StatsControllerTemplateTest {
                 .andExpect(content().string(containsString("집계 시작 기준")))
                 .andExpect(content().string(containsString("질문 반응 추적 기능이 배포된 시점 이후")))
                 .andExpect(content().string(containsString("(2026년 8월 25일 12:00 KST)")))
-                .andExpect(content().string(containsString("tab-link  active\" href=\"/stats/question\"")));
+                .andExpect(content().string(containsString("class=\"tab-link  active\"")));
     }
 
     @Test
@@ -503,14 +503,20 @@ class StatsControllerTemplateTest {
     }
 
     @Test
-    void all_stats_templates_include_question_tab() throws Exception {
+    void all_stats_templates_use_common_tab_fragment() throws Exception {
+        String fragment = new ClassPathResource("templates/stats/fragments/tabs.html")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(fragment)
+                .contains("th:fragment=\"tabs(activeTab)\"", "th:href=\"@{/stats/question}\"", ">질문</a>");
+
         for (String template : List.of("daily", "weekly", "monthly", "type", "question", "question-overview", "withdrawal", "total")) {
             String source = new ClassPathResource("templates/stats/" + template + ".html")
                     .getContentAsString(StandardCharsets.UTF_8);
 
             assertThat(source)
                     .as(template)
-                    .contains("th:href=\"@{/stats/question}\"", ">질문</a>");
+                    .contains("th:replace=\"~{stats/fragments/tabs :: tabs(${activeTab})}\"");
         }
     }
 
