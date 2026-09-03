@@ -23,6 +23,9 @@
   <a class="tab-link"
      th:classappend="${activeTab} == 'total' ? ' active' : ''"
      th:href="@{/stats/total}">전체</a>
+  <a class="tab-link"
+     th:classappend="${activeTab} == 'ask-chat' ? ' active' : ''"
+     th:href="@{/stats/ask-chat}">Ask Chat</a>
 </div>
 </body>
 </html>
