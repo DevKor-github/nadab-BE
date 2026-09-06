@@ -1,6 +1,5 @@
 package com.devkor.ifive.nadab.domain.auth.application;
 
-import com.devkor.ifive.nadab.domain.auth.core.entity.UserWithdrawalReason;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEvent;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEventReason;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalReasonType;
@@ -88,7 +87,7 @@ class AuthServiceV2PersistenceTest extends PostgresIntegrationTestSupport {
     }
 
     @Test
-    void withdrawal_commits_user_state_and_both_reason_stores_together() {
+    void withdrawal_commits_user_state_and_new_reason_store_without_legacy_write() {
         userId = createUser();
 
         authServiceV2.withdrawUser(
@@ -100,7 +99,6 @@ class AuthServiceV2PersistenceTest extends PostgresIntegrationTestSupport {
         User withdrawnUser = userRepository.findById(userId).orElseThrow();
         WithdrawalEvent event = withdrawalEventRepository.findAll().getFirst();
         List<WithdrawalEventReason> eventReasons = withdrawalEventReasonRepository.findAll();
-        List<UserWithdrawalReason> legacyReasons = userWithdrawalReasonRepository.findAll();
 
         assertThat(withdrawnUser.getDeletedAt()).isNotNull();
         assertThat(withdrawnUser.getSignupStatus()).isEqualTo(SignupStatusType.WITHDRAWN);
@@ -112,16 +110,11 @@ class AuthServiceV2PersistenceTest extends PostgresIntegrationTestSupport {
                         WithdrawalReasonType.DAILY_LOGGING_BURDEN,
                         WithdrawalReasonType.OTHER
                 );
-        assertThat(legacyReasons)
-                .extracting(UserWithdrawalReason::getReason)
-                .containsExactlyInAnyOrder(
-                        WithdrawalReasonType.DAILY_LOGGING_BURDEN,
-                        WithdrawalReasonType.OTHER
-                );
+        assertThat(userWithdrawalReasonRepository.count()).isZero();
     }
 
     @Test
-    void new_reason_store_failure_rolls_back_withdrawal_and_legacy_reasons() {
+    void new_reason_store_failure_rolls_back_withdrawal_and_event() {
         userId = createUser();
         doThrow(new IllegalStateException("신규 탈퇴 사유 저장 실패"))
                 .when(withdrawalEventReasonRepository).saveAll(anyList());

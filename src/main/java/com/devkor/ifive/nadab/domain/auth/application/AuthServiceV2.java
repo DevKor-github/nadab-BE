@@ -1,10 +1,8 @@
 package com.devkor.ifive.nadab.domain.auth.application;
 
-import com.devkor.ifive.nadab.domain.auth.core.entity.UserWithdrawalReason;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEvent;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEventReason;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalReasonType;
-import com.devkor.ifive.nadab.domain.auth.core.repository.UserWithdrawalReasonRepository;
 import com.devkor.ifive.nadab.domain.auth.core.repository.WithdrawalEventReasonRepository;
 import com.devkor.ifive.nadab.domain.auth.core.repository.WithdrawalEventRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
@@ -30,7 +28,6 @@ public class AuthServiceV2 {
 
     private final WithdrawalService withdrawalService;
     private final UserRepository userRepository;
-    private final UserWithdrawalReasonRepository userWithdrawalReasonRepository;
     private final WithdrawalEventRepository withdrawalEventRepository;
     private final WithdrawalEventReasonRepository withdrawalEventReasonRepository;
 
@@ -50,19 +47,11 @@ public class AuthServiceV2 {
         WithdrawalEvent event = withdrawalEventRepository.save(
                 WithdrawalEvent.create(user, effectiveWithdrawnAt)
         );
-        List<UserWithdrawalReason> legacyReasons = new ArrayList<>(validatedReasons.size());
         List<WithdrawalEventReason> eventReasons = new ArrayList<>(validatedReasons.size());
         for (WithdrawalReasonType reason : validatedReasons) {
             String detail = reason == WithdrawalReasonType.OTHER ? normalizedCustomReason : null;
-            legacyReasons.add(UserWithdrawalReason.create(
-                    user,
-                    reason,
-                    detail,
-                    effectiveWithdrawnAt
-            ));
             eventReasons.add(WithdrawalEventReason.create(event, reason, detail));
         }
-        userWithdrawalReasonRepository.saveAll(legacyReasons);
         withdrawalEventReasonRepository.saveAll(eventReasons);
     }
 
