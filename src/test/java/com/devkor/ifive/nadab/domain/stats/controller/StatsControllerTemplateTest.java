@@ -37,6 +37,8 @@ import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestSerie
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalEventRowViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalStatsViewModel;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.security.filter.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
@@ -287,6 +289,36 @@ class StatsControllerTemplateTest {
 
         assertThat(html.indexOf("<canvas id=\"mauChart\""))
                 .isLessThan(html.indexOf("선택한 월간 통계"));
+    }
+
+    @Test
+    void withdrawalStats_renders_retention_scope_and_request_event_labels() throws Exception {
+        when(withdrawalStatsService.getWithdrawalStats()).thenReturn(new WithdrawalStatsViewModel(
+                100,
+                1L,
+                List.of("매일 기록이 부담", "기타(직접 입력)"),
+                List.of(2L, 1L),
+                List.of(new WithdrawalEventRowViewModel(
+                        "2026-09-01 12:30:00",
+                        "매일 기록이 부담, 기타(직접 입력)",
+                        "-"
+                )),
+                "2026-09-06 12:00:00"
+        ));
+
+        mockMvc.perform(get("/stats/withdrawal"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("탈퇴 요청 사유 분포")))
+                .andExpect(content().string(containsString("계정 완전 삭제와 분리")))
+                .andExpect(content().string(containsString("탈퇴 요청 시점부터 최대 1년")))
+                .andExpect(content().string(containsString("탈퇴 요청 이벤트 목록")))
+                .andExpect(content().string(containsString("계정 상태와 무관하게 보존 기간이 남은 요청")))
+                .andExpect(content().string(containsString("계정 연결이 제거된 이벤트의 자유 입력 내용은 표시하지 않습니다.")))
+                .andExpect(content().string(containsString("탈퇴 요청 시각")))
+                .andExpect(content().string(containsString("2026-09-01 12:30:00")))
+                .andExpect(content().string(containsString("매일 기록이 부담, 기타(직접 입력)")));
+
+        verify(withdrawalStatsService).getWithdrawalStats();
     }
 
     @Test

@@ -24,23 +24,22 @@ public class WithdrawalStatsService {
     private final WithdrawalStatsRepository repo;
 
     public WithdrawalStatsViewModel getWithdrawalStats() {
-        List<Object[]> rows = repo.findLatestWithdrawalReasonRows(RECENT_WITHDRAWAL_EVENT_LIMIT);
-        List<Object[]> totalReasonRows = repo.countAllWithdrawalReasons();
+        List<Object[]> rows = repo.findLatestRetainedWithdrawalReasonRows(RECENT_WITHDRAWAL_EVENT_LIMIT);
+        List<Object[]> totalReasonRows = repo.countRetainedWithdrawalReasons();
 
-        Map<EventKey, EventAccumulator> eventMap = new LinkedHashMap<>();
+        Map<Long, EventAccumulator> eventMap = new LinkedHashMap<>();
         Map<WithdrawalReasonType, Long> reasonCountMap = new EnumMap<>(WithdrawalReasonType.class);
 
         for (Object[] row : rows) {
-            long userId = toLong(row[0]);
+            long eventId = toLong(row[0]);
             OffsetDateTime withdrawnAt = toOffsetDateTime(row[1]);
             String reasonCode = String.valueOf(row[2]);
             WithdrawalReasonType reasonType = parseReasonType(reasonCode);
             String customReason = row[3] == null ? null : String.valueOf(row[3]).trim();
 
             OffsetDateTime normalizedWithdrawnAt = withdrawnAt.truncatedTo(ChronoUnit.SECONDS);
-            EventKey key = new EventKey(userId, normalizedWithdrawnAt);
             EventAccumulator accumulator = eventMap.computeIfAbsent(
-                    key,
+                    eventId,
                     k -> new EventAccumulator(formatDateTime(normalizedWithdrawnAt))
             );
 
@@ -134,9 +133,6 @@ public class WithdrawalStatsService {
             return rawReasonCode;
         }
         return toReasonLabel(reasonType);
-    }
-
-    private record EventKey(long userId, OffsetDateTime withdrawnAt) {
     }
 
     private static class EventAccumulator {
