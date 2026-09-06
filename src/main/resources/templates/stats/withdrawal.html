@@ -224,8 +224,8 @@
 <div class="grid">
   <div class="card">
     <div class="card-header">
-      <div class="card-title">탈퇴 사유 분포</div>
-      <div class="card-sub">전체 탈퇴 사유 집계</div>
+      <div class="card-title">탈퇴 요청 사유 분포</div>
+      <div class="card-sub">계정 완전 삭제와 분리해 보존 중인 사유를 집계하며, 탈퇴 요청 시점부터 최대 1년 범위입니다.</div>
     </div>
     <div class="card-body">
       <canvas id="reasonChart" height="120"></canvas>
@@ -234,15 +234,15 @@
 
   <div class="card">
     <div class="card-header">
-      <div class="card-title">탈퇴 이벤트 목록 (최신순)</div>
-      <div class="card-sub">표는 최신 <span class="mono" th:text="${vm.recentEventLimit}">100</span>개 이벤트를 표시합니다.</div>
+      <div class="card-title">탈퇴 요청 이벤트 목록 (최신순)</div>
+      <div class="card-sub">계정 상태와 무관하게 보존 기간이 남은 요청 중 최신 <span class="mono" th:text="${vm.recentEventLimit}">100</span>개를 표시합니다. 계정 연결이 제거된 이벤트의 자유 입력 내용은 표시하지 않습니다.</div>
     </div>
     <div class="card-body">
       <div class="table-wrap" th:if="${!#lists.isEmpty(vm.rows)}">
         <table>
           <thead>
           <tr>
-            <th>탈퇴 시각</th>
+            <th>탈퇴 요청 시각</th>
             <th>선택 사유</th>
             <th>기타 사유</th>
           </tr>
@@ -256,7 +256,7 @@
           </tbody>
         </table>
       </div>
-      <div class="empty" th:if="${#lists.isEmpty(vm.rows)}">표시할 탈퇴 이벤트가 없습니다.</div>
+      <div class="empty" th:if="${#lists.isEmpty(vm.rows)}">표시할 탈퇴 요청 이벤트가 없습니다.</div>
     </div>
   </div>
 </div>
