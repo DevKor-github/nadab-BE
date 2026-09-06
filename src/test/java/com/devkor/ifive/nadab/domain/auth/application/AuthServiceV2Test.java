@@ -1,8 +1,12 @@
 package com.devkor.ifive.nadab.domain.auth.application;
 
 import com.devkor.ifive.nadab.domain.auth.core.entity.UserWithdrawalReason;
+import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEvent;
+import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEventReason;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalReasonType;
 import com.devkor.ifive.nadab.domain.auth.core.repository.UserWithdrawalReasonRepository;
+import com.devkor.ifive.nadab.domain.auth.core.repository.WithdrawalEventReasonRepository;
+import com.devkor.ifive.nadab.domain.auth.core.repository.WithdrawalEventRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -19,6 +23,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
@@ -37,6 +42,12 @@ class AuthServiceV2Test {
     @Mock
     UserWithdrawalReasonRepository userWithdrawalReasonRepository;
 
+    @Mock
+    WithdrawalEventRepository withdrawalEventRepository;
+
+    @Mock
+    WithdrawalEventReasonRepository withdrawalEventReasonRepository;
+
     AuthServiceV2 authServiceV2;
 
     @BeforeEach
@@ -44,7 +55,9 @@ class AuthServiceV2Test {
         authServiceV2 = new AuthServiceV2(
                 withdrawalService,
                 userRepository,
-                userWithdrawalReasonRepository
+                userWithdrawalReasonRepository,
+                withdrawalEventRepository,
+                withdrawalEventReasonRepository
         );
     }
 
@@ -58,6 +71,8 @@ class AuthServiceV2Test {
             return null;
         }).when(withdrawalService).withdrawUser(userId);
         when(userRepository.getReferenceById(userId)).thenReturn(user);
+        when(withdrawalEventRepository.save(any(WithdrawalEvent.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         authServiceV2.withdrawUser(
@@ -69,10 +84,17 @@ class AuthServiceV2Test {
         // then
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<UserWithdrawalReason>> captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<WithdrawalEvent> eventCaptor = ArgumentCaptor.forClass(WithdrawalEvent.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<WithdrawalEventReason>> eventReasonsCaptor = ArgumentCaptor.forClass(List.class);
         verify(withdrawalService).withdrawUser(userId);
         verify(userWithdrawalReasonRepository).saveAll(captor.capture());
+        verify(withdrawalEventRepository).save(eventCaptor.capture());
+        verify(withdrawalEventReasonRepository).saveAll(eventReasonsCaptor.capture());
 
         List<UserWithdrawalReason> savedReasons = captor.getValue();
+        WithdrawalEvent savedEvent = eventCaptor.getValue();
+        List<WithdrawalEventReason> savedEventReasons = eventReasonsCaptor.getValue();
         OffsetDateTime deletedAt = user.getDeletedAt();
 
         assertThat(savedReasons).hasSize(2);
@@ -90,6 +112,21 @@ class AuthServiceV2Test {
                 );
         assertThat(savedReasons.get(0).getCustomReason()).isNull();
         assertThat(savedReasons.get(1).getCustomReason()).isEqualTo("custom reason");
+        assertThat(savedEvent.getUser()).isEqualTo(user);
+        assertThat(savedEvent.getWithdrawnAt()).isEqualTo(deletedAt);
+        assertThat(savedEvent.getExpiresAt()).isEqualTo(deletedAt.plusYears(1));
+        assertThat(savedEvent.getAnonymizedAt()).isNull();
+        assertThat(savedEventReasons)
+                .extracting(WithdrawalEventReason::getEvent)
+                .containsOnly(savedEvent);
+        assertThat(savedEventReasons)
+                .extracting(WithdrawalEventReason::getReason)
+                .containsExactly(
+                        WithdrawalReasonType.DAILY_LOGGING_BURDEN,
+                        WithdrawalReasonType.OTHER
+                );
+        assertThat(savedEventReasons.get(0).getCustomReason()).isNull();
+        assertThat(savedEventReasons.get(1).getCustomReason()).isEqualTo("custom reason");
     }
 
     @Test
@@ -150,5 +187,7 @@ class AuthServiceV2Test {
         verify(withdrawalService, never()).withdrawUser(1L);
         verify(userRepository, never()).getReferenceById(1L);
         verify(userWithdrawalReasonRepository, never()).saveAll(anyList());
+        verify(withdrawalEventRepository, never()).save(any(WithdrawalEvent.class));
+        verify(withdrawalEventReasonRepository, never()).saveAll(anyList());
     }
 }
