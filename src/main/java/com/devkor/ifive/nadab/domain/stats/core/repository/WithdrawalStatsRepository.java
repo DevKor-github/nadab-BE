@@ -12,39 +12,40 @@ public class WithdrawalStatsRepository {
 
     private final EntityManager em;
 
-    public List<Object[]> findLatestWithdrawalReasonRows(int limitEvents) {
+    public List<Object[]> findLatestRetainedWithdrawalReasonRows(int limitEvents) {
         return em.createNativeQuery("""
                 with ranked_events as (
                     select
-                        uwr.user_id,
-                        uwr.withdrawn_at,
-                        row_number() over (order by uwr.withdrawn_at desc, uwr.user_id desc) as rn
-                    from user_withdrawal_reasons uwr
-                    group by uwr.user_id, uwr.withdrawn_at
+                        we.id,
+                        we.withdrawn_at,
+                        row_number() over (order by we.withdrawn_at desc, we.id desc) as rn
+                    from withdrawal_events we
+                    where we.expires_at > current_timestamp
                 )
                 select
-                    uwr.user_id,
-                    uwr.withdrawn_at,
-                    uwr.reason,
-                    uwr.custom_reason
-                from user_withdrawal_reasons uwr
-                join ranked_events re
-                  on re.user_id = uwr.user_id
-                 and re.withdrawn_at = uwr.withdrawn_at
+                    re.id,
+                    re.withdrawn_at,
+                    wer.reason,
+                    case when we.user_id is null then null else wer.custom_reason end
+                from ranked_events re
+                join withdrawal_events we on we.id = re.id
+                join withdrawal_event_reasons wer on wer.event_id = re.id
                 where re.rn <= :limitEvents
-                order by uwr.withdrawn_at desc, uwr.user_id desc, uwr.reason asc
+                order by re.withdrawn_at desc, re.id desc, wer.reason asc
                 """)
                 .setParameter("limitEvents", limitEvents)
                 .getResultList();
     }
 
-    public List<Object[]> countAllWithdrawalReasons() {
+    public List<Object[]> countRetainedWithdrawalReasons() {
         return em.createNativeQuery("""
                 select
-                    uwr.reason,
+                    wer.reason,
                     count(*) as cnt
-                from user_withdrawal_reasons uwr
-                group by uwr.reason
+                from withdrawal_event_reasons wer
+                join withdrawal_events we on we.id = wer.event_id
+                where we.expires_at > current_timestamp
+                group by wer.reason
                 """)
                 .getResultList();
     }

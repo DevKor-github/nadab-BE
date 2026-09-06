@@ -1,6 +1,7 @@
 package com.devkor.ifive.nadab.domain.stats.controller;
 
 import com.devkor.ifive.nadab.domain.admin.infra.security.AdminPageAuthInterceptor;
+import com.devkor.ifive.nadab.domain.stats.application.AskChatStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.DailyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.MonthlyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.QuestionStatsService;
@@ -9,6 +10,15 @@ import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.helper.DailyQuestionOverviewCsvExporter;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyRagStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyWalletStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatErrorStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagErrorStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagSourceStatsDto;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatRagStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatWalletStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyPeriodStatsViewModel;
@@ -27,6 +37,8 @@ import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeReportInterestSerie
 import com.devkor.ifive.nadab.domain.stats.core.dto.type.TypeStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyPeriodStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalEventRowViewModel;
+import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalStatsViewModel;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.security.filter.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
@@ -65,6 +77,8 @@ class StatsControllerTemplateTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockitoBean
+    private AskChatStatsService askChatStatsService;
     @MockitoBean
     private DailyStatsService dailyStatsService;
     @MockitoBean
@@ -167,6 +181,75 @@ class StatsControllerTemplateTest {
     }
 
     @Test
+    void askChatStats_renders_usage_quality_wallet_and_rag_dashboard() throws Exception {
+        AskChatDailyStatsViewModel dailyStats = new AskChatDailyStatsViewModel(
+                LocalDate.of(2026, 8, 30),
+                4L,
+                3L,
+                2L,
+                2L,
+                8L,
+                7L,
+                1L,
+                320.5,
+                780L,
+                new AskChatDailyWalletStatsViewModel(8L, 1L, 6L, 1L, 5L, 2L, 3L, 0L, 1L, 4L, 3L, -1L),
+                new AskChatDailyRagStatsViewModel(5L, 1L, 3L, 1L, 0L, 1.0, 4L, 3L)
+        );
+        AskChatStatsViewModel stats = new AskChatStatsViewModel(
+                LocalDate.of(2026, 8, 25),
+                LocalDate.of(2026, 8, 31),
+                List.of(dailyStats),
+                10L,
+                8L,
+                4L,
+                6L,
+                20L,
+                18L,
+                2L,
+                90.0,
+                320.5,
+                780L,
+                List.of(new AskChatErrorStatsDto("TIMEOUT", 2L)),
+                new AskChatWalletStatsViewModel(20L, 1L, 17L, 2L, 12L, 5L, 8L, 1L, 0L, 9L, 7L, -3L),
+                new AskChatRagStatsViewModel(
+                        12L,
+                        2L,
+                        8L,
+                        1L,
+                        1L,
+                        66.7,
+                        1.5,
+                        14L,
+                        9L,
+                        List.of(new AskChatRagSourceStatsDto("ASK_CHAT_MESSAGE", 12L, 2L, 8L, 1L, 1L)),
+                        List.of(new AskChatRagErrorStatsDto("EMBEDDING_TIMEOUT", 1L))
+                ),
+                "2026-08-31 12:00:00"
+        );
+        when(askChatStatsService.getAskChatStats()).thenReturn(stats);
+
+        String html = mockMvc.perform(get("/stats/ask-chat"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Ask Chat 집계 기간")))
+                .andExpect(content().string(containsString("2026-08-25 ~ 2026-08-31")))
+                .andExpect(content().string(containsString("usageChart")))
+                .andExpect(content().string(containsString("답변 성공률")))
+                .andExpect(content().string(containsString("대화권 현황")))
+                .andExpect(content().string(containsString("유료 충전")))
+                .andExpect(content().string(containsString("RAG 현황")))
+                .andExpect(content().string(containsString("ASK_CHAT_MESSAGE")))
+                .andExpect(content().string(containsString("EMBEDDING_TIMEOUT")))
+                .andExpect(content().string(containsString("class=\"tab-link  active\"")))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html)
+                .contains("일별 Ask Chat 상세", "TIMEOUT", "90.0%", "320.5 ms", "780 ms")
+                .contains("href=\"/stats/ask-chat\"");
+        verify(askChatStatsService).getAskChatStats();
+    }
+
+    @Test
     void monthlyStats_renders_monthly_peak_period() throws Exception {
         YearMonth selectedMonth = YearMonth.of(2026, 8);
         PeakStatViewModel monthlyPeak = peak(120L, "2026-08", false);
@@ -206,6 +289,36 @@ class StatsControllerTemplateTest {
 
         assertThat(html.indexOf("<canvas id=\"mauChart\""))
                 .isLessThan(html.indexOf("선택한 월간 통계"));
+    }
+
+    @Test
+    void withdrawalStats_renders_retention_scope_and_request_event_labels() throws Exception {
+        when(withdrawalStatsService.getWithdrawalStats()).thenReturn(new WithdrawalStatsViewModel(
+                100,
+                1L,
+                List.of("매일 기록이 부담", "기타(직접 입력)"),
+                List.of(2L, 1L),
+                List.of(new WithdrawalEventRowViewModel(
+                        "2026-09-01 12:30:00",
+                        "매일 기록이 부담, 기타(직접 입력)",
+                        "-"
+                )),
+                "2026-09-06 12:00:00"
+        ));
+
+        mockMvc.perform(get("/stats/withdrawal"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("탈퇴 요청 사유 분포")))
+                .andExpect(content().string(containsString("계정 완전 삭제와 분리")))
+                .andExpect(content().string(containsString("탈퇴 요청 시점부터 최대 1년")))
+                .andExpect(content().string(containsString("탈퇴 요청 이벤트 목록")))
+                .andExpect(content().string(containsString("계정 상태와 무관하게 보존 기간이 남은 요청")))
+                .andExpect(content().string(containsString("계정 연결이 제거된 이벤트의 자유 입력 내용은 표시하지 않습니다.")))
+                .andExpect(content().string(containsString("탈퇴 요청 시각")))
+                .andExpect(content().string(containsString("2026-09-01 12:30:00")))
+                .andExpect(content().string(containsString("매일 기록이 부담, 기타(직접 입력)")));
+
+        verify(withdrawalStatsService).getWithdrawalStats();
     }
 
     @Test
@@ -284,7 +397,7 @@ class StatsControllerTemplateTest {
                 .andExpect(content().string(containsString("집계 시작 기준")))
                 .andExpect(content().string(containsString("질문 반응 추적 기능이 배포된 시점 이후")))
                 .andExpect(content().string(containsString("(2026년 8월 25일 12:00 KST)")))
-                .andExpect(content().string(containsString("tab-link  active\" href=\"/stats/question\"")));
+                .andExpect(content().string(containsString("class=\"tab-link  active\"")));
     }
 
     @Test
@@ -503,14 +616,26 @@ class StatsControllerTemplateTest {
     }
 
     @Test
-    void all_stats_templates_include_question_tab() throws Exception {
-        for (String template : List.of("daily", "weekly", "monthly", "type", "question", "question-overview", "withdrawal", "total")) {
+    void all_stats_templates_use_common_tab_fragment() throws Exception {
+        String fragment = new ClassPathResource("templates/stats/fragments/tabs.html")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(fragment)
+                .contains(
+                        "th:fragment=\"tabs(activeTab)\"",
+                        "th:href=\"@{/stats/question}\"",
+                        ">질문</a>",
+                        "th:href=\"@{/stats/ask-chat}\"",
+                        ">Ask Chat</a>"
+                );
+
+        for (String template : List.of("daily", "weekly", "monthly", "type", "question", "question-overview", "withdrawal", "total", "ask-chat")) {
             String source = new ClassPathResource("templates/stats/" + template + ".html")
                     .getContentAsString(StandardCharsets.UTF_8);
 
             assertThat(source)
                     .as(template)
-                    .contains("th:href=\"@{/stats/question}\"", ">질문</a>");
+                    .contains("th:replace=\"~{stats/fragments/tabs :: tabs(${activeTab})}\"");
         }
     }
 

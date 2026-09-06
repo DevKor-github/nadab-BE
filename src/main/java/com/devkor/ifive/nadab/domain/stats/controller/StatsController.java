@@ -1,5 +1,6 @@
 package com.devkor.ifive.nadab.domain.stats.controller;
 
+import com.devkor.ifive.nadab.domain.stats.application.AskChatStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.DailyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.MonthlyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.QuestionStatsService;
@@ -9,6 +10,7 @@ import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.helper.DailyQuestionOverviewCsvExporter;
 import com.devkor.ifive.nadab.domain.stats.application.helper.StatsPeriodResolver;
+import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.daily.DailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.monthly.MonthlyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.question.DailyQuestionOverviewQuery;
@@ -45,6 +47,7 @@ public class StatsController {
     private static final String QUESTION_OVERVIEW_CSV_FILENAME = "nadab_daily_question_stats.csv";
 
     private final DailyStatsService dailyStatsService;
+    private final AskChatStatsService askChatStatsService;
     private final WeeklyStatsService weeklyStatsService;
     private final MonthlyStatsService monthlyStatsService;
     private final TotalStatsService totalStatsService;
@@ -53,6 +56,13 @@ public class StatsController {
     private final WithdrawalStatsService withdrawalStatsService;
     private final DailyQuestionOverviewCsvExporter dailyQuestionOverviewCsvExporter;
 
+    @GetMapping("/stats/ask-chat")
+    public String askChatStats(Model model) {
+        AskChatStatsViewModel vm = askChatStatsService.getAskChatStats();
+        model.addAttribute("vm", vm);
+        model.addAttribute("activeTab", "ask-chat");
+        return "stats/ask-chat";
+    }
 
     @GetMapping("/stats/daily")
     public String dailyStats(

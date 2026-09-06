@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 class WithdrawalStatsServiceTest {
 
     @Test
-    void getWithdrawalStats_groups_latest_rows_by_user_and_withdrawn_at() {
+    void getWithdrawalStats_groups_latest_rows_by_event_id() {
         // given
         WithdrawalStatsRepository repo = mock(WithdrawalStatsRepository.class);
         WithdrawalStatsService service = new WithdrawalStatsService(repo);
@@ -27,12 +27,12 @@ class WithdrawalStatsServiceTest {
         OffsetDateTime withdrawnAt = OffsetDateTime.of(
                 2026, 6, 1, 12, 30, 5, 900_000_000, ZoneOffset.UTC
         );
-        when(repo.findLatestWithdrawalReasonRows(100)).thenReturn(List.of(
-                row(1L, withdrawnAt, "DAILY_LOGGING_BURDEN", null),
-                row(1L, withdrawnAt, "OTHER", "  custom reason  "),
-                row(2L, Timestamp.valueOf(LocalDateTime.of(2026, 6, 2, 10, 0, 0)), "UNKNOWN_REASON", null)
+        when(repo.findLatestRetainedWithdrawalReasonRows(100)).thenReturn(List.of(
+                row(101L, withdrawnAt, "DAILY_LOGGING_BURDEN", null),
+                row(101L, withdrawnAt, "OTHER", "  custom reason  "),
+                row(102L, Timestamp.valueOf(LocalDateTime.of(2026, 6, 2, 10, 0, 0)), "UNKNOWN_REASON", null)
         ));
-        when(repo.countAllWithdrawalReasons()).thenReturn(List.of(
+        when(repo.countRetainedWithdrawalReasons()).thenReturn(List.of(
                 row("DAILY_LOGGING_BURDEN", 2L),
                 row("OTHER", 1L),
                 row("UNKNOWN_REASON", 99L)

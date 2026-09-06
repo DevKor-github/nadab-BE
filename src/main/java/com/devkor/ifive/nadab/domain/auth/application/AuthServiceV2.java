@@ -1,8 +1,10 @@
 package com.devkor.ifive.nadab.domain.auth.application;
 
-import com.devkor.ifive.nadab.domain.auth.core.entity.UserWithdrawalReason;
+import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEvent;
+import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalEventReason;
 import com.devkor.ifive.nadab.domain.auth.core.entity.WithdrawalReasonType;
-import com.devkor.ifive.nadab.domain.auth.core.repository.UserWithdrawalReasonRepository;
+import com.devkor.ifive.nadab.domain.auth.core.repository.WithdrawalEventReasonRepository;
+import com.devkor.ifive.nadab.domain.auth.core.repository.WithdrawalEventRepository;
 import com.devkor.ifive.nadab.domain.user.core.entity.User;
 import com.devkor.ifive.nadab.domain.user.core.repository.UserRepository;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
@@ -26,7 +28,8 @@ public class AuthServiceV2 {
 
     private final WithdrawalService withdrawalService;
     private final UserRepository userRepository;
-    private final UserWithdrawalReasonRepository userWithdrawalReasonRepository;
+    private final WithdrawalEventRepository withdrawalEventRepository;
+    private final WithdrawalEventReasonRepository withdrawalEventReasonRepository;
 
     public void withdrawUser(Long userId, List<WithdrawalReasonType> reasons, String customReason) {
         List<WithdrawalReasonType> validatedReasons = validateReasons(reasons);
@@ -41,17 +44,15 @@ public class AuthServiceV2 {
         OffsetDateTime effectiveWithdrawnAt = user.getDeletedAt() != null
                 ? user.getDeletedAt()
                 : OffsetDateTime.now();
-        List<UserWithdrawalReason> entities = new ArrayList<>(validatedReasons.size());
+        WithdrawalEvent event = withdrawalEventRepository.save(
+                WithdrawalEvent.create(user, effectiveWithdrawnAt)
+        );
+        List<WithdrawalEventReason> eventReasons = new ArrayList<>(validatedReasons.size());
         for (WithdrawalReasonType reason : validatedReasons) {
             String detail = reason == WithdrawalReasonType.OTHER ? normalizedCustomReason : null;
-            entities.add(UserWithdrawalReason.create(
-                    user,
-                    reason,
-                    detail,
-                    effectiveWithdrawnAt
-            ));
+            eventReasons.add(WithdrawalEventReason.create(event, reason, detail));
         }
-        userWithdrawalReasonRepository.saveAll(entities);
+        withdrawalEventReasonRepository.saveAll(eventReasons);
     }
 
     private List<WithdrawalReasonType> validateReasons(List<WithdrawalReasonType> reasons) {
