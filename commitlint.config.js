@@ -20,6 +20,7 @@ module.exports = {
             "ai",
             "report",
             "pdf",
+            "ads",
             "moderation",
             "search",
             "stats",
@@ -119,6 +120,9 @@ module.exports = {
                     },
                     pdf: {
                         description: '📄 PDF 내보내기 도메인 (예: 기록 PDF 생성, 렌더링)'
+                    },
+                    ads: {
+                        description: '📺 광고 도메인 (예: 보상형 광고 크리스탈 충전, SSV 검증)'
                     },
                     moderation: {
                         description: '🚨 신고/차단 도메인 (예: 공유글 신고, 공유 활동 중지)'

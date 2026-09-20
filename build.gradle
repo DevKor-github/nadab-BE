@@ -98,6 +98,9 @@ dependencies {
 
     // webp 디코더
     implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.1'
+
+    // AdMob SSV 서명 검증 (Tink)
+    implementation 'com.google.crypto.tink:apps-rewardedads:1.15.0'
 }
 
 dependencyManagement {
