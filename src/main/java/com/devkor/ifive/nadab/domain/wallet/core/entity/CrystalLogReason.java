@@ -16,5 +16,7 @@ public enum CrystalLogReason {
 
     PDF_EXPORT_GENERATE,
 
+    AD_REWARD_GRANT,
+
     ADMIN_ADJUST
 }
