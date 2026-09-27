@@ -19,7 +19,6 @@ import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatStatsViewMode
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatWalletStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatWalletSummaryDto;
 import com.devkor.ifive.nadab.domain.stats.core.repository.AskChatStatsRepository;
-import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,18 +37,11 @@ import java.util.Objects;
 @Transactional(readOnly = true)
 public class AskChatStatsService {
 
-    public static final int DEFAULT_CHART_DAYS = 7;
-
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter REFRESHED_AT_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final AskChatStatsRepository repository;
-
-    public AskChatStatsViewModel getAskChatStats() {
-        LocalDate endDate = TodayDateTimeProvider.getTodayDate();
-        return getAskChatStats(endDate.minusDays(DEFAULT_CHART_DAYS - 1L), endDate);
-    }
 
     public AskChatStatsViewModel getAskChatStats(LocalDate startDate, LocalDate endDate) {
         Objects.requireNonNull(startDate, "startDate must not be null");

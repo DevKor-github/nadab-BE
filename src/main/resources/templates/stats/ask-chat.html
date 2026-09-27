@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>NADAB — Ask Chat Stats</title>
+  <title>NADAB — Stats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -121,6 +121,20 @@
     .tab-link:hover { color: var(--text-1); }
     .tab-link.active { color: #fff; background: var(--accent); }
 
+    .period-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .period-link {
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text-2);
+      background: var(--surface);
+      font-size: .78rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .period-link:hover { color: var(--text-1); border-color: var(--accent); }
+    .period-link.active { color: #fff; border-color: var(--accent); background: var(--accent); }
+
     .period-panel,
     .panel,
     .summary-card {
@@ -129,6 +143,7 @@
       background: var(--surface);
     }
     .period-panel { margin-bottom: 20px; padding: 20px 22px; }
+    .period-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
     .period-eyebrow {
       margin-bottom: 7px;
       color: var(--accent);
@@ -139,6 +154,33 @@
     }
     .period-title { color: var(--text-1); font-family: 'DM Mono', monospace; font-size: 1.28rem; font-weight: 500; }
     .period-note { margin-top: 8px; color: var(--text-2); font-size: .78rem; line-height: 1.5; }
+    .period-picker { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
+    .period-picker-field { display: grid; gap: 6px; }
+    .period-picker-label { color: var(--text-2); font-size: .68rem; }
+    .period-picker-input {
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-1);
+      background: var(--surface-2);
+      color-scheme: dark;
+      font: 500 .78rem 'DM Mono', monospace;
+    }
+    .period-picker-submit, .period-picker-current {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-1);
+      background: var(--surface-2);
+      font: 600 .78rem 'Syne', sans-serif;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .period-picker-submit:hover, .period-picker-current:hover { border-color: var(--accent); }
 
     .summary-grid {
       display: grid;
@@ -214,6 +256,7 @@
       body { padding: 20px 14px 40px; }
       .page-header { align-items: stretch; flex-direction: column; }
       .header-right { flex-wrap: wrap; gap: 8px 12px; }
+      .period-panel-header { align-items: stretch; flex-direction: column; }
       .chart-grid, .detail-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 520px) {
@@ -248,10 +291,43 @@
 
 <div th:replace="~{stats/fragments/tabs :: tabs(${activeTab})}"></div>
 
+<nav class="period-tabs" aria-label="물어보기 통계 기간">
+  <a class="period-link" th:classappend="${period == 'daily'} ? ' active' : ''"
+     th:attr="aria-current=${period == 'daily' ? 'page' : null}"
+     th:href="@{/stats/ask-chat(period='daily')}">일간</a>
+  <a class="period-link" th:classappend="${period == 'weekly'} ? ' active' : ''"
+     th:attr="aria-current=${period == 'weekly' ? 'page' : null}"
+     th:href="@{/stats/ask-chat(period='weekly')}">주간</a>
+  <a class="period-link" th:classappend="${period == 'monthly'} ? ' active' : ''"
+     th:attr="aria-current=${period == 'monthly' ? 'page' : null}"
+     th:href="@{/stats/ask-chat(period='monthly')}">월간</a>
+</nav>
+
 <section class="period-panel">
-  <div class="period-eyebrow">Ask Chat 집계 기간</div>
-  <div class="period-title" th:text="|${vm.startDate} ~ ${vm.endDate}|">2026-08-25 ~ 2026-08-31</div>
-  <div class="period-note">최근 7일 · Asia/Seoul 기준 · 세션, 메시지, 대화권, RAG read model을 한 화면에서 확인합니다.</div>
+  <div class="period-panel-header">
+    <div>
+      <div class="period-eyebrow">Ask Chat 집계 기간</div>
+      <div class="period-title" th:text="|${vm.startDate} ~ ${vm.endDate}|">2026-08-25 ~ 2026-08-31</div>
+      <div class="period-note">Asia/Seoul 기준 · 진행 중인 주·월은 오늘까지 집계합니다.</div>
+    </div>
+    <form class="period-picker" method="get" th:action="@{/stats/ask-chat}">
+      <input type="hidden" name="period" th:value="${period}"/>
+      <div class="period-picker-field">
+        <label class="period-picker-label" for="periodValue"
+               th:text="${period == 'daily' ? '기준일' : period == 'weekly' ? '기준 주' : '기준 월'}">기준일</label>
+        <input class="period-picker-input" id="periodValue" name="date" type="date"
+               th:if="${period == 'daily'}" th:value="${periodValue}" required/>
+        <input class="period-picker-input" id="periodValue" name="week" type="week"
+               th:if="${period == 'weekly'}" th:value="${periodValue}" required/>
+        <input class="period-picker-input" id="periodValue" name="month" type="month"
+               th:if="${period == 'monthly'}" th:value="${periodValue}" required/>
+      </div>
+      <button class="period-picker-submit" type="submit">조회</button>
+      <a class="period-picker-current" th:if="${period == 'daily'}" th:href="@{/stats/ask-chat(period='daily')}">오늘</a>
+      <a class="period-picker-current" th:if="${period == 'weekly'}" th:href="@{/stats/ask-chat(period='weekly')}">이번 주</a>
+      <a class="period-picker-current" th:if="${period == 'monthly'}" th:href="@{/stats/ask-chat(period='monthly')}">이번 달</a>
+    </form>
+  </div>
 </section>
 
 <section class="summary-grid">

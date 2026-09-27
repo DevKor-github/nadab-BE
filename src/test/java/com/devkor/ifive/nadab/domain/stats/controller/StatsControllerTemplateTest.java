@@ -10,6 +10,7 @@ import com.devkor.ifive.nadab.domain.stats.application.TypeStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WithdrawalStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.WeeklyStatsService;
 import com.devkor.ifive.nadab.domain.stats.application.helper.DailyQuestionOverviewCsvExporter;
+import com.devkor.ifive.nadab.domain.stats.application.helper.StatsPeriodResolver;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyRagStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyStatsViewModel;
 import com.devkor.ifive.nadab.domain.stats.core.dto.askchat.AskChatDailyWalletStatsViewModel;
@@ -41,6 +42,7 @@ import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalEventRo
 import com.devkor.ifive.nadab.domain.stats.core.dto.withdrawal.WithdrawalStatsViewModel;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.security.filter.JwtAuthenticationFilter;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -49,6 +51,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.ui.ExtendedModelMap;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
@@ -59,6 +62,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -76,6 +80,8 @@ class StatsControllerTemplateTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private StatsController statsController;
 
     @MockitoBean
     private AskChatStatsService askChatStatsService;
@@ -227,11 +233,14 @@ class StatsControllerTemplateTest {
                 ),
                 "2026-08-31 12:00:00"
         );
-        when(askChatStatsService.getAskChatStats()).thenReturn(stats);
+        when(askChatStatsService.getAskChatStats(any(LocalDate.class), any(LocalDate.class))).thenReturn(stats);
 
         String html = mockMvc.perform(get("/stats/ask-chat"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Ask Chat 집계 기간")))
+                .andExpect(content().string(containsString("aria-label=\"물어보기 통계 기간\"")))
+                .andExpect(content().string(containsString("name=\"date\" type=\"date\"")))
+                .andExpect(content().string(containsString("name=\"period\" value=\"daily\"")))
                 .andExpect(content().string(containsString("2026-08-25 ~ 2026-08-31")))
                 .andExpect(content().string(containsString("usageChart")))
                 .andExpect(content().string(containsString("답변 성공률")))
@@ -245,8 +254,54 @@ class StatsControllerTemplateTest {
 
         assertThat(html)
                 .contains("일별 Ask Chat 상세", "TIMEOUT", "90.0%", "320.5 ms", "780 ms")
-                .contains("href=\"/stats/ask-chat\"");
-        verify(askChatStatsService).getAskChatStats();
+                .contains("href=\"/stats/ask-chat\"", "href=\"/stats/ask-chat?period=weekly\"");
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        verify(askChatStatsService).getAskChatStats(today, today);
+
+        mockMvc.perform(get("/stats/ask-chat").param("period", "weekly").param("week", "2025-W01"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("name=\"week\" type=\"week\"")))
+                .andExpect(content().string(containsString("value=\"2025-W01\"")))
+                .andExpect(content().string(containsString("name=\"period\" value=\"weekly\"")))
+                .andExpect(content().string(containsString("이번 주")));
+
+        mockMvc.perform(get("/stats/ask-chat").param("period", "monthly").param("month", "2026-08"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("name=\"month\" type=\"month\"")))
+                .andExpect(content().string(containsString("value=\"2026-08\"")))
+                .andExpect(content().string(containsString("name=\"period\" value=\"monthly\"")))
+                .andExpect(content().string(containsString("이번 달")));
+    }
+
+    @Test
+    void askChatStats_selects_daily_weekly_and_monthly_ranges() {
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        statsController.askChatStats("daily", "2026-08-13", null, null, model);
+        assertThat(model.get("periodValue")).isEqualTo("2026-08-13");
+        verify(askChatStatsService).getAskChatStats(
+                LocalDate.of(2026, 8, 13), LocalDate.of(2026, 8, 13));
+
+        statsController.askChatStats("weekly", null, "2025-W01", null, model);
+        assertThat(model.get("periodValue")).isEqualTo("2025-W01");
+        verify(askChatStatsService).getAskChatStats(
+                LocalDate.of(2024, 12, 30), LocalDate.of(2025, 1, 5));
+
+        statsController.askChatStats("monthly", null, null, "2026-08", model);
+        assertThat(model.get("periodValue")).isEqualTo("2026-08");
+        verify(askChatStatsService).getAskChatStats(
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+    }
+
+    @Test
+    void askChatStats_caps_current_week_and_month_at_today() {
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+
+        statsController.askChatStats("weekly", null, null, null, new ExtendedModelMap());
+        verify(askChatStatsService).getAskChatStats(StatsPeriodResolver.resolveWeekly(null), today);
+
+        statsController.askChatStats("monthly", null, null, null, new ExtendedModelMap());
+        verify(askChatStatsService).getAskChatStats(today.withDayOfMonth(1), today);
     }
 
     @Test
@@ -328,6 +383,14 @@ class StatsControllerTemplateTest {
         mockMvc.perform(get("/stats/weekly").param("week", "invalid"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/stats/monthly").param("month", "2026-13"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/ask-chat").param("period", "yearly"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/ask-chat").param("date", "2999-01-01"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/ask-chat").param("period", "weekly").param("week", "invalid"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/stats/ask-chat").param("period", "monthly").param("month", "2026-13"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/stats/question").param("questionId", "not-a-number"))
                 .andExpect(status().isBadRequest());
