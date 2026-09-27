@@ -626,8 +626,12 @@ class StatsControllerTemplateTest {
                         "th:href=\"@{/stats/question}\"",
                         ">질문</a>",
                         "th:href=\"@{/stats/ask-chat}\"",
-                        ">Ask Chat</a>"
+                        ">물어보기</a>"
                 );
+        assertThat(fragment.indexOf(">유형</a>"))
+                .isLessThan(fragment.indexOf(">물어보기</a>"));
+        assertThat(fragment.indexOf(">물어보기</a>"))
+                .isLessThan(fragment.indexOf(">질문</a>"));
 
         for (String template : List.of("daily", "weekly", "monthly", "type", "question", "question-overview", "withdrawal", "total", "ask-chat")) {
             String source = new ClassPathResource("templates/stats/" + template + ".html")
