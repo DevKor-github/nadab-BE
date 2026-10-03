@@ -15,6 +15,9 @@
      th:classappend="${activeTab} == 'type' ? ' active' : ''"
      th:href="@{/stats/type}">유형</a>
   <a class="tab-link"
+     th:classappend="${activeTab} == 'ask-chat' ? ' active' : ''"
+     th:href="@{/stats/ask-chat}">물어보기</a>
+  <a class="tab-link"
      th:classappend="${activeTab} == 'question' ? ' active' : ''"
      th:href="@{/stats/question}">질문</a>
   <a class="tab-link"
@@ -23,9 +26,6 @@
   <a class="tab-link"
      th:classappend="${activeTab} == 'total' ? ' active' : ''"
      th:href="@{/stats/total}">전체</a>
-  <a class="tab-link"
-     th:classappend="${activeTab} == 'ask-chat' ? ' active' : ''"
-     th:href="@{/stats/ask-chat}">Ask Chat</a>
 </div>
 </body>
 </html>

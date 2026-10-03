@@ -25,6 +25,7 @@ import com.devkor.ifive.nadab.domain.stats.core.dto.weekly.WeeklyStatsViewModel;
 import com.devkor.ifive.nadab.domain.user.core.entity.InterestCode;
 import com.devkor.ifive.nadab.global.core.response.ErrorCode;
 import com.devkor.ifive.nadab.global.exception.BadRequestException;
+import com.devkor.ifive.nadab.global.shared.util.TodayDateTimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -57,10 +58,45 @@ public class StatsController {
     private final DailyQuestionOverviewCsvExporter dailyQuestionOverviewCsvExporter;
 
     @GetMapping("/stats/ask-chat")
-    public String askChatStats(Model model) {
-        AskChatStatsViewModel vm = askChatStatsService.getAskChatStats();
+    public String askChatStats(
+            @RequestParam(defaultValue = "daily") String period,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String week,
+            @RequestParam(required = false) String month,
+            Model model
+    ) {
+        LocalDate startDate;
+        LocalDate endDate;
+        String periodValue;
+        switch (period) {
+            case "daily" -> {
+                startDate = StatsPeriodResolver.resolveDaily(date);
+                endDate = startDate;
+                periodValue = startDate.toString();
+            }
+            case "weekly" -> {
+                startDate = StatsPeriodResolver.resolveWeekly(week);
+                endDate = startDate.plusDays(6);
+                periodValue = StatsPeriodResolver.formatIsoWeek(startDate);
+            }
+            case "monthly" -> {
+                YearMonth selectedMonth = StatsPeriodResolver.resolveMonthly(month);
+                startDate = selectedMonth.atDay(1);
+                endDate = selectedMonth.atEndOfMonth();
+                periodValue = selectedMonth.toString();
+            }
+            default -> throw new BadRequestException(ErrorCode.VALIDATION_FAILED);
+        }
+        LocalDate today = TodayDateTimeProvider.getTodayDate();
+        if (endDate.isAfter(today)) {
+            endDate = today;
+        }
+
+        AskChatStatsViewModel vm = askChatStatsService.getAskChatStats(startDate, endDate);
         model.addAttribute("vm", vm);
         model.addAttribute("activeTab", "ask-chat");
+        model.addAttribute("period", period);
+        model.addAttribute("periodValue", periodValue);
         return "stats/ask-chat";
     }
 

@@ -481,6 +481,14 @@ public enum ErrorCode {
     PDF_EXPORT_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PDF 생성에 실패했습니다. 차감된 크리스탈은 자동 환불됩니다"),
     PDF_EXPORT_GENERATION_TIMEOUT(HttpStatus.INTERNAL_SERVER_ERROR, "시간 내에 생성이 완료되지 않아 취소되었습니다. 차감된 크리스탈은 자동 환불됩니다"),
 
+    // ==================== AD_REWARD (보상형 광고 크리스탈 충전) ====================
+    // 400 Bad Request
+    AD_REWARD_NOT_NEEDED(HttpStatus.BAD_REQUEST, "이미 크리스탈이 충분해 광고 시청이 필요하지 않습니다"),
+    // 403 Forbidden
+    AD_REWARD_SESSION_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 광고 보상 세션만 조회할 수 있습니다"),
+    // 404 Not Found
+    AD_REWARD_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "광고 보상 세션을 찾을 수 없습니다"),
+
     // ==================== ADMIN (어드민) ====================
     // 401 Unauthorized
     ADMIN_PAGE_INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "관리자 페이지 비밀번호가 올바르지 않습니다");
