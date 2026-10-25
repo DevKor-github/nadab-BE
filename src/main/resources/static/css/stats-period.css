@@ -149,35 +149,6 @@
 }
 
 @media (max-width: 680px) {
-  .page-header {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .header-right {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-  }
-
-  .tabs {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tab-link {
-    flex: 0 0 auto;
-    padding: 7px 12px;
-    font-size: .76rem;
-  }
-
   .period-panel-header {
     align-items: stretch;
     flex-direction: column;
