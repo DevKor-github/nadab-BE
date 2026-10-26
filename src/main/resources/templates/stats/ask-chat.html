@@ -254,8 +254,6 @@
     }
     @media (max-width: 820px) {
       body { padding: 20px 14px 40px; }
-      .page-header { align-items: stretch; flex-direction: column; }
-      .header-right { flex-wrap: wrap; gap: 8px 12px; }
       .period-panel-header { align-items: stretch; flex-direction: column; }
       .chart-grid, .detail-grid { grid-template-columns: 1fr; }
     }
@@ -265,14 +263,14 @@
       .summary-value { font-size: 1.4rem; }
       .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .period-title { font-size: 1.05rem; }
-      .tab-link { padding: 7px 12px; font-size: .76rem; }
     }
   </style>
+  <link rel="stylesheet" th:href="@{/css/stats-layout.css}"/>
 </head>
 <body>
 
 <div class="page-header">
-  <div class="page-title">NADAB · Ask Chat Stats</div>
+  <div class="page-title">NADAB · Stats</div>
   <div class="header-right">
     <div id="healthBar" class="health-bar loading">
       <span class="health-dot"></span>
