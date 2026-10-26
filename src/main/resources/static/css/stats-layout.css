@@ -1,0 +1,50 @@
+.tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-link {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.health-bar,
+.btn-refresh {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.refreshed-at span {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .header-right {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+}
+
+@media (max-width: 680px) {
+  .tabs {
+    width: 100%;
+  }
+
+  .tab-link {
+    padding: 7px 12px;
+    font-size: .76rem;
+  }
+}
